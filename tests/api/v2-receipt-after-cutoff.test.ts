@@ -4,7 +4,7 @@ import { apiRequest, createApiTestContext, createClassRoom, joinClassRoom, SETTI
 it("recovers an accepted operation receipt after collection closes without accepting a new batch", async () => {
   const test = createApiTestContext();
   try {
-    const created = await createClassRoom(test, crypto.randomUUID(), { ...SETTINGS, ionAnswer: "name", gradingMode: "deferred" });
+    const created = await createClassRoom(test, crypto.randomUUID(), { ...SETTINGS, mode: "name", gradingMode: "deferred" });
     const roomId = created.body.room.id;
     const joined = await joinClassRoom(test, roomId);
     await test.handlers.startRoom(apiRequest(`/api/rooms/${roomId}/start`, { method: "POST", json: { requestId: crypto.randomUUID(), expectedRevision: 1 } }), { id: roomId });
@@ -15,7 +15,7 @@ it("recovers an accepted operation receipt after collection closes without accep
     test.setNow(started.startAtMs + 1000);
     const body = { requestId: crypto.randomUUID(), writerEpoch: 1, manifestId: manifest.manifestId,
       evaluatorVersion: manifest.evaluatorVersion, operations: [{ seq: 1, operationId: crypto.randomUUID(), type: "draft", questionId: manifest.questions[0].id,
-        fieldId: "name", value: "テスト", elapsedMs: 1000, editedElapsedMs: 1000 }] };
+        fieldId: "name", value: JSON.stringify({ tokens: [] }), elapsedMs: 1000, editedElapsedMs: 1000 }] };
     const send = (payload: unknown) => test.handlers.operations(apiRequest(`/api/rooms/${roomId}/operations`, { method: "POST", token: joined.token, json: payload }), { id: roomId });
     const first = await send(body);
     expect(first.status, JSON.stringify(await first.clone().json())).toBe(200);

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ItemDifficulty } from "../../src/games/alkane-puzzle/shared/question-profile";
+type ItemDifficulty = "normal" | "hard" | "both" | "off";
 import "./question-difficulty-toggle.css";
 
 export const itemDifficultyLabels: Record<ItemDifficulty, string> = {

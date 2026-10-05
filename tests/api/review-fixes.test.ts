@@ -33,66 +33,43 @@ async function startClass(test: ReturnType<typeof context>, roomId: string, revi
 }
 
 describe("review: answer payload validation", () => {
-  it("accepts a strict FormulaEntry for ion formulas but a canonical string cannot spoof the charge control", async () => {
+  it("accepts a valid board answer after a syntactically valid wrong board", async () => {
     const test = context();
     const created = await createClassRoom(test);
     const joined = await joinClassRoom(test, created.body.room.id);
     await startClass(test, created.body.room.id);
     const stateResponse = await test.handlers.state(apiRequest(`/api/rooms/${created.body.room.id}/state`, { token: joined.token }), { id: created.body.room.id });
     const state = await stateResponse.json() as { participant: { revision: number }; question: { id: string } };
-    const internal = test.database.sqlite.prepare(`
-      SELECT answer_snapshot_json FROM room_questions WHERE question_id = ?
-    `).get(state.question.id) as { answer_snapshot_json: string };
-    const question = JSON.parse(internal.answer_snapshot_json) as {
-      answer: { canonical: string };
-      ionFormula: string;
-      ionCharge: number;
-    };
-
-    const spoof = await test.handlers.actions(apiRequest(`/api/rooms/${created.body.room.id}/actions`, {
-      method: "POST",
-      token: joined.token,
-      json: {
-        requestId: crypto.randomUUID(), questionId: state.question.id,
+    const internal = test.database.sqlite.prepare("SELECT answer_snapshot_json FROM room_questions WHERE question_id = ?")
+      .get(state.question.id) as { answer_snapshot_json: string };
+    const question = JSON.parse(internal.answer_snapshot_json) as { answer: { canonical: string } };
+    const emptyBoard = { grid: Array.from({ length: 5 }, () => Array(7).fill(null)) };
+    const wrong = await test.handlers.actions(apiRequest(`/api/rooms/${created.body.room.id}/actions`, {
+      method: "POST", token: joined.token,
+      json: { requestId: crypto.randomUUID(), questionId: state.question.id,
         expectedParticipantRevision: state.participant.revision, clientElapsedMs: 1,
-        action: { type: "answer", fieldId: "formula", value: question.answer.canonical },
-      },
+        action: { type: "answer", fieldId: "formula", value: JSON.stringify(emptyBoard) } },
     }), { id: created.body.room.id });
-    expect(await spoof.json()).toMatchObject({ correct: false, participantRevision: 1, correctCount: 0 });
+    expect(wrong.status).toBe(200);
+    expect(await wrong.json()).toMatchObject({ correct: false, participantRevision: 1, correctCount: 0 });
 
-    const tokens = question.ionFormula.match(/[A-Z][a-z]?|\d+|[()]/gu);
-    expect(tokens).not.toBeNull();
     const valid = await test.handlers.actions(apiRequest(`/api/rooms/${created.body.room.id}/actions`, {
-      method: "POST",
-      token: joined.token,
-      json: {
-        requestId: crypto.randomUUID(), questionId: state.question.id,
+      method: "POST", token: joined.token,
+      json: { requestId: crypto.randomUUID(), questionId: state.question.id,
         expectedParticipantRevision: 1, clientElapsedMs: 2,
-        action: {
-          type: "answer",
-          fieldId: "formula",
-          value: {
-            tokens,
-            cursor: tokens!.length,
-            charge: {
-              magnitude: Math.abs(question.ionCharge),
-              sign: question.ionCharge > 0 ? "+" : "-",
-              source: "chargeButton",
-            },
-          },
-        },
-      },
+        action: { type: "answer", fieldId: "formula", value: question.answer.canonical } },
     }), { id: created.body.room.id });
+    expect(valid.status).toBe(200);
     expect(await valid.json()).toMatchObject({ correct: true, participantRevision: 2, correctCount: 1 });
   });
 
   it.each([
-    { tokens: ["Na"], cursor: 2, charge: null },
-    { tokens: ["<script>"], cursor: 1, charge: null },
-    { tokens: ["Na"], cursor: 1, charge: { magnitude: 0, sign: "+", source: "chargeButton" } },
-    { tokens: ["Na"], cursor: 1, charge: { magnitude: 1, sign: "+", source: "forged" } },
-    { tokens: ["Na"], cursor: 1, charge: null, canonical: "Na+" },
-  ])("rejects malformed structured formula entry %#", async (value) => {
+    { grid: [[{ type: 1, rotation: 0 }]] },
+    { grid: Array.from({ length: 5 }, () => Array(7).fill({ type: 99, rotation: 0 })) },
+    { grid: Array.from({ length: 5 }, () => Array(7).fill({ type: 1, rotation: 45 })) },
+    { grid: Array.from({ length: 5 }, () => Array(7).fill({ type: 2, rotation: 0, element: "OH" })) },
+    { grid: Array.from({ length: 5 }, () => Array(7).fill(null)), canonical: "forged" },
+  ])("rejects malformed board payload %#", async (value) => {
     const test = context();
     const created = await createClassRoom(test);
     const joined = await joinClassRoom(test, created.body.room.id);
@@ -108,9 +85,9 @@ describe("review: answer payload validation", () => {
     expect(response.status).toBe(400);
   });
 
-  it("preserves string answers for name fields", async () => {
+  it("preserves JSON token string answers for name fields", async () => {
     const test = context();
-    const settings = { ...SETTINGS, ionAnswer: "name" as const };
+    const settings = { ...SETTINGS, mode: "name" as const };
     const created = await createClassRoom(test, crypto.randomUUID(), settings);
     const joined = await joinClassRoom(test, created.body.room.id);
     await startClass(test, created.body.room.id);

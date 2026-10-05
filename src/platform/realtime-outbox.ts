@@ -42,12 +42,18 @@ export async function queueRoomEvents(db:PersistenceDatabase,publicId:string,bef
 export type BroadcastSender=(topic:string,event:string,payload:unknown)=>Promise<void>;
 export async function flushRoomEvents(transact:<T>(scope:string,run:(db:PersistenceDatabase)=>Promise<T>)=>Promise<T>,publicId:string,send:BroadcastSender,now=Date.now()){
   const claimed=await transact(`broadcast:${publicId}`,async db=>{
+    await db.prepare('SELECT app_expire_teacher_leases(?)').bind(now).run();
     const room=await readRoom(db,publicId);if(!room||room.expires_at_ms<=now)return [];
     const topic=await db.prepare('SELECT epoch,sent_control_ms,sent_progress_ms FROM app_room_topics WHERE room_id=?').bind(room.id).first<any>();
     const pending=(await db.prepare(`SELECT * FROM app_outbox WHERE room_id=? AND lease_until_ms<? ORDER BY CASE kind WHEN 'control' THEN 0 ELSE 1 END`).bind(room.id,now).all<any>()).results;
     const recipients=await db.prepare(`SELECT count(*) AS count FROM participants WHERE room_id=? AND status<>'REMOVED'`).bind(room.id).first<{count:number}>();
     const hosts=1;const result=[];
     for(const event of pending){
+      if(event.kind==='host'&&room.kind==='class'){
+        const owner=await db.prepare('SELECT uid FROM app_teacher_bindings WHERE uid=? AND active=true AND lease_until_ms>?')
+          .bind(room.owner_teacher_id,now).first<{uid:string}>();
+        if(!owner)continue;
+      }
       if(now-(event.kind==='host'?topic.sent_progress_ms:topic.sent_control_ms)<1000)continue;
       const cost=reservedEventCost(event.kind==='host'?hosts:Number(recipients?.count??0)+(room.kind==='mate'?0:1));
       // This singleton row serializes the project-wide weighted fanout budget.
@@ -57,7 +63,8 @@ export async function flushRoomEvents(transact:<T>(scope:string,run:(db:Persiste
       await db.prepare('UPDATE app_broadcast_budget SET window_ms=?,used=? WHERE id=1').bind(window,used+cost).run();
       const lease=crypto.randomUUID();
       await db.prepare('UPDATE app_outbox SET lease_id=?,lease_until_ms=? WHERE room_id=? AND kind=?').bind(lease,now+5000,room.id,event.kind).run();
-      result.push({...event,lease,topic:`room:${publicId}:${event.kind==='host'?'host':'control'}:${topic.epoch}`,epoch:topic.epoch});
+      result.push({...event,lease,topic:`room:${publicId}:${event.kind==='host'?'host':'control'}:${topic.epoch}`,epoch:topic.epoch,
+        room_kind:room.kind,owner_uid:room.owner_teacher_id});
     }
     return result;
   });
@@ -67,8 +74,14 @@ export async function flushRoomEvents(transact:<T>(scope:string,run:(db:Persiste
       if(payload.epoch!==event.epoch)continue;
       // A revoke committed after claim must prevent sending to the old topic.
       await transact(`room:${publicId}`,async db=>{
+        await db.prepare('SELECT app_expire_teacher_leases(?)').bind(now).run();
         const current=await db.prepare('SELECT epoch FROM app_room_topics WHERE room_id=? FOR UPDATE').bind(event.room_id).first<{epoch:number}>();
         if(current?.epoch!==event.epoch)return;
+        if(event.kind==='host'&&event.room_kind==='class'){
+          const owner=await db.prepare('SELECT uid FROM app_teacher_bindings WHERE uid=? AND active=true AND lease_until_ms>?')
+            .bind(event.owner_uid,now).first<{uid:string}>();
+          if(!owner)return;
+        }
         await send(event.topic,event.kind==='host'?'host.progress':'room.changed',payload);
         await db.prepare('DELETE FROM app_outbox WHERE room_id=? AND kind=? AND event_id=? AND lease_id=?').bind(event.room_id,event.kind,event.event_id,event.lease).run();
         await db.prepare(`UPDATE app_room_topics SET ${event.kind==='host'?'sent_progress_ms':'sent_control_ms'}=? WHERE room_id=?`).bind(now,event.room_id).run();

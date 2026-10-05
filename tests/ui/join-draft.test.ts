@@ -17,15 +17,15 @@ function storage(): Storage {
 describe("pending join", () => {
   it("persists one exact request across a second click and reload without replacing the active credential", () => {
     const local = storage();
-    local.setItem("ionic-formula-competition:room:room-1", JSON.stringify({ token: "old-token", participantId: "old-id" }));
+    local.setItem("alkane-puzzle-competition:room:room-1", JSON.stringify({ token: "old-token", participantId: "old-id" }));
     const first = beginPendingJoin(local, "room-1", "名前", () => "new-token", () => "request-1");
     const repeat = beginPendingJoin(local, "room-1", "変更した名前", () => "other-token", () => "request-2");
     expect(repeat).toEqual(first);
     expect(loadPendingJoin(local, "room-1")).toEqual(first);
-    expect(JSON.parse(local.getItem("ionic-formula-competition:room:room-1")!)).toEqual({ token: "old-token", participantId: "old-id" });
+    expect(JSON.parse(local.getItem("alkane-puzzle-competition:room:room-1")!)).toEqual({ token: "old-token", participantId: "old-id" });
 
     expect(completePendingJoin(local, "room-1", first, "new-id")).toBe(true);
-    expect(JSON.parse(local.getItem("ionic-formula-competition:room:room-1")!)).toEqual({ token: "new-token", participantId: "new-id" });
+    expect(JSON.parse(local.getItem("alkane-puzzle-competition:room:room-1")!)).toEqual({ token: "new-token", participantId: "new-id" });
     expect(loadPendingJoin(local, "room-1")).toBeNull();
     expect(completePendingJoin(local, "room-1", first, "late-id")).toBe(false);
   });

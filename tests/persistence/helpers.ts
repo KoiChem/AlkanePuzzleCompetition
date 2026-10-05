@@ -135,26 +135,31 @@ export class SqliteD1 {
   }
 }
 
+const blankBoard = () => Array.from({ length: 5 }, () => Array(7).fill(null));
+const ethaneBoard = blankBoard();
+ethaneBoard[2][2] = { type: 1, rotation: 0 };
+ethaneBoard[2][3] = { type: 1, rotation: 180 };
+export const CORRECT_BOARD_ANSWER = JSON.stringify({ grid: ethaneBoard });
+export const WRONG_BOARD_ANSWER = JSON.stringify({ grid: blankBoard() });
+
 export const QUESTION: InternalQuestion = Object.freeze({
   id: "question-1",
   ordinal: 0,
-  itemId: "sodium",
-  category: "ionSimple",
-  variant: "ionNameToFormula",
-  prompt: Object.freeze({ kind: "ionName", values: Object.freeze([{ type: "name" as const, value: "ナトリウムイオン" }]) }),
+  itemId: "ethane",
+  category: "chain",
+  variant: "arrange",
+  prompt: Object.freeze({ kind: "alkane", mode: "arrange", grid: null, name: "エタン", bounds: { cols: 7, rows: 5 }, alcoholEnabled: false, values: [] as const }),
   fields: Object.freeze([{ id: "formula" as const, type: "formula" as const }]),
   maxScore: 1,
-  answer: Object.freeze({ type: "formula" as const, canonical: "Na+", accepted: Object.freeze([]) }),
+  answer: Object.freeze({ type: "formula" as const, canonical: CORRECT_BOARD_ANSWER, accepted: Object.freeze([]) }),
 });
 
 export const ROOM_SETTINGS = Object.freeze({
   questionCount: 5 as const,
   timeLimitMinutes: 3 as const,
-  mode: "ion" as const,
-  difficulty: "normal" as const,
-  ionAnswer: "formula" as const,
-  compoundPrompts: Object.freeze({ formula: true, name: false }),
-  compoundAnswer: "formula" as const,
+  mode: "arrange" as const,
+  difficulty: "easy" as const,
+  alcoholEnabled: false,
 });
 
 export function classRoomInput(overrides: Record<string, unknown> = {}) {
@@ -165,7 +170,7 @@ export function classRoomInput(overrides: Record<string, unknown> = {}) {
     kind: "class" as const,
     ownerTeacherId: "teacher-1",
     settings: ROOM_SETTINGS,
-    gameId: "ionic-formula",
+    gameId: "alkane-puzzle",
     gameVersion: "1",
     datasetVersion: "4",
     maxScore: 5,

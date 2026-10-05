@@ -8,8 +8,8 @@ export type HistoryCandidate = {
   expiresAtMs?: number;
   settings?: AlkaneGameSettings;
 };
-const INDEX_KEY = "ionic-formula-competition:history:v1";
-const PREFIX = "ionic-formula-competition:";
+const INDEX_KEY = "alkane-puzzle-competition:history:v1";
+const PREFIX = "alkane-puzzle-competition:";
 const validRoomId = (value: unknown): value is string => typeof value === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(value);
 
 export function discoverHistoryCandidates(storage: Pick<Storage, "length" | "key" | "getItem">): HistoryCandidate[] {

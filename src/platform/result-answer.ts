@@ -2,6 +2,7 @@ import type { FormulaEntry } from "../games/alkane-puzzle/shared/types";
 
 export type DisplayAnswer = {
   lastAnswer: string | null;
+  lastAnswerValue?: unknown;
   lastAnswerEntry: FormulaEntry | null;
   answerDisplayUnavailable?: true;
 };
@@ -15,8 +16,14 @@ export function decodeDisplayAnswer(stored: string | null): DisplayAnswer {
   if (typeof raw === "string") return { lastAnswer: raw, lastAnswerEntry: null };
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { lastAnswer: null, lastAnswerEntry: null, answerDisplayUnavailable: true };
   const candidate = raw as Record<string, unknown>;
+  if (Array.isArray(candidate.grid) && candidate.grid.length <= 5 && candidate.grid.every(row => Array.isArray(row) && row.length <= 7)) {
+    return { lastAnswer: null, lastAnswerEntry: null, lastAnswerValue: {grid: candidate.grid} };
+  }
   if (!Array.isArray(candidate.tokens) || !candidate.tokens.every(token => typeof token === "string")) {
     return { lastAnswer: null, lastAnswerEntry: null, answerDisplayUnavailable: true };
+  }
+  if (Array.isArray(candidate.tokens) && candidate.charge === undefined) {
+    return { lastAnswer: candidate.tokens.join(''), lastAnswerEntry: null, lastAnswerValue: {tokens: candidate.tokens} };
   }
   const charge = candidate.charge;
   if (charge !== null && charge !== undefined && (

@@ -33,7 +33,7 @@ export function Runner({ id, color = "#1763a6", goal, stopped, rest = false, das
 }
 
 export const HostRace = memo(function HostRace({ roomId, participants, mode, maxScore, active, pace, remainingText, interruptButton }: { roomId: string; participants: ParticipantState[]; mode: RaceMode; maxScore: number; active: boolean; pace: 0 | 1 | 2 | 3; remainingText: string; interruptButton: ReactNode }) {
-  const motionKey = "ionic-formula-competition:race-motion:v1";
+  const motionKey = "alkane-puzzle-competition:race-motion:v1";
   const previous = useRef<string[]>([]);
   const [motionChoice, setMotionChoice] = useState<RaceMotionChoice>("auto");
   const light = effectiveRaceMotion(motionChoice, false) === "light";

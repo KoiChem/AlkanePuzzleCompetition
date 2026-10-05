@@ -5,32 +5,25 @@ const contexts: ReturnType<typeof createApiTestContext>[] = [];
 afterEach(() => contexts.splice(0).forEach(context => context.close()));
 
 describe("field pass", () => {
-  it("keeps the name field pending after passing only the formula", async () => {
+  it("resolves a single arrange field and advances to the next question", async () => {
     const ctx = createApiTestContext(); contexts.push(ctx);
-    const settings = { ...SETTINGS, mode: "compound" as const, compoundPrompts: { formula: true, name: true }, compoundAnswer: "both" as const };
-    const room = (await createClassRoom(ctx, "create-both", settings)).body.room.id;
+    const created = await createClassRoom(ctx);
+    const room = created.body.room.id;
     const joined = await joinClassRoom(ctx, room, "参加者");
-    await ctx.handlers.startRoom(apiRequest(`/api/rooms/${room}/start`, { method: "POST", json: { requestId: "start-both", expectedRevision: 1 } }), { id: room });
+    await ctx.handlers.startRoom(apiRequest(`/api/rooms/${room}/start`, { method: "POST", json: { requestId: "start-arrange", expectedRevision: 1 } }), { id: room });
     ctx.setNow(6_000);
     const before = await ctx.handlers.state(apiRequest(`/api/rooms/${room}/state`, { token: joined.token }), { id: room });
-    const data = await before.json() as { participant: { revision: number }; question: { id: string; progress: { fieldStates: Record<string, string> } } };
-    expect(data.question.progress.fieldStates).toMatchObject({ formula: "pending", name: "pending" });
-    const pass = await ctx.handlers.actions(apiRequest(`/api/rooms/${room}/actions`, { method: "POST", token: joined.token, json: { requestId: "pass-formula", questionId: data.question.id, expectedParticipantRevision: 0, clientElapsedMs: 0, action: { type: "pass", fieldId: "formula" } } }), { id: room });
+    const data = await before.json() as { question: { id: string; fields: Array<{ id: string }>; progress: { fieldStates: Record<string, string> } } };
+    expect(data.question.fields.map(field => field.id)).toEqual(["formula"]);
+    expect(data.question.progress.fieldStates).toMatchObject({ formula: "pending" });
+    const pass = await ctx.handlers.actions(apiRequest(`/api/rooms/${room}/actions`, { method: "POST", token: joined.token,
+      json: { requestId: "pass-formula", questionId: data.question.id, expectedParticipantRevision: 0, clientElapsedMs: 0, action: { type: "pass", fieldId: "formula" } },
+    }), { id: room });
     expect(pass.status).toBe(200);
+    expect(await pass.json()).toMatchObject({ correctCount: 0, currentOrdinal: 1, resolvedQuestionCount: 1 });
     const after = await ctx.handlers.state(apiRequest(`/api/rooms/${room}/state`, { token: joined.token }), { id: room });
     const changed = await after.json() as typeof data;
-    expect(changed.question.id).toBe(data.question.id);
-    expect(changed.question.progress.fieldStates).toMatchObject({ formula: "passed", name: "pending" });
-    expect(changed.participant.revision).toBe(1);
-    const answerRow = await ctx.database.prepare(`
-      SELECT q.answer_snapshot_json FROM room_questions q JOIN rooms r ON r.id = q.room_id
-      WHERE r.public_id = ? AND q.ordinal = 0
-    `).bind(room).first<{ answer_snapshot_json: string }>();
-    const answerSnapshot = JSON.parse(answerRow!.answer_snapshot_json) as { answer: { name: { canonical: string } } };
-    ctx.setNow(7_000);
-    const answerName = await ctx.handlers.actions(apiRequest(`/api/rooms/${room}/actions`, { method: "POST", token: joined.token, json: { requestId: "answer-name", questionId: data.question.id, expectedParticipantRevision: 1, clientElapsedMs: 1_000, action: { type: "answer", fieldId: "name", value: answerSnapshot.answer.name.canonical } } }), { id: room });
-    expect(answerName.status).toBe(200);
-    expect(await answerName.json()).toMatchObject({ correctCount: 1, currentOrdinal: 1, resolvedQuestionCount: 1 });
+    expect(changed.question.id).not.toBe(data.question.id);
   });
 
   it("requires a field for a new pass request", async () => {

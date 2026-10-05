@@ -1,3 +1,4 @@
+import {CHEMISTRY_CONTENT_VERSION} from '../games/alkane-puzzle/shared/content-version';
 import type { AlkaneGameSettings } from "../games/alkane-puzzle/shared/types";
 import {
   PersistenceConflictError,
@@ -51,7 +52,7 @@ export async function updateRoomSettingsCommand(
         WHERE room_id = rooms.id AND actor_id = ? AND request_id = ?
       )
   `).bind(
-    json(input.settings), input.settings.chemistryContentVersion ?? "4", input.maxScore, marker, input.roomId, input.expectedRevision,
+    json(input.settings), input.settings.chemistryContentVersion ?? CHEMISTRY_CONTENT_VERSION, input.maxScore, marker, input.roomId, input.expectedRevision,
     actorId, input.requestId,
   )];
   statements.push(database.prepare(`

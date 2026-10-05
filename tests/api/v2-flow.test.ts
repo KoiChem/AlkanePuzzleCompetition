@@ -7,7 +7,7 @@ afterEach(() => contexts.splice(0).forEach(context => context.close()));
 describe("protocol v2 grading modes", () => {
   it("finalizes an immediate early submission as 提出 with only accepted correct answers", async () => {
     const test = createApiTestContext(); contexts.push(test);
-    const created = await createClassRoom(test, crypto.randomUUID(), { ...SETTINGS, ionAnswer: "name", gradingMode: "immediate" });
+    const created = await createClassRoom(test, crypto.randomUUID(), { ...SETTINGS, mode: "name", gradingMode: "immediate" });
     const roomId = created.body.room.id;
     const joined = await joinClassRoom(test, roomId);
     await test.handlers.startRoom(apiRequest(`/api/rooms/${roomId}/start`, { method: "POST", json: { requestId: crypto.randomUUID(), expectedRevision: 1 } }), { id: roomId });
@@ -124,7 +124,7 @@ describe("protocol v2 grading modes", () => {
   for (const gradingMode of ["immediate", "deferred"] as const) {
     it(`prepares, saves and finalizes ${gradingMode}`, async () => {
       const test = createApiTestContext(); contexts.push(test);
-      const created = await createClassRoom(test, crypto.randomUUID(), { ...SETTINGS, ionAnswer: "name", gradingMode });
+      const created = await createClassRoom(test, crypto.randomUUID(), { ...SETTINGS, mode: "name", gradingMode });
       expect(created.response.status).toBe(201);
       const roomId = created.body.room.id;
       const joined = await joinClassRoom(test, roomId);
@@ -149,7 +149,7 @@ describe("protocol v2 grading modes", () => {
       const question = manifest.questions[0];
       const operation = gradingMode === "immediate"
         ? { seq: 1, operationId: crypto.randomUUID(), type: "answer", questionId: question.id, fieldId: "name", value: question.answer!.canonical, elapsedMs: 1000 }
-        : { seq: 1, operationId: crypto.randomUUID(), type: "draft", questionId: question.id, fieldId: "name", value: "テスト", elapsedMs: 1000, editedElapsedMs: 1000 };
+        : { seq: 1, operationId: crypto.randomUUID(), type: "draft", questionId: question.id, fieldId: "name", value: JSON.stringify({ tokens: ["メチル"] }), elapsedMs: 1000, editedElapsedMs: 1000 };
       const saved = await test.handlers.operations(apiRequest(`/api/rooms/${roomId}/operations`, { method: "POST", token: joined.token,
         json: { requestId: crypto.randomUUID(), writerEpoch: 1, manifestId: manifest.manifestId, evaluatorVersion: manifest.evaluatorVersion, operations: [operation] },
       }), { id: roomId });

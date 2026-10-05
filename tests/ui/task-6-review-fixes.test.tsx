@@ -3,10 +3,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import ions from "../../src/games/alkane-puzzle/data/ions.json";
-import compounds from "../../src/games/alkane-puzzle/data/compounds.json";
-import { CHARGE_OPTIONS, FORMULA_TOKENS, FormulaKeyboard } from "../../src/games/alkane-puzzle/client/FormulaKeyboard";
-import { createFormulaEntry } from "../../src/games/alkane-puzzle/client/formula-entry";
+import { QuestionView } from "../../src/games/alkane-puzzle/client/QuestionView";
+import { generateQuestionSet, toPublicQuestion } from "../../src/games/alkane-puzzle/server/question-generator";
 import { Lobby } from "../../src/features/lobby/Lobby";
 import {
   DEFAULT_SETTINGS,
@@ -26,29 +24,20 @@ const room = {
 };
 
 describe("Task 6 review fixes", () => {
-  it("can enter every formula token and ion charge present in the vendored curriculum", () => {
-    const available = new Set<string>(FORMULA_TOKENS);
-    for (const item of [...ions, ...compounds]) {
-      if (!item.formula) continue;
-      const tokens = [...item.formula];
-      expect(tokens.every((token) => available.has(token)), item.formula).toBe(true);
-    }
-    expect(CHARGE_OPTIONS.map(({ magnitude, sign }) => `${magnitude}${sign}`)).toEqual([
-      "1+", "2+", "3+", "1-", "2-", "3-", "4-",
-    ]);
-    expect(CHARGE_OPTIONS.every((charge) => charge.source === "chargeButton")).toBe(true);
+  it("supplies a full source palette without revealing the generated answer structure", () => {
+    const question = generateQuestionSet({ ...DEFAULT_SETTINGS, questionCount: 5 }, () => .47)[0];
+    expect(question.prompt.mode).toBe("arrange");
+    expect(question.prompt.grid).toBeNull();
+    expect(question.prompt.options?.map(item => item.element ?? item.type)).toEqual([1,2,3,4,5,"F","Cl","Br","I"]);
+    expect(question.answer.canonical).toContain('"grid"');
   });
 
-  it("renders all charge controls without embedding curriculum answers", () => {
-    const html = renderToStaticMarkup(createElement(FormulaKeyboard, {
-      value: createFormulaEntry(), onChange: () => {},
-    }));
-    expect(html).toContain("2+");
-    expect(html).toContain("3−");
-    expect(html).not.toContain("硫酸");
-    expect(html).toContain("formula-composer");
-    expect(html).toContain("解答をチェック");
-    expect(html).toContain("formula-placeholder");
+  it("renders the public puzzle without embedding its canonical answer", () => {
+    const question = generateQuestionSet({ ...DEFAULT_SETTINGS, questionCount: 5 }, () => .37)[0];
+    const html = renderToStaticMarkup(createElement(QuestionView, { question: toPublicQuestion(question,{resolvedFieldIds:[]}), fieldId:"formula", onChange:()=>{} }));
+    expect(html).toContain("解答の構造");
+    expect(html).toContain("原子パレット");
+    expect(html).not.toContain(question.answer.canonical);
   });
 
   it("rejects participant snapshots that arrive out of order even when room revision is unchanged", () => {
@@ -65,16 +54,14 @@ describe("Task 6 review fixes", () => {
     expect(remainingSeconds(310_000, 309_999)).toBe(1);
   });
 
-  it("uses random defaults and exposes compound prompt toggles and shared settings summaries", () => {
-    expect(DEFAULT_SETTINGS.ionAnswer).toBe("random");
-    expect(DEFAULT_SETTINGS.compoundAnswer).toBe("random");
-    expect(settingsSummary({ ...DEFAULT_SETTINGS, mode: "compound", compoundAnswer: "both" })).toBe("10問・5分・問題毎判定・化合物・やさしめ・出題 イオン式・イオン名・解答 式と名");
+  it("exposes the two alkane modes, difficulties, and shared settings summary", () => {
+    expect(DEFAULT_SETTINGS.mode).toBe("arrange");
+    expect(DEFAULT_SETTINGS.difficulty).toBe("easy");
+    expect(settingsSummary({ ...DEFAULT_SETTINGS, mode: "name", difficulty:"medium" })).toBe("10問・5分・問題毎判定・名付ける・まあまあ");
     const html = renderToStaticMarkup(createElement(CompetitionSettingsForm, {
-      value: { ...DEFAULT_SETTINGS, mode: "compound" }, onChange: () => {},
+      value: DEFAULT_SETTINGS, onChange: () => {},
     }));
-    expect(html).toContain("化合物の出題");
-    expect(html).toContain("イオン式");
-    expect(html).toContain("イオン名");
+    for (const label of ["並べる","名付ける","すいすい","まあまあ","アルコール"]) expect(html).toContain(label);
   });
 
   it("renders a real local QR image, lobby settings, and owner removal controls", () => {
@@ -89,7 +76,7 @@ describe("Task 6 review fixes", () => {
     expect(html).toContain("<svg");
     expect(html).toContain("aria-label=\"参加用QRコード");
     expect(html).not.toContain("qr-placeholder");
-    expect(html).toContain("10問・5分・問題毎判定・イオン・やさしめ・出題 イオン式・イオン名・解答 式または名");
+    expect(html).toContain("10問・5分・問題毎判定・並べる・すいすい");
     expect(html).toContain("ゲストさんを参加者から除外");
     expect(html).not.toContain("ホストさんを参加者から除外");
   });
@@ -97,14 +84,15 @@ describe("Task 6 review fixes", () => {
   it("wires join info, settings PATCH, removal, and persistent pending actions in components", () => {
     const join = readFileSync(new URL("../../app/join/[publicId]/page.tsx", import.meta.url), "utf8");
     const roomScreen = readFileSync(new URL("../../src/features/lobby/RoomScreen.tsx", import.meta.url), "utf8");
-    const player = readFileSync(new URL("../../src/features/play/CompetitionPlayer.tsx", import.meta.url), "utf8");
+    const player = readFileSync(new URL("../../src/features/play/CompetitionPlayerV2.tsx", import.meta.url), "utf8");
     expect(join).toContain("/api/join-info?publicId=");
     expect(join).toContain("participantCount");
     expect(join).toContain("capacity");
     expect(roomScreen).toContain("patchJson");
     expect(roomScreen).toContain("/settings");
     expect(roomScreen).toContain("/remove");
-    expect(player).toContain("sessionStorage");
-    expect(player).toContain("playerReducer");
+    expect(player).toContain("writeV2Local");
+    expect(player).toContain("scheduleDrafts");
+    expect(player).toContain("QuestionView");
   });
 });

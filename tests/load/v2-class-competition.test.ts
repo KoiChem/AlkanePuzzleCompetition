@@ -6,12 +6,12 @@ import { apiRequest, createApiTestContext, createClassRoom, SETTINGS } from "../
 const loadIt = process.env.RUN_LOAD === "1" ? it : it.skip;
 
 describe("protocol v2 42-player load profile", () => {
+  for (const mode of ["arrange", "name"] as const) {
   for (const gradingMode of ["immediate", "deferred"] as const) {
-    loadIt(`${gradingMode}: 15 compound questions and two fields`, async () => {
+    loadIt(`${mode}/${gradingMode}: 15 questions and one field`, async () => {
       const test = createApiTestContext();
       try {
-        const settings = { ...SETTINGS, questionCount: 15 as const, mode: "compound" as const,
-          compoundPrompts: { formula: true, name: true }, compoundAnswer: "both" as const, gradingMode };
+        const settings = { ...SETTINGS, questionCount: 15 as const, mode, gradingMode };
         const created = await createClassRoom(test, crypto.randomUUID(), settings);
         if (created.response.status !== 201) throw new Error(`create: ${created.response.status}`);
         const roomId = created.body.room.id;
@@ -43,13 +43,13 @@ describe("protocol v2 42-player load profile", () => {
           const operations: Array<Record<string, unknown>> = [];
           let elapsedMs = 1;
           for (const question of questions) {
-            if (question.answer.type !== "both") throw new Error("expected two-field question");
-            for (const fieldId of ["formula", "name"] as const) {
-              operations.push({ seq: operations.length + 1, operationId: `v2-${playerIndex}-${question.ordinal}-${fieldId}`,
-                type: gradingMode === "immediate" ? "answer" : "draft", questionId: question.id, fieldId,
-                value: question.answer[fieldId].canonical, elapsedMs, ...(gradingMode === "deferred" ? { editedElapsedMs: elapsedMs } : {}) });
-              elapsedMs += 1;
-            }
+            const fieldId = mode === "arrange" ? "formula" : "name";
+            if (question.prompt.mode !== mode || question.answer.type !== fieldId
+              || question.fields.length !== 1 || question.fields[0]?.id !== fieldId) throw new Error("expected one matching Alkane field");
+            operations.push({ seq: operations.length + 1, operationId: `v2-${playerIndex}-${question.ordinal}-${fieldId}`,
+              type: gradingMode === "immediate" ? "answer" : "draft", questionId: question.id, fieldId,
+              value: question.answer.canonical, elapsedMs, ...(gradingMode === "deferred" ? { editedElapsedMs: elapsedMs } : {}) });
+            elapsedMs += 1;
           }
           operations.push({ seq: operations.length + 1, operationId: `v2-${playerIndex}-finish`, type: "finish",
             reason: gradingMode === "immediate" ? "completed" : "submitted", elapsedMs });
@@ -64,12 +64,13 @@ describe("protocol v2 42-player load profile", () => {
         }));
         const row = test.database.sqlite.prepare(`SELECT COUNT(*) AS players, SUM(correct_count) AS score
           FROM final_results WHERE room_id = (SELECT id FROM rooms WHERE public_id = ?)`).get(roomId) as { players: number; score: number };
-        if (row.players !== 42 || row.score !== 42 * 30) throw new Error(`incorrect final rows: ${JSON.stringify(row)}`);
+        if (row.players !== 42 || row.score !== 42 * 15) throw new Error(`incorrect final rows: ${JSON.stringify(row)}`);
         const sorted = timings.sort((a, b) => a - b);
-        console.log(JSON.stringify({ mode: gradingMode, profile: "42 players, 15 questions, 2 fields",
+        console.log(JSON.stringify({ mode, gradingMode, profile: "42 players, 15 questions, 1 field",
           submitRequests: 42, p95SubmitMs: Number(sorted[Math.ceil(sorted.length * .95) - 1].toFixed(2)),
           d1Operations: test.database.metrics() }));
       } finally { test.close(); }
     }, 120000);
+  }
   }
 });

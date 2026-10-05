@@ -8,8 +8,8 @@ export const PUBLIC_CONFIG = {
     mateMatch: 4,
   },
   retentionMs: {
-    classCompetition: 7 * 24 * 60 * 60 * 1_000,
-    mateMatch: 24 * 60 * 60 * 1_000,
+    classCompetition: 14 * 24 * 60 * 60 * 1_000,
+    mateMatch: 14 * 24 * 60 * 60 * 1_000,
     cancelledRoom: 24 * 60 * 60 * 1_000,
   },
   waitingRoomLifetimeMs: 2 * 60 * 60 * 1_000,

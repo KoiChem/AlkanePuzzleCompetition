@@ -13,7 +13,7 @@ export type V2LocalRecord = {
   inflight?: { requestId: string; operations: V2Operation[]; writerEpoch?: number; manifestId?: string; evaluatorVersion?: string };
   ordinal: number;
   reviewTarget?: { questionId: string; fieldId: "formula" | "name" };
-  drafts: Record<string, { value: unknown; editedElapsedMs: number }>;
+  drafts: Record<string, { value: unknown; editedElapsedMs: number; version?:number; syncedVersion?:number }>;
   finished: boolean;
   expiresAtMs?: number;
 };
@@ -37,7 +37,7 @@ export function isRestorableV2Local(value: unknown, manifestId: string, evaluato
     && typeof row.finished === "boolean";
 }
 
-const DATABASE = "ionic-formula-competition-v2";
+const DATABASE = "alkane-puzzle-competition-v2";
 const STORE = "sessions";
 export const v2LocalKey = (roomId: string, participantId: string, manifestId: string) => `${roomId}:${participantId}:${manifestId}`;
 

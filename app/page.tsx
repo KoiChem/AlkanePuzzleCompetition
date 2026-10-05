@@ -7,7 +7,7 @@ export default function Home() {
     <main>
       <section className="home-card" aria-labelledby="home-title">
         <header>
-          <p className="eyebrow">IONIC FORMULA</p>
+          <p className="eyebrow">ALKANE PUZZLE</p>
           <h1 id="home-title">Competition</h1>
         </header>
 
@@ -22,7 +22,7 @@ export default function Home() {
         </nav>
         <nav className="home-utility-actions" aria-label="履歴と関連アプリ">
           <a className="secondary-link" href={appPath("/history")}>過去の結果</a>
-          <a className="secondary-link" href="https://koichem.github.io/IonicFormula/" target="_blank" rel="noopener noreferrer" aria-label="IonicFormula（新しいタブで開く）">IonicFormula</a>
+          <a className="secondary-link" href="https://koichem.github.io/AlkanePuzzle/" target="_blank" rel="noopener noreferrer" aria-label="AlkanePuzzle（新しいタブで開く）">AlkanePuzzle</a>
         </nav>
       </section>
     </main>

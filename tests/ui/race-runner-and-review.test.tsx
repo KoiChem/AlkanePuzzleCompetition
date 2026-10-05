@@ -134,27 +134,31 @@ describe("host runner", () => {
 });
 
 describe("deferred review", () => {
-  it("places the question and answer on consecutive lines with formatted charges", () => {
+  it("shows the arrange prompt and restored board answer", () => {
     const html = renderToStaticMarkup(createElement(DeferredReviewQuestion, {
       number: 1,
-      prompt: { kind: "ionFormula", values: [{ type: "formula", value: "Na", charge: 1 }] },
-      fields: [{ id: "name", value: "ナトリウムイオン" }],
+      prompt: { kind: "alkane", mode:"arrange", name:"メタン", grid:null, alcoholEnabled:false, values:[] },
+      fields: [{ id: "formula", value: JSON.stringify({grid:[[{type:1,rotation:0}]]}) }],
       disabled: false,
       onSelect: () => {},
     }));
-    expect(html).toMatch(/第１問：.*Na.*<sup>\+<\/sup>/);
-    expect(html).toContain("解答：ナトリウムイオン");
-    expect(html).not.toContain("問題：");
+    expect(html).toContain("第1問：");
+    expect(html).toContain("並べる：メタン");
+    expect(html).toContain('aria-label="第1問の解答"');
+    expect(html).toContain("<svg");
   });
-  it("labels both answers and preserves unanswered fields", () => {
+  it("shows a name prompt structure, tokens, and an unanswered field", () => {
     const html = renderToStaticMarkup(createElement(DeferredReviewQuestion, {
       number: 2,
-      prompt: { kind: "compoundIons", values: [{ type: "formula", value: "Na", charge: 1 }, { type: "formula", value: "Cl", charge: -1 }] },
-      fields: [{ id: "formula", value: undefined }, { id: "name", value: "塩化ナトリウム" }],
+      prompt: { kind: "alkane", mode:"name", grid:[[{type:1,rotation:0}]], alcoholEnabled:false, values:[] },
+      fields: [{ id: "name", value: JSON.stringify({tokens:["メタン"]}) }],
       disabled: false,
       onSelect: () => {},
     }));
-    expect(html).toContain("解答：未解答");
-    expect(html).toContain("名称：塩化ナトリウム");
+    expect(html).toContain("名付ける：この構造");
+    expect(html).toContain("名前：");
+    expect(html).toContain("メタン");
+    const empty = renderToStaticMarkup(createElement(DeferredReviewQuestion, { number:3, prompt:{kind:"alkane",mode:"arrange",grid:null,name:"エタン",alcoholEnabled:false,values:[]}, fields:[{id:"formula",value:undefined}], disabled:false,onSelect:()=>{} }));
+    expect(empty).toContain("構造：");expect(empty).toContain("未解答");
   });
 });

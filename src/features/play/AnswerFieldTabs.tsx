@@ -1,7 +1,7 @@
 import type { AnswerField, AnswerFieldId, GameMode, QuestionProgress } from "../../games/alkane-puzzle/shared/types";
 
 export function fieldLabel(id: AnswerFieldId, mode: GameMode): string {
-  return id === "formula" ? (mode === "ion" ? "イオン式" : "組成式") : (mode === "ion" ? "イオン名" : "化合物名");
+  return id === "formula" ? "構造" : "名称";
 }
 
 export function AnswerFieldTabs({ fields, fieldStates, selectedFieldId, mode, onSelect }: {

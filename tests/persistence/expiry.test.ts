@@ -4,7 +4,7 @@ import { cleanupExpired } from "../../src/persistence/cleanup";
 import { loadAuthorizedResult, finalizeRoom } from "../../src/persistence/results";
 import { createRoom, startRoom } from "../../src/persistence/rooms";
 import { joinRoom } from "../../src/persistence/participants";
-import { QUESTION, SqliteD1, classRoomInput, joinInput, mateRoomInput, scalar } from "./helpers";
+import { CORRECT_BOARD_ANSWER, WRONG_BOARD_ANSWER, QUESTION, SqliteD1, classRoomInput, joinInput, mateRoomInput, scalar } from "./helpers";
 import { applyPlayerAction } from "../../src/persistence/actions";
 import { PUBLIC_CONFIG } from "../../src/config/public";
 
@@ -62,7 +62,7 @@ describe("expiry and final results", () => {
     await applyPlayerAction(db, {
       roomId: "room-1", participantId: "p-0", requestId: "answer", bodyHash: "answer",
       questionId: "question-1", expectedParticipantRevision: 0, clientElapsedMs: 1_000,
-      serverNowMs: 4_000, action: { type: "answer", fieldId: "formula", value: "Na+" },
+      serverNowMs: 4_000, action: { type: "answer", fieldId: "formula", value: CORRECT_BOARD_ANSWER },
     });
     db.setNow(200_000);
     const finalized = await finalizeRoom(db, { roomId: "room-1", requestId: "final", bodyHash: "final", nowMs: 200_000 });
@@ -88,7 +88,7 @@ describe("expiry and final results", () => {
     const action = {
       roomId: "room-1", participantId: "p-0", requestId: "answer", bodyHash: "answer",
       questionId: "question-1", expectedParticipantRevision: 0, clientElapsedMs: 1_000,
-      serverNowMs: 4_000, action: { type: "answer" as const, fieldId: "formula" as const, value: "Na+" },
+      serverNowMs: 4_000, action: { type: "answer" as const, fieldId: "formula" as const, value: CORRECT_BOARD_ANSWER },
     };
     db.setNow(4_000);
     const first = await applyPlayerAction(db, action);

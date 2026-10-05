@@ -1,20 +1,19 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { AnswerFieldTabs } from "../../src/features/play/AnswerFieldTabs";
+import { AnswerFieldTabs, fieldLabel } from "../../src/features/play/AnswerFieldTabs";
 
 describe("answer field tabs", () => {
-  it("labels a passed formula separately from a pending name", () => {
+  it("uses the structure transport field without exposing the legacy formula label", () => {
+    expect(fieldLabel("formula","arrange")).toBe("構造");
+    expect(fieldLabel("name","name")).toBe("名称");
     const html = renderToStaticMarkup(createElement(AnswerFieldTabs, {
-      fields: [{ id: "formula", type: "formula" }, { id: "name", type: "name" }],
-      fieldStates: { formula: "passed", name: "pending" },
-      selectedFieldId: "name",
-      mode: "compound",
+      fields: [{ id: "formula", type: "formula" }],
+      fieldStates: { formula: "pending" },
+      selectedFieldId: "formula",
+      mode: "arrange",
       onSelect: () => {},
     }));
-    expect(html).toContain("パス済み");
-    expect(html).toContain('data-field-state="passed"');
-    expect(html).toContain("解答中");
-    expect(html).not.toContain("正解済み");
+    expect(html).toBe("");
   });
 });

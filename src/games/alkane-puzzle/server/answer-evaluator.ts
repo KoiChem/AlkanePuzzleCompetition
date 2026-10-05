@@ -1,1 +1,1 @@
-export { evaluateField, normalizeFormula, normalizeName } from "../shared/answer-evaluator";
+export { EVALUATOR_VERSION, evaluateField, validateAlkaneAnswer } from '../shared/answer-evaluator';

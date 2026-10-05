@@ -87,7 +87,7 @@ function ParticipantRoom({ roomId, token }: { roomId: string; token: string }) {
   const pendingCancel = useRef<{ requestId: string; expectedRevision: number } | null>(null);
   const [settings, setSettings] = useState<AlkaneGameSettings | null>(null);
   const cancelPreparation = async () => { if (!data) return; setBusy(true); try { await postJson(`/api/rooms/${encodeURIComponent(roomId)}/cancel-preparation`, { expectedRevision: data.room.revision }, { token }); await refresh(); } catch (reason: any) { alert(reason.message); } finally { setBusy(false); } };
-  const [meta, setMeta] = useState<{ joinCode?: string; host?: boolean }>(() => { try { return JSON.parse(localStorage.getItem(`ionic-formula-competition:meta:${roomId}`) ?? "{}"); } catch { return {}; } });
+  const [meta, setMeta] = useState<{ joinCode?: string; host?: boolean }>(() => { try { return JSON.parse(localStorage.getItem(`alkane-puzzle-competition:meta:${roomId}`) ?? "{}"); } catch { return {}; } });
   useHostCountdownSound(!!meta.host && data?.room.state === "COUNTDOWN", data?.room.startAtMs, clockRef, data?.serverNow);
   if (removed) return <RemovedParticipantNotice roomState={removed.roomState} canRejoin={removed.canRejoin} onRejoin={() => {
     try { sessionStorage.setItem(reentryNicknameKey(roomId), removed.nickname); } catch { /* use the join form without a preset */ }
@@ -118,7 +118,7 @@ function ManagedRoom({ roomId }: { roomId: string }) {
   const [settings, setSettings] = useState<AlkaneGameSettings | null>(null);
   useHostCountdownSound(data?.room.state === "COUNTDOWN", data?.room.startAtMs, clockRef, data?.serverNow);
   let meta: { joinCode?: string; host?: boolean } = {};
-  try { if (typeof localStorage !== "undefined") meta = JSON.parse(localStorage.getItem(`ionic-formula-competition:meta:${roomId}`) ?? "{}"); } catch { /* a damaged local hint must not prevent room recovery */ }
+  try { if (typeof localStorage !== "undefined") meta = JSON.parse(localStorage.getItem(`alkane-puzzle-competition:meta:${roomId}`) ?? "{}"); } catch { /* a damaged local hint must not prevent room recovery */ }
   if (results) return <Results data={results} />;
   if (!data) return <main className="page-shell"><section className="panel"><h1>管理画面へ接続中</h1><p role="status">{error ?? "読み込み中…"}</p></section></main>;
   if (data.room.state === "CANCELLED") return <CancelledRoom />;

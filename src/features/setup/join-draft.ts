@@ -1,7 +1,7 @@
 export type PendingJoin = { token: string; requestId: string; nickname: string };
 
-export const joinDraftKey = (roomId: string) => `ionic-formula-competition:join-draft:${roomId}`;
-export const reentryNicknameKey = (roomId: string) => `ionic-formula-competition:reentry-nickname:${roomId}`;
+export const joinDraftKey = (roomId: string) => `alkane-puzzle-competition:join-draft:${roomId}`;
+export const reentryNicknameKey = (roomId: string) => `alkane-puzzle-competition:reentry-nickname:${roomId}`;
 
 export function loadPendingJoin(storage: Storage, roomId: string): PendingJoin | null {
   try {
@@ -31,13 +31,13 @@ export function clearPendingJoin(storage: Storage, roomId: string): void {
 export function completePendingJoin(storage: Storage, roomId: string, draft: PendingJoin, participantId: string): boolean {
   const current = loadPendingJoin(storage, roomId);
   if (!current || current.token !== draft.token || current.requestId !== draft.requestId || current.nickname !== draft.nickname) return false;
-  storage.setItem(`ionic-formula-competition:room:${roomId}`, JSON.stringify({ token: draft.token, participantId }));
+  storage.setItem(`alkane-puzzle-competition:room:${roomId}`, JSON.stringify({ token: draft.token, participantId }));
   clearPendingJoin(storage, roomId);
   return true;
 }
 
 export function clearPreviousParticipantSession(storage: Storage, roomId: string): void {
   for (const key of ["pending-action", "feedback-shown", "wait-credit", "wait-observation"]) {
-    storage.removeItem(`ionic-formula-competition:${key}:${roomId}`);
+    storage.removeItem(`alkane-puzzle-competition:${key}:${roomId}`);
   }
 }

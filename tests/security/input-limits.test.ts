@@ -11,6 +11,7 @@ import {
 } from "../api/helpers";
 
 const contexts: ReturnType<typeof createApiTestContext>[] = [];
+const WRONG_BOARD_ANSWER = JSON.stringify({ grid: Array.from({ length: 5 }, () => Array(7).fill(null)) });
 afterEach(() => {
   contexts.splice(0).forEach((context) => context.close());
   vi.restoreAllMocks();
@@ -110,7 +111,7 @@ describe("request, origin, authentication, and input limits", () => {
           questionId: current.question.id,
           expectedParticipantRevision: revision,
           clientElapsedMs: 1,
-          action: { type: "answer", fieldId: "formula", value: "K+" },
+          action: { type: "answer", fieldId: "formula", value: WRONG_BOARD_ANSWER },
         },
       }), { id: created.body.room.id });
       expect(response.status, `revision ${revision}`).toBe(200);
@@ -123,7 +124,7 @@ describe("request, origin, authentication, and input limits", () => {
         questionId: current.question.id,
         expectedParticipantRevision: 120,
         clientElapsedMs: 1,
-        action: { type: "answer", fieldId: "formula", value: "K+" },
+        action: { type: "answer", fieldId: "formula", value: WRONG_BOARD_ANSWER },
       },
     }), { id: created.body.room.id });
 
@@ -157,7 +158,7 @@ describe("request, origin, authentication, and input limits", () => {
       questionId: current.question.id,
       expectedParticipantRevision: 999,
       clientElapsedMs: 1,
-      action: { type: "answer", fieldId: "formula", value: "K+" },
+      action: { type: "answer", fieldId: "formula", value: WRONG_BOARD_ANSWER },
     });
     for (let index = 0; index < 120; index += 1) {
       const response = await test.handlers.actions(apiRequest(`/api/rooms/${created.body.room.id}/actions`, {

@@ -10,4 +10,5 @@ supabase/.temp/
 coverage/
 .playwright-mcp/
 
-.superpowers/
+
+.pnpm-store/

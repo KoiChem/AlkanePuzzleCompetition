@@ -1,6 +1,7 @@
-import { questionProfileCatalog, validateQuestionProfileShape } from "../games/alkane-puzzle/shared/question-profile";
+import {readParticipantDrafts, saveParticipantDrafts} from '../persistence/participant-drafts';
+import { DEFAULT_QUESTION_PROFILE, questionProfileCatalog, validateQuestionProfileShape } from "../games/alkane-puzzle/shared/question-profile";
 import { readQuestionProfile, readRoomQuestionProfile, updateQuestionProfile } from "../persistence/question-profiles";
-import { CHEMISTRY_CONTENT_VERSION } from "../games/alkane-puzzle/shared/complex-policy";
+import { CHEMISTRY_CONTENT_VERSION } from "../games/alkane-puzzle/shared/content-version";
 import "./server-only";
 
 import { effectiveRoomState } from "../competition-core/state-machine";
@@ -8,7 +9,7 @@ import type { RoomState } from "../competition-core/types";
 import { PUBLIC_CONFIG } from "../config/public";
 import { type ServerConfig } from "../config/server";
 import { generateQuestionSet, validateGameSettings, validateQuestionProfile } from "../games/alkane-puzzle/server/question-generator";
-import { EVALUATOR_VERSION } from "../games/alkane-puzzle/shared/answer-evaluator";
+import { EVALUATOR_VERSION, validateAlkaneAnswer } from "../games/alkane-puzzle/shared/answer-evaluator";
 import type {
   AnswerFieldId,
   FormulaEntry,
@@ -59,6 +60,8 @@ const JOIN_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 export type RouteParameters = { readonly id: string };
 
 export type ApiDependencies = {
+  readonly teacherAuthorization?: (identity: TeacherIdentity) => Promise<{ allowed: boolean; master: boolean }>;
+  readonly teacherAllowlistCommand?: (request: Request) => Promise<Response>;
   readonly database: PersistenceDatabase;
   readonly teacherIdentity: TeacherIdentityProvider;
   readonly serverConfig: ServerConfig;
@@ -351,22 +354,9 @@ function requestId(value: unknown): string {
 
 function parseSettings(value: unknown): AlkaneGameSettings {
   if (!isRecord(value)) throw new ApiError(400, "invalid_settings", "競技設定が不正です");
-  assertKeys(value, [
-    "questionCount", "timeLimitMinutes", "mode", "difficulty", "ionAnswer",
-    "compoundPrompts", "compoundAnswer", "gradingMode", "complexEnabled", "chemistryContentVersion",
-  ]);
-  if (!isRecord(value.compoundPrompts)) throw new ApiError(400, "invalid_settings", "出題形式が不正です");
-  assertKeys(value.compoundPrompts, ["formula", "name"]);
-  if (typeof value.compoundPrompts.formula !== "boolean" || typeof value.compoundPrompts.name !== "boolean") {
-    throw new ApiError(400, "invalid_settings", "出題形式が不正です");
-  }
-  const settings = { ...value, gradingMode: value.gradingMode ?? "immediate", complexEnabled: value.complexEnabled === undefined ? false : value.complexEnabled,
-    chemistryContentVersion: value.chemistryContentVersion === undefined ? CHEMISTRY_CONTENT_VERSION : value.chemistryContentVersion } as AlkaneGameSettings;
-  try {
-    validateGameSettings(settings);
-  } catch {
-    throw new ApiError(400, "invalid_settings", "競技設定が不正です");
-  }
+  assertKeys(value, ["questionCount", "timeLimitMinutes", "mode", "difficulty", "gradingMode", "alcoholEnabled", "chemistryContentVersion"]);
+  const settings = {...value, gradingMode: value.gradingMode ?? "immediate", alcoholEnabled: value.alcoholEnabled ?? false,chemistryContentVersion:CHEMISTRY_CONTENT_VERSION} as AlkaneGameSettings;
+  try { validateGameSettings(settings); } catch (error) { throw new ApiError(400, "invalid_settings", error instanceof Error ? error.message : "競技設定が不正です"); }
   return settings;
 }
 
@@ -424,7 +414,17 @@ async function readTeacherAllowlist(database: PersistenceDatabase): Promise<Allo
   return await database.prepare("SELECT emails_json, revision, last_request_id, last_body_hash FROM teacher_allowlist WHERE id = 1").first<AllowlistRow>()
     ?? { emails_json: "[]", revision: 0, last_request_id: null, last_body_hash: null };
 }
+async function isMasterTeacher(dependencies: ApiDependencies, identity: TeacherIdentity): Promise<boolean> {
+  if (dependencies.teacherAuthorization) { const role = await dependencies.teacherAuthorization(identity); return role.allowed && role.master; }
+  return !!dependencies.serverConfig.masterTeacherEmail && identity.email === dependencies.serverConfig.masterTeacherEmail;
+}
+
 async function requireApplicationTeacher(dependencies: ApiDependencies, request: Request): Promise<TeacherIdentity> {
+  if (dependencies.teacherAuthorization) {
+    const identity = await requireVerifiedTeacher(request, dependencies.teacherIdentity);
+    if (!(await dependencies.teacherAuthorization(identity)).allowed) throw new TeacherIdentityError(403, "teacher_forbidden", "教員として許可されていません");
+    return identity;
+  }
   const master = dependencies.serverConfig.masterTeacherEmail;
   if (!master) return requireTeacher(request, dependencies.teacherIdentity, dependencies.serverConfig.teacherAllowedEmails);
   const identity = await requireVerifiedTeacher(request, dependencies.teacherIdentity);
@@ -581,7 +581,7 @@ function roomView(room: RoomRow, nowMs: number) {
 }
 
 function correctAnswer(question: InternalQuestion, fieldId: AnswerFieldId): string {
-  const specification = question.answer.type === "both" ? question.answer[fieldId] : question.answer;
+  const specification = question.answer;
   return specification.canonical;
 }
 
@@ -620,7 +620,7 @@ async function participantQuestionResults(
     id: string;
     ordinal: number;
     prompt: PublicQuestion["prompt"];
-    fields: Array<{ id: AnswerFieldId; state: string; correctAnswer: string; correctFormulaCore: string | null; correctFormulaCharge: number | null; lastAnswer: string | null; lastAnswerEntry: FormulaEntry | null; answerDisplayUnavailable?: true; lastAnswerCorrect: boolean | null; attemptCount: number }>;
+    fields: Array<{ correctAnswerValue: unknown; lastAnswerValue?: unknown; id: AnswerFieldId; state: string; correctAnswer: string; correctFormulaCore: string | null; correctFormulaCharge: number | null; lastAnswer: string | null; lastAnswerEntry: FormulaEntry | null; answerDisplayUnavailable?: true; lastAnswerCorrect: boolean | null; attemptCount: number }>;
   }>();
   let unavailableCount = 0;
   for (const row of results) {
@@ -638,8 +638,9 @@ async function participantQuestionResults(
       id: row.field_id,
       state: row.state,
       correctAnswer: correctAnswer(internal, row.field_id),
-      correctFormulaCore: row.field_id === "formula" && internal.ionCharge != null ? internal.ionFormula ?? null : null,
-      correctFormulaCharge: row.field_id === "formula" ? internal.ionCharge ?? null : null,
+      correctFormulaCore: null,
+      correctFormulaCharge: null,
+      correctAnswerValue: JSON.parse(internal.answer.canonical),
       ...displayAnswer,
       lastAnswerCorrect: row.last_answer_correct === null ? null : row.last_answer_correct === 1,
       attemptCount: row.attempt_count,
@@ -786,7 +787,7 @@ export function createApiHandlers(dependencies: ApiDependencies) {
       kind: "class",
       ownerTeacherId: teacher.id,
       settings,
-      gameId: "ionic-formula",
+      gameId: "alkane-puzzle",
       gameVersion: requestedV2 ? "2" : "1",
       datasetVersion: CHEMISTRY_CONTENT_VERSION,
       questionProfile,
@@ -813,7 +814,7 @@ export function createApiHandlers(dependencies: ApiDependencies) {
     const nickname = normalizeNickname(value.nickname);
     const requestedV2 = isRecord(value.settings) && value.settings.gradingMode !== undefined;
     const settings = parseSettings(value.settings);
-    const questionProfile = await readQuestionProfile(dependencies.database);
+    const questionProfile = {profile: structuredClone(DEFAULT_QUESTION_PROFILE), revision:0};
     const validated = validateGameSettings(settings, questionProfile.profile);
     const nowMs = dependencies.now();
     await cleanupExpired(dependencies.database, { nowMs, limit: LAZY_CLEANUP_LIMIT });
@@ -825,7 +826,7 @@ export function createApiHandlers(dependencies: ApiDependencies) {
       kind: "mate",
       ownerTeacherId: null,
       settings,
-      gameId: "ionic-formula",
+      gameId: "alkane-puzzle",
       gameVersion: requestedV2 ? "2" : "1",
       datasetVersion: CHEMISTRY_CONTENT_VERSION,
       questionProfile,
@@ -956,7 +957,11 @@ export function createApiHandlers(dependencies: ApiDependencies) {
     requireUnexpired(room, dependencies.now());
     if (room.game_version !== "2") throw new ApiError(404, "not_found", "問題の準備情報がありません");
     const participant = await requireParticipant(dependencies.database, request, room.id);
-    return jsonResponse(await loadV2Manifest(dependencies.database, room.id, participant.participantId));
+    const loaded = await loadV2Manifest(dependencies.database, room.id, participant.participantId);
+    const drafts = await readParticipantDrafts(dependencies.database, room.id, participant.participantId);
+    const progress = await dependencies.database.prepare('SELECT writer_epoch,ack_seq FROM v2_participant_progress WHERE room_id=? AND participant_id=?').bind(room.id,participant.participantId).first<{writer_epoch:number;ack_seq:number}>();
+    const saved = await dependencies.database.prepare('SELECT payload_json FROM v2_operations WHERE room_id=? AND participant_id=? ORDER BY seq').bind(room.id,participant.participantId).all<{payload_json:string}>();
+    return jsonResponse({...loaded,serverDrafts:drafts,writerEpoch:progress?.writer_epoch??1,ackSeq:progress?.ack_seq??0,operations:saved.results.map(row=>JSON.parse(row.payload_json))});
   });
 
   const ready = (request: Request, parameters: RouteParameters) => safe(async () => {
@@ -1004,6 +1009,26 @@ export function createApiHandlers(dependencies: ApiDependencies) {
     });
     await maybeFinalizeV2Room(dependencies.database, { roomId: room.id, nowMs: dependencies.now() });
     return jsonResponse(response);
+  });
+
+  const drafts = (request: Request, parameters: RouteParameters) => safe(async () => {
+    const room = await loadRoom(dependencies.database, parameters.id);
+    const nowMs = dependencies.now(); requireUnexpired(room,nowMs);
+    const participant = await requireParticipant(dependencies.database,request,room.id);
+    if(request.method==='GET') return jsonResponse({drafts:await readParticipantDrafts(dependencies.database,room.id,participant.participantId)});
+    const {value}=await readMutationBody(request,MAX_OPERATION_BODY_BYTES);
+    assertKeys(value,['manifestId','writerEpoch','items']);
+    if(!Array.isArray(value.items)||value.items.length>15) throw new ApiError(400,'invalid_drafts','途中解答を確認してください');
+    const questions=await dependencies.database.prepare('SELECT question_id,field_spec_json,public_payload_json FROM room_questions WHERE room_id=?').bind(room.id).all<{question_id:string;field_spec_json:string;public_payload_json:string}>();
+    const items=value.items.map(raw=>{
+      if(!isRecord(raw))throw new ApiError(400,'invalid_draft','途中解答が不正です');
+      assertKeys(raw,['questionId','fieldId','value','version','editedElapsedMs']);
+      const question=questions.results.find(q=>q.question_id===raw.questionId);
+      if(!question||!JSON.parse(question.field_spec_json).some((f:{id:string})=>f.id===raw.fieldId))throw new ApiError(400,'invalid_draft','問題を確認してください');
+      if(!validateAlkaneAnswer(raw.value,JSON.parse(question.public_payload_json).prompt))throw new ApiError(400,'invalid_draft','解答の形式を確認してください');
+      return {questionId:stringValue(raw.questionId,'questionId',128),fieldId:raw.fieldId as 'formula'|'name',value:raw.value,version:integerValue(raw.version,'version',1),editedElapsedMs:integerValue(raw.editedElapsedMs,'editedElapsedMs')};
+    });
+    return jsonResponse(await saveParticipantDrafts(dependencies.database,{roomId:room.id,participantId:participant.participantId,manifestId:stringValue(value.manifestId,'manifestId',128),writerEpoch:integerValue(value.writerEpoch,'writerEpoch',1),nowMs,items}));
   });
 
   const writer = (request: Request, parameters: RouteParameters) => safe(async () => {
@@ -1113,9 +1138,7 @@ export function createApiHandlers(dependencies: ApiDependencies) {
       action = {
         type: "answer",
         fieldId: value.action.fieldId,
-        value: value.action.fieldId === "formula" && isRecord(value.action.value)
-          ? formulaEntryValue(value.action.value)
-          : stringValue(value.action.value, "回答", MAX_ANSWER_LENGTH),
+        value: (()=>{const answer=validateAlkaneAnswer(value.action.value);if(!answer)throw new ApiError(400,'invalid_answer','解答の形式を確認してください');return JSON.stringify(answer);})(),
       };
     } else {
       throw new ApiError(400, "invalid_action", "操作内容が不正です");
@@ -1294,7 +1317,7 @@ export function createApiHandlers(dependencies: ApiDependencies) {
 
   const teacherQuestionProfile = (request: Request) => safe(async () => {
     const teacher = await requireApplicationTeacher(dependencies, request);
-    if (!dependencies.serverConfig.masterTeacherEmail || teacher.email !== dependencies.serverConfig.masterTeacherEmail) {
+    if (!(await isMasterTeacher(dependencies, teacher))) {
       throw new ApiError(403, "master_required", "管理者教員のみ操作できます");
     }
     const catalog = questionProfileCatalog();
@@ -1317,7 +1340,7 @@ export function createApiHandlers(dependencies: ApiDependencies) {
     const nowMs = dependencies.now();
     await cleanupExpired(dependencies.database, { nowMs, limit: LAZY_CLEANUP_LIMIT });
     if (request.method === "GET") return jsonResponse(await readMateEnabled(dependencies.database));
-    if (!dependencies.serverConfig.masterTeacherEmail || teacher.email !== dependencies.serverConfig.masterTeacherEmail) {
+    if (!(await isMasterTeacher(dependencies, teacher))) {
       throw new ApiError(403, "master_required", "マスター教員のみ操作できます");
     }
     const { value, bodyHash } = await readMutationBody(request);
@@ -1335,10 +1358,11 @@ export function createApiHandlers(dependencies: ApiDependencies) {
 
   const teacherSession = (request: Request) => safe(async () => {
     const teacher = await requireApplicationTeacher(dependencies, request);
-    return jsonResponse({ email: teacher.email, role: teacher.email === dependencies.serverConfig.masterTeacherEmail ? "master" : "teacher" });
+    return jsonResponse({ email: teacher.email, role: await isMasterTeacher(dependencies, teacher) ? "master" : "teacher" });
   });
 
   const teacherAllowlist = (request: Request) => safe(async () => {
+    if (dependencies.teacherAllowlistCommand) return dependencies.teacherAllowlistCommand(request);
     const teacher = await requireVerifiedTeacher(request, dependencies.teacherIdentity);
     const master = dependencies.serverConfig.masterTeacherEmail;
     if (!master || teacher.email !== master) throw new ApiError(403, "master_required", "マスター教員のみ操作できます");
@@ -1388,6 +1412,7 @@ export function createApiHandlers(dependencies: ApiDependencies) {
     cancelPreparation,
     operations,
     writer,
+    drafts,
     cancelRoom: cancel,
     interruptRoom: interrupt,
     removeParticipant,

@@ -8,7 +8,7 @@ beforeAll(async()=>{pg=new PGlite();await pg.exec(readFileSync('supabase/migrati
 afterAll(async()=>pg.close());
 it('stores immutable revisions and idempotent receipt on PostgreSQL',async()=>{
  await pg.exec(readFileSync('supabase/migrations/202610020001_question_profiles.sql','utf8'));
- const initial=await readQuestionProfile(db);const profile=structuredClone(initial.profile);profile.rules.ion.normal.complexPercent=30;
+ const initial=await readQuestionProfile(db);const profile=structuredClone(initial.profile);profile.rules.arrange.easy.gridCols=6;
  const input={teacherId:'master',requestId:'profile-test',bodyHash:'hash',expectedRevision:0,profile,nowMs:Date.now()};
  expect(await updateQuestionProfile(db,input)).toEqual({profile,revision:1});expect(await updateQuestionProfile(db,input)).toEqual({profile,revision:1});expect(await readQuestionProfile(db)).toEqual({profile,revision:1});
  expect((await pg.query("SELECT has_table_privilege('authenticated','question_profiles','SELECT') AS permitted")).rows[0]).toMatchObject({permitted:false});

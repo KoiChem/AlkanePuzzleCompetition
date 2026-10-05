@@ -9,14 +9,14 @@ import { ReturnHomeButton } from "../../src/features/setup/ReturnHomeButton";
 
 import { TeacherManagement } from "./TeacherManagement";
 
-const DRAFT_KEY = "ionic-formula-competition:class-create-request";
+const DRAFT_KEY = "alkane-puzzle-competition:class-create-request";
 export function TeacherClient() {
   const [view, setView] = useState<"class" | "management">("class");
   const [master, setMaster] = useState(false);
   useEffect(() => { let active = true; void apiFetch("/api/teacher/session", { cache: "no-store" }).then(async response => response.ok ? await response.json() as { role?: string } : null).then(session => { if (active) setMaster(session?.role === "master"); }).catch(() => {}); return () => { active = false; }; }, []);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS); const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [pendingDraft, setPendingDraft] = useState(false);
   useEffect(() => { try { const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null"); if (draft?.settings) { setSettings(draft.settings); setPendingDraft(true); } } catch {} }, []);
-  const create = async () => { setBusy(true); setError(""); const fresh = { requestId: crypto.randomUUID(), settings }; let draft: typeof fresh; try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null") ?? fresh; } catch { draft = fresh; } localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); try { const body = await postJson("/api/class-rooms", draft); const id = body.room.id; localStorage.setItem(`ionic-formula-competition:meta:${id}`, JSON.stringify({ joinCode: body.room.joinCode })); rememberHistoryRoom(localStorage, { roomId: id, role: "teacher", kind: "class", createdAtMs: Date.now(), settings: draft.settings }); localStorage.removeItem(DRAFT_KEY); location.href = appPath(`/rooms/${encodeURIComponent(id)}`); } catch (e: any) { if (e.status && e.status < 500 && e.code !== "database_conflict") { localStorage.removeItem(DRAFT_KEY); setPendingDraft(false); } else { setSettings(draft.settings); setPendingDraft(true); } setError(e.message); setBusy(false); } };
+  const create = async () => { setBusy(true); setError(""); const fresh = { requestId: crypto.randomUUID(), settings }; let draft: typeof fresh; try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null") ?? fresh; } catch { draft = fresh; } localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); try { const body = await postJson("/api/class-rooms", draft); const id = body.room.id; localStorage.setItem(`alkane-puzzle-competition:meta:${id}`, JSON.stringify({ joinCode: body.room.joinCode })); rememberHistoryRoom(localStorage, { roomId: id, role: "teacher", kind: "class", createdAtMs: Date.now(), settings: draft.settings }); localStorage.removeItem(DRAFT_KEY); location.href = appPath(`/rooms/${encodeURIComponent(id)}`); } catch (e: any) { if (e.status && e.status < 500 && e.code !== "database_conflict") { localStorage.removeItem(DRAFT_KEY); setPendingDraft(false); } else { setSettings(draft.settings); setPendingDraft(true); } setError(e.message); setBusy(false); } };
   return <main className="page-shell teacher-setup">
     <section className="panel wide teacher-workspace">
       <header className="teacher-workspace-header">

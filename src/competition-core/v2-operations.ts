@@ -1,4 +1,5 @@
-import { evaluateField } from "../games/alkane-puzzle/server/answer-evaluator";
+import { answerHasContent as nonempty } from "../features/play/answer-content";
+import { evaluateField, validateAlkaneAnswer } from "../games/alkane-puzzle/server/answer-evaluator";
 import type { InternalQuestion } from "../games/alkane-puzzle/shared/types";
 
 export type V2GradingMode = "immediate" | "deferred";
@@ -36,14 +37,6 @@ export function emptyV2Replay(): V2Replay {
 }
 
 function fieldKey(questionId: string, fieldId: string) { return `${questionId}:${fieldId}`; }
-function nonempty(value: unknown): boolean {
-  if (typeof value === "string") return value.trim().length > 0;
-  if (typeof value === "object" && value !== null && "tokens" in value) {
-    const entry = value as { tokens?: unknown; charge?: unknown };
-    return (Array.isArray(entry.tokens) && entry.tokens.some((token) => String(token).trim())) || entry.charge != null;
-  }
-  return false;
-}
 
 export function replayV2Operations(
   questions: readonly InternalQuestion[],
@@ -88,6 +81,7 @@ export function replayV2Operations(
     }
     const question = questionById.get(operation.questionId ?? "");
     if (!question || !operation.fieldId || !question.fields.some((field) => field.id === operation.fieldId)) throw new TypeError("invalid question or field");
+    if ((operation.type === 'answer' || operation.type === 'draft') && !validateAlkaneAnswer(operation.value, question.prompt)) throw new TypeError('invalid alkane answer');
     const fieldId = operation.fieldId;
     const key = fieldKey(question.id, fieldId);
     const previous = fields[key];

@@ -1,13 +1,14 @@
+import {pendingDraftItems,draftsPending} from './draft-sync';
+import {mergeServerDrafts} from './restore-session';
+import type {SavedDraft} from '../../persistence/participant-drafts';
+import {answerHasContent} from "./answer-content";
 import { appPath } from '../../web/routing';
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import type { FormulaEntry, InternalQuestion, PublicQuestion } from "../../games/alkane-puzzle/shared/types";
 import { EVALUATOR_VERSION, evaluateField } from "../../games/alkane-puzzle/shared/answer-evaluator";
-import { createFormulaEntry } from "../../games/alkane-puzzle/client/formula-entry";
-import { FormulaKeyboard } from "../../games/alkane-puzzle/client/FormulaKeyboard";
-import { NameKeyboard } from "../../games/alkane-puzzle/client/NameKeyboard";
-import { QuestionView } from "../../games/alkane-puzzle/client/QuestionView";
+import { QuestionView,updateMarkupExpiry } from "../../games/alkane-puzzle/client/QuestionView";
 import { AnswerFieldTabs, fieldLabel } from "./AnswerFieldTabs";
 import { ImmediateVerdict, type Verdict } from "./ImmediateVerdict";
 import { fetchJsonWithTimeout, postJson, remainingSeconds, useRoomSync } from "./useRoomSync";
@@ -27,7 +28,7 @@ import { immediateReviewState, immediateResumeTarget } from "./immediate-review-
 import { ImmediateReviewList } from "./ImmediateReviewList";
 
 const fieldKey = (questionId: string, fieldId: string) => `${questionId}:${fieldId}`;
-const emptyValue = (value: unknown) => typeof value === "string" ? !value.trim() : !value || typeof value !== "object" || !("tokens" in value) || !(value as FormulaEntry).tokens.length && !(value as FormulaEntry).charge;
+const emptyValue = (value: unknown) => !answerHasContent(value);
 const publicQuestion = (question: InternalQuestion | PublicQuestion, resolved: string[]): PublicQuestion => ({ id: question.id, ordinal: question.ordinal, prompt: question.prompt, fields: question.fields, progress: { resolvedFieldIds: resolved as ("formula" | "name")[] } });
 function immediateScore(questions: (InternalQuestion | PublicQuestion)[], operations: V2Operation[], throughSeq = Number.POSITIVE_INFINITY) {
   return new Set(operations.filter(operation => {
@@ -61,6 +62,10 @@ export function CompetitionPlayerV2({ roomId, token }: { roomId: string; token: 
   const results = resultLoad.full;
   const sessionRef = useRef<V2LocalRecord | null>(null);
   const sending = useRef(false);
+  const draftInflight=useRef<Record<string,number>>({});
+  const [draftStatus,setDraftStatus]=useState<"idle"|"sending"|"retry">("idle");
+  const draftTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
+  const draftFlushRef=useRef<(()=>Promise<void>)|null>(null);
   const sessionGeneration = useRef(0);
   const saveVersion = useRef(0);
   const postCollectionProbes = useRef(0);
@@ -80,7 +85,7 @@ export function CompetitionPlayerV2({ roomId, token }: { roomId: string; token: 
   const checkpointRef = useRef<(() => void) | null>(null);
   const flushRef = useRef<(() => Promise<void>) | null>(null);
   const mounted = useRef(true);
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; sessionGeneration.current += 1; if (timer.current) clearTimeout(timer.current); }; }, [roomId, token]);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; sessionGeneration.current += 1; if (timer.current) clearTimeout(timer.current); if(draftTimer.current)clearTimeout(draftTimer.current); }; }, [roomId, token]);
   const wallClock = useRef<{ serverNow: number; wallAt: number } | null>(null);
   const lastElapsed = useRef(0);
   const room = data?.room;
@@ -100,6 +105,12 @@ export function CompetitionPlayerV2({ roomId, token }: { roomId: string; token: 
   };
   const key = session && participantId ? v2LocalKey(roomId, participantId, session.manifestId) : null;
   useEffect(() => { void pruneExpiredV2Local().catch(() => undefined); }, []);
+  useEffect(()=>{
+    if(!room?.expiresAtMs || !participantId)return;
+    try{updateMarkupExpiry(localStorage,`alkane-markup:${roomId}:${participantId}:`,room.expiresAtMs);}catch{/* local storage may be unavailable */}
+    const current=sessionRef.current;
+    if(current && current.expiresAtMs!==room.expiresAtMs){const next={...current,expiresAtMs:room.expiresAtMs};sessionRef.current=next;setSession(next);persistChain.current=persistChain.current.catch(()=>undefined).then(()=>writeV2Local(v2LocalKey(roomId,participantId,current.manifestId),next));}
+  },[room?.expiresAtMs,participantId,roomId]);
   useEffect(() => {
     if (!key || !(room?.state === "EXPIRED" || (room?.expiresAtMs && Date.now() >= room.expiresAtMs))) return;
     void persistChain.current.then(() => deleteV2Local(key)).catch(() => undefined);
@@ -108,7 +119,7 @@ export function CompetitionPlayerV2({ roomId, token }: { roomId: string; token: 
   useEffect(() => {
     if (!participantId) return;
     const owner = tabId.current ?? crypto.randomUUID(); tabId.current = owner;
-    const name = `ionic-formula-competition:v2-writer:${roomId}:${participantId}`;
+    const name = `alkane-puzzle-competition:v2-writer:${roomId}:${participantId}`;
     let active = true;
     let leaseTimer: ReturnType<typeof setInterval> | null = null;
     let yielded = false;
@@ -176,17 +187,17 @@ export function CompetitionPlayerV2({ roomId, token }: { roomId: string; token: 
     loading.current = true;
     void (async () => {
       try {
-        const manifest = await fetchJsonWithTimeout(`/api/rooms/${encodeURIComponent(roomId)}/manifest`, { headers: { authorization: `Bearer ${token}` }, cache: "no-store" }, 10_000) as { manifestId: string; evaluatorVersion: string; gradingMode: "immediate" | "deferred"; preparationGeneration: number; questions: (InternalQuestion | PublicQuestion)[] };
+        const manifest = await fetchJsonWithTimeout(`/api/rooms/${encodeURIComponent(roomId)}/manifest`, { headers: { authorization: `Bearer ${token}` }, cache: "no-store" }, 10_000) as { manifestId: string; evaluatorVersion: string; gradingMode: "immediate" | "deferred"; preparationGeneration: number; questions: (InternalQuestion | PublicQuestion)[];serverDrafts:Record<string,SavedDraft>;writerEpoch:number;ackSeq:number;operations:V2Operation[] };
         if (manifest.evaluatorVersion !== EVALUATOR_VERSION) throw new Error("アプリを更新してから参加してください");
         if (data.v2?.manifestId && data.v2.manifestId !== manifest.manifestId) throw new Error("問題の版が切り替わりました。再接続しています");
         const localKey = v2LocalKey(roomId, participantId, manifest.manifestId);
         const stored = await readV2Local(localKey).catch(() => { throw new Error("保存した解答を読み込めませんでした"); });
         if (stored && (!isRestorableV2Local(stored, manifest.manifestId, manifest.evaluatorVersion, manifest.questions.map(question => question.id)) || stored.gradingMode !== manifest.gradingMode)) throw new Error("保存した解答を読み込めませんでした");
-        if (!stored && data.room.state !== "PREPARING") throw new Error("保存した解答が見つかりませんでした");
-        let next: V2LocalRecord = stored ? { ...stored, preparationGeneration: manifest.preparationGeneration, expiresAtMs: data.room.expiresAtMs } : {
+        let next: V2LocalRecord = stored && stored.writerEpoch===manifest.writerEpoch ? { ...stored, preparationGeneration: manifest.preparationGeneration, expiresAtMs: data.room.expiresAtMs } : {
           manifestId: manifest.manifestId, preparationGeneration: manifest.preparationGeneration, evaluatorVersion: manifest.evaluatorVersion, gradingMode: manifest.gradingMode,
-          questions: manifest.questions, writerEpoch: 1, ackSeq: 0, operations: [], ordinal: 0, drafts: {}, finished: false, expiresAtMs: data.room.expiresAtMs,
+          questions: manifest.questions, writerEpoch: manifest.writerEpoch, ackSeq: manifest.ackSeq, operations: manifest.operations, ordinal: 0, drafts: {}, finished: manifest.operations.some(op=>op.type==='finish'), expiresAtMs: data.room.expiresAtMs,
         };
+        next=mergeServerDrafts(next,manifest.serverDrafts??{},manifest.writerEpoch);
         if (next.gradingMode === "immediate" && !next.finished) {
           const progress = immediateReviewState(next.questions, next.operations);
           const activeReview = next.reviewTarget && progress.fields[fieldKey(next.reviewTarget.questionId, next.reviewTarget.fieldId)] !== "correct";
@@ -245,6 +256,22 @@ export function CompetitionPlayerV2({ roomId, token }: { roomId: string; token: 
     persistChain.current = saved;
     return saved;
   };
+  const scheduleDrafts=()=>{if(!draftTimer.current)draftTimer.current=setTimeout(()=>{draftTimer.current=null;void draftFlushRef.current?.();},2000);};
+  draftFlushRef.current=async()=>{
+    const current=sessionRef.current;
+    if(!current || !writeLockRef.current || current.finished || room?.state!=="RUNNING" || currentNow()>=(cutoffAtMs??0))return;
+    const items=pendingDraftItems(current,draftInflight.current);
+    if(!items.length)return;
+    for(const item of items)draftInflight.current[item.key]=item.version;
+    setDraftStatus("sending");
+    try{
+      const response=await postJson(`/api/rooms/${encodeURIComponent(roomId)}/drafts`,{manifestId:current.manifestId,writerEpoch:current.writerEpoch,items:items.map(({key,...item})=>item)},{token}) as {versions:Record<string,number>};
+      const latest=sessionRef.current;
+      if(latest && latest.writerEpoch===current.writerEpoch && latest.manifestId===current.manifestId){const drafts={...latest.drafts};for(const [key,version] of Object.entries(response.versions))if(drafts[key])drafts[key]={...drafts[key],syncedVersion:Math.max(drafts[key].syncedVersion??0,version)};await persist({...latest,drafts});}
+      setDraftStatus("idle");
+    }catch{setDraftStatus("retry");scheduleDrafts();}finally{for(const item of items)if(draftInflight.current[item.key]===item.version)delete draftInflight.current[item.key];if(draftsPending(sessionRef.current))scheduleDrafts();}
+  };
+  useEffect(()=>{if(hasWriteLock && session && room?.state==='RUNNING')scheduleDrafts();},[hasWriteLock,session?.manifestId,room?.state]);
   const scheduleFlush = (delayMs: number) => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => { timer.current = null; void flushRef.current?.(); }, Math.max(0, delayMs, retryNotBefore.current - Date.now()));
@@ -349,19 +376,21 @@ export function CompetitionPlayerV2({ roomId, token }: { roomId: string; token: 
 
   const pendingCount = session ? session.operations.length - session.ackSeq : 0;
   const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+  const draftPending=room?.state==="RUNNING" && !session?.finished && draftsPending(session);
   const syncText = storageFailed ? "この端末への保存を確認できません。画面を閉じずにお待ちください"
     : localSaving ? "この端末に解答を保存しています…"
+    : draftPending ? draftStatus==="retry" ? "途中解答はこの端末に保存しました。通信が戻ると自動で再送します" : "途中解答をサーバーに保存しています…"
     : sendStatus === "blocked" ? message
     : sendStatus === "sending" ? "解答記録を送信しています…"
     : sendStatus === "retry" ? offline ? "通信が戻ると自動で再送信します。この画面を開いたままお待ちください"
       : "解答はこの端末に保存しました。通信を再確認しています"
     : pendingCount === 0 && session?.operations.length ? room?.state === "FINISHED" ? "解答記録の送信を確認しました" : "解答記録の送信を確認しました。結果を待っています" : "解答をこの端末に保存しました";
   const syncPanel = session ? <ParticipantSyncStatus text={syncText}
-    action={storageFailed ? "保存を再試行" : sendStatus === "retry" ? offline ? "接続を再確認" : "今すぐ再送信" : sendStatus === "blocked" ? "状態を再確認" : undefined}
+    action={storageFailed ? "保存を再試行" : draftPending && draftStatus==="retry" ? "今すぐ再送信" : sendStatus === "retry" ? offline ? "接続を再確認" : "今すぐ再送信" : sendStatus === "blocked" ? "状態を再確認" : undefined}
     disabled={sendStatus === "sending" || sendStatus === "retry" && Date.now() < retryAt}
     onAction={() => { if (storageFailed && sessionRef.current) void persist(sessionRef.current);
       else if (sendStatus === "blocked") void refresh().catch(() => undefined);
-      else { if (timer.current) clearTimeout(timer.current); timer.current = null; void flushRef.current?.(); } }}/>: null;
+      else { void draftFlushRef.current?.(); if (timer.current) clearTimeout(timer.current); timer.current = null; void flushRef.current?.(); } }}/>: null;
   if (results) return <>{syncPanel}<ImmediateVerdict verdict={verdict?.fullScore ? verdict : null}/><Results data={results}/></>;
   if (!data) return <main className="page-shell"><section className="panel"><h1>競技に接続しています</h1><ParticipantSyncStatus text={error ?? "時刻を同期しています…"} action={error ? "接続を再確認" : undefined} onAction={() => void refresh().catch(() => undefined)}/></section></main>;
   if (!room) return null;
@@ -379,7 +408,9 @@ export function CompetitionPlayerV2({ roomId, token }: { roomId: string; token: 
     try {
       const current = sessionRef.current; if (!current) return;
       const response = await postJson(`/api/rooms/${encodeURIComponent(roomId)}/writer`, { expectedEpoch: current.writerEpoch }, { token }) as { writerEpoch: number };
-      persist({ ...current, writerEpoch: response.writerEpoch }); setMessage("");
+      await persistChain.current.catch(()=>undefined);
+      sessionGeneration.current+=1;sessionRef.current=null;setSession(null);loading.current=false;draftInflight.current={};lastCheckpoint.current={};
+      setMessage("");await refresh();
     } catch (reason: any) { lockRelease.current?.(); setMessage(reason.message ?? "書き手を変更できませんでした"); }
   })()}>このタブで続ける</button></> : <h1>競技に戻っています…</h1>}<p role="status">{message}</p></section></main>;
   if (room?.state === "COLLECTING" || session.finished) return <main className="page-shell"><ImmediateVerdict verdict={verdict?.fullScore ? verdict : null}/><section className="panel"><h1>記録を確認しています</h1>{syncPanel}</section></main>;
@@ -392,11 +423,12 @@ export function CompetitionPlayerV2({ roomId, token }: { roomId: string; token: 
   const field = reviewTarget ? question.fields.find(item => item.id === reviewTarget.fieldId) ?? question.fields[0]
     : question.fields.find(item => item.id === selectedField && !resolved.includes(item.id)) ?? question.fields.find(item => !resolved.includes(item.id)) ?? question.fields[0];
   const value = session.drafts[fieldKey(question.id, field.id)]?.value;
-  const setValue = (next: FormulaEntry | string) => {
+  const setValue = (next: unknown) => {
     const current = sessionRef.current; if (!current) return;
     if (cutoffAtMs && currentNow() >= cutoffAtMs) return;
     const edited = elapsedMs();
-    persist({ ...current, drafts: { ...current.drafts, [fieldKey(question.id, field.id)]: { value: next, editedElapsedMs: edited } } });
+    scheduleDrafts();
+    persist({ ...current, drafts: { ...current.drafts, [fieldKey(question.id, field.id)]: { value: next, editedElapsedMs: edited,version:(current.drafts[fieldKey(question.id,field.id)]?.version??0)+1,syncedVersion:current.drafts[fieldKey(question.id,field.id)]?.syncedVersion??0 } } });
   };
   const checkpoint = () => {
     if (session.gradingMode !== "deferred") return;
@@ -506,9 +538,10 @@ export function CompetitionPlayerV2({ roomId, token }: { roomId: string; token: 
   return <main className="play-shell play-active play-answering" data-tick={tick}>
     <header className="scorebar"><span>第{question.ordinal + 1}問 / 全{session.questions.length}問</span><span>{session.gradingMode === "immediate" ? `正解 ${localCorrect} / ${room.maxScore}` : `入力済み ${filledFields} / ${totalFields}`}</span><span>残り {String(Math.floor(remaining / 60)).padStart(2, "0")}:{String(remaining % 60).padStart(2, "0")}</span></header>
     {syncPanel}<ImmediateVerdict verdict={verdict}/>
-    <QuestionView question={publicCurrent}/>
+
     <section className="answer-area" ref={answerAreaRef}><AnswerFieldTabs fields={question.fields} fieldStates={Object.fromEntries(question.fields.map(item => [item.id, reviewTarget?.fieldId === item.id ? "pending" : immediate?.fields[fieldKey(question.id, item.id)] === "correct" ? "correct" : ["passed", "passedRetry"].includes(immediate?.fields[fieldKey(question.id, item.id)] ?? "") ? "passed" : "pending"]))} selectedFieldId={field.id} mode={(room.settings as AlkaneGameSettings).mode} onSelect={next => { if (reviewTarget) return; checkpoint(); setSelectedField(next); }}/>
-    {field.id === "formula" ? <FormulaKeyboard value={(value as FormulaEntry | undefined) ?? createFormulaEntry()} onChange={setValue} onSubmit={check} showSubmit={session.gradingMode === "immediate"} kind={(room.settings as AlkaneGameSettings).mode} disabled={!canEdit} resetKey={question.id}/> : <NameKeyboard complexEnabled={(room.settings as AlkaneGameSettings).complexEnabled} difficulty={(room.settings as AlkaneGameSettings).difficulty} value={typeof value === "string" ? value : ""} onChange={setValue} onSubmit={check} showSubmit={session.gradingMode === "immediate"} kind={(room.settings as AlkaneGameSettings).mode} disabled={!canEdit} focusKey={`${question.id}:${field.id}`}/>}
+    <QuestionView question={publicCurrent} fieldId={field.id} value={typeof value === 'string' ? value : value ? JSON.stringify(value) : undefined} onChange={setValue} disabled={!canEdit} expiresAtMs={room.expiresAtMs} storageKey={`${roomId}:${participantId}:${question.id}`}/>
+    {session.gradingMode === "immediate" && <button className="primary-action" type="button" disabled={!canEdit || emptyValue(value)} onClick={check}>チェック</button>}
     {session.gradingMode === "immediate" ? <div className="immediate-actions">{reviewTarget ? <button className="pass-action" type="button" onClick={() => { setConfirmSubmitting(false); setReviewing(true); }}>確認一覧へ戻る</button> : <button className="pass-action" type="button" disabled={!canEdit || resolved.includes(field.id)} onClick={pass}>パス</button>}<button className="review-action" type="button" onClick={() => { setConfirmSubmitting(false); setReviewing(true); }}>全解答確認</button></div> : null}
     </section>
     {session.gradingMode === "deferred" && <nav className="question-navigation" aria-label="問題の移動"><button type="button" disabled={!canEdit || session.ordinal === 0} onClick={() => { checkpoint(); persist({ ...sessionRef.current!, ordinal: session.ordinal - 1 }); }}>前の問題</button><button type="button" className={session.ordinal < session.questions.length - 1 ? "is-emphasized" : ""} disabled={!canEdit || session.ordinal >= session.questions.length - 1} onClick={() => { checkpoint(); persist({ ...sessionRef.current!, ordinal: session.ordinal + 1 }); }}>次の問題</button><button type="button" className={session.ordinal === session.questions.length - 1 ? "is-emphasized" : ""} disabled={!canEdit} onClick={() => { checkpoint(); setReviewing(true); }}>全解答確認</button></nav>}

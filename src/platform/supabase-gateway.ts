@@ -3,6 +3,7 @@ import { hashParticipantToken } from './participant-auth';
 import { googleIdentity, type VerifiedUser } from './supabase-identity';
 import type { PersistenceDatabase } from '../persistence/db';
 import { queueRoomEvents, roomFingerprint } from './realtime-outbox';
+import type { SharedTeacherClient, SharedTeacherDecision } from './shared-teacher-client';
 
 export type TransactionRunner = <T>(scope: string, run: (db: PersistenceDatabase) => Promise<T>) => Promise<T>;
 export type GatewayOptions = {
@@ -11,6 +12,7 @@ export type GatewayOptions = {
   masterEmail: string;
   allowedOrigins: readonly string[];
   flush(roomId: string): Promise<void>;
+  sharedTeacher?: SharedTeacherClient;
   now?: () => number;
 };
 type HandlerName = keyof ReturnType<typeof createApiHandlers>;
@@ -29,7 +31,7 @@ const roomRoutes: Record<string, { method: string[]; name: HandlerName }> = {
   nickname:{method:['PATCH'],name:'nickname'},settings:{method:['PATCH'],name:'updateRoomSettings'},
   start:{method:['POST'],name:'startRoom'},manifest:{method:['GET'],name:'manifest'},ready:{method:['POST'],name:'ready'},
   'cancel-preparation':{method:['POST'],name:'cancelPreparation'},operations:{method:['POST'],name:'operations'},
-  writer:{method:['POST'],name:'writer'},cancel:{method:['POST'],name:'cancelRoom'},interrupt:{method:['POST'],name:'interruptRoom'},
+  drafts:{method:['GET','POST'],name:'drafts'},writer:{method:['POST'],name:'writer'},cancel:{method:['POST'],name:'cancelRoom'},interrupt:{method:['POST'],name:'interruptRoom'},
   remove:{method:['POST'],name:'removeParticipant'},actions:{method:['POST'],name:'actions'},
   results:{method:['GET'],name:'results'},'result-summary':{method:['GET'],name:'resultSummary'},
 };
@@ -43,21 +45,19 @@ function withCors(response: Response, origin: string) {
   return new Response(response.body,{status:response.status,headers});
 }
 
-async function teacherProvider(db: PersistenceDatabase,user:VerifiedUser,masterEmail:string) {
+async function teacherProvider(db: PersistenceDatabase,user:VerifiedUser,decision:SharedTeacherDecision|null,now:number) {
   const identity=googleIdentity(user);
   if (!identity) return {getVerifiedIdentity:async()=>null};
-  const master=masterEmail.trim().toLowerCase();
-  if (!master) return {getVerifiedIdentity:async()=>null};
-  await db.prepare('INSERT OR IGNORE INTO app_auth_config(id,master_email) VALUES(1,?)').bind(master).run();
-  const settings=await db.prepare('SELECT master_email FROM app_auth_config WHERE id=1').first<{master_email:string}>();
-  if(settings?.master_email!==master) throw new Error('Master identity configuration differs');
-  const list=await db.prepare('SELECT emails_json FROM teacher_allowlist WHERE id=1').first<{emails_json:string}>();
-  const permitted=identity.email===master||(JSON.parse(list?.emails_json??'[]') as string[]).includes(identity.email);
+  if (!decision) return {getVerifiedIdentity:async()=>identity};
+  if (!decision.allowed || decision.email!==identity.email) {
+    await db.prepare('UPDATE app_teacher_bindings SET active=false,lease_until_ms=0 WHERE uid=? AND active=true').bind(user.id).run();
+    return {getVerifiedIdentity:async()=>identity};
+  }
   const byUid=await db.prepare('SELECT email,active FROM app_teacher_bindings WHERE uid=?').bind(user.id).first<{email:string;active:boolean}>();
   const byEmail=await db.prepare('SELECT uid FROM app_teacher_bindings WHERE email=?').bind(identity.email).first<{uid:string}>();
-  if(!permitted || (byUid && byUid.email!==identity.email) || (byEmail && byEmail.uid!==user.id)) return {getVerifiedIdentity:async()=>null};
-  if(!byUid) await db.prepare('INSERT INTO app_teacher_bindings(uid,email) VALUES(?,?)').bind(user.id,identity.email).run();
-  else if(!byUid.active) await db.prepare('UPDATE app_teacher_bindings SET active=true WHERE uid=?').bind(user.id).run();
+  if((byUid && byUid.email!==identity.email) || (byEmail && byEmail.uid!==user.id)) throw new Error('Teacher identity binding conflict');
+  if(!byUid) await db.prepare('INSERT INTO app_teacher_bindings(uid,email,active,lease_until_ms) VALUES(?,?,true,?)').bind(user.id,identity.email,now+60_000).run();
+  else await db.prepare('UPDATE app_teacher_bindings SET active=true,lease_until_ms=? WHERE uid=?').bind(now+60_000,user.id).run();
   return {getVerifiedIdentity:async()=>identity};
 }
 async function associateParticipant(db:PersistenceDatabase,user:VerifiedUser,request:Request,publicId:string) {
@@ -80,7 +80,7 @@ async function topicsFor(db:PersistenceDatabase,user:VerifiedUser,publicId:strin
   if(!room||room.expires_at_ms<=now)return null;
   const member=await db.prepare(`SELECT m.participant_id FROM app_memberships m JOIN participants p ON p.room_id=m.room_id AND p.id=m.participant_id
     WHERE m.room_id=? AND m.uid=? AND p.status<>'REMOVED'`).bind(room.id,user.id).first<{participant_id:string}>();
-  const teacher=await db.prepare('SELECT uid FROM app_teacher_bindings WHERE uid=? AND active=true').bind(user.id).first<{uid:string}>();
+  const teacher=await db.prepare('SELECT uid FROM app_teacher_bindings WHERE uid=? AND active=true AND lease_until_ms>?').bind(user.id,now).first<{uid:string}>();
   const owner=teacher?.uid===room.owner_teacher_id;
   if(!member&&!owner)return null;
   const row=await db.prepare('SELECT epoch FROM app_room_topics WHERE room_id=?').bind(room.id).first<{epoch:number}>();
@@ -115,13 +115,22 @@ export function createSupabaseGateway(options:GatewayOptions) {
       const response=await options.transact(scope,async db=>{
         const now=(options.now??Date.now)();
         if(crypto.getRandomValues(new Uint32Array(1))[0]%200===0)await db.prepare('SELECT app_prune_auxiliary()').run();
+        await db.prepare('SELECT app_expire_teacher_leases(?)').bind(now).run();
         // Rate limits are per verified UID, never classroom NAT IP.
         const bucket=`${user.id}:${Math.floor(now/60000)}`;
         const limit=await db.prepare(`INSERT INTO app_request_limits(bucket,window_ms,count) VALUES(?,?,1)
           ON CONFLICT(bucket) DO UPDATE SET count=app_request_limits.count+1 RETURNING count`).bind(bucket,now).first<{count:number}>();
         if((limit?.count??0)>180) { const limited=failure(429,'rate_limited','通信が集中しています。少し待って再試行してください'); limited.headers.set('retry-after',String(Math.ceil((60000-now%60000)/1000))); return limited; }
-        const provider=await teacherProvider(db,user,options.masterEmail);
-        const handlers=createApiHandlers({database:db,teacherIdentity:provider,serverConfig:{teacherAllowedEmails:[],masterTeacherEmail:options.masterEmail.trim().toLowerCase()},now:options.now??Date.now,random:()=>crypto.getRandomValues(new Uint32Array(1))[0]/0x100000000,randomUUID:()=>crypto.randomUUID()});
+        const identity=googleIdentity(user);
+        const owner=publicId?await db.prepare('SELECT owner_teacher_id FROM rooms WHERE public_id=?').bind(publicId).first<{owner_teacher_id:string|null}>():null;
+        const needsTeacher=!!identity&&(path.startsWith('/api/teacher/')||route?.name==='createClassRoom'||owner?.owner_teacher_id===user.id);
+        const bearer=incoming.headers.get('authorization')?.replace(/^Bearer /,'')??'';
+        const decision=needsTeacher&&options.sharedTeacher&&bearer?await options.sharedTeacher.authorize(bearer):null;
+        const provider=await teacherProvider(db,user,decision,now);
+        const handlers=createApiHandlers({database:db,teacherIdentity:provider,
+          teacherAuthorization:async checked=>({allowed:!!decision?.allowed&&decision.email===checked.email,master:!!decision?.master}),
+          teacherAllowlistCommand:async forwarded=>options.sharedTeacher&&bearer?options.sharedTeacher.allowlist(bearer,forwarded):failure(503,'identity_unavailable','教員認証を利用できません'),
+          serverConfig:{teacherAllowedEmails:[],masterTeacherEmail:options.masterEmail.trim().toLowerCase()},now:options.now??Date.now,random:()=>crypto.getRandomValues(new Uint32Array(1))[0]/0x100000000,randomUUID:()=>crypto.randomUUID()});
         const before=publicId?await roomFingerprint(db,publicId):null;
         const result=await (handlers[realtime?'state':route!.name] as (r:Request,p:{id:string})=>Promise<Response>)(request.clone(),{id:publicId});
         if(!result.ok)return result;

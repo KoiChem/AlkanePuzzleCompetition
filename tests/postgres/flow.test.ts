@@ -7,7 +7,7 @@ import { createParticipantToken } from '../../src/platform/participant-auth';
 let pg: PGlite;
 let now = Date.now();
 const origin = 'https://competition.example';
-const settings = { questionCount: 5, timeLimitMinutes: 3, mode: 'ion', difficulty: 'normal', ionAnswer: 'formula', compoundPrompts: { formula: true, name: false }, compoundAnswer: 'formula' };
+const settings = { questionCount: 5, timeLimitMinutes: 3, mode: 'arrange', difficulty: 'easy', alcoholEnabled: false };
 function request(path: string, body?: unknown, token?: string) {
   return new Request(origin + path, { method: body ? 'POST' : 'GET', headers: { origin, 'x-competition-csrf': '1', 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined });
 }
@@ -20,12 +20,27 @@ async function call(name: keyof ReturnType<typeof createApiHandlers>, req: Reque
     return result;
   });
 }
-beforeAll(async () => { pg = new PGlite(); await pg.exec(readFileSync('supabase/migrations/202610010001_core.sql','utf8')); await pg.exec('CREATE ROLE anon; CREATE ROLE authenticated'); await pg.exec(readFileSync('supabase/migrations/202610020001_question_profiles.sql','utf8')); });
+beforeAll(async () => {
+  pg = new PGlite();
+  await pg.exec(readFileSync('supabase/migrations/202610010001_core.sql','utf8'));
+  await pg.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE SCHEMA auth;
+    CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT null::uuid $$;
+    CREATE SCHEMA realtime;CREATE TABLE realtime.messages(extension text);ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
+    CREATE FUNCTION realtime.topic() RETURNS text LANGUAGE sql AS $$ SELECT ''::text $$;`);
+  for(const file of ['202610010002_auth_realtime.sql','202610010003_permissions_maintenance.sql',
+    '202610020001_question_profiles.sql','202610040001_teacher_leases.sql','202610040002_drafts_retention.sql'])
+    await pg.exec(readFileSync('supabase/migrations/'+file,'utf8'));
+});
 afterAll(async () => { await pg.close(); });
 describe('real Postgres v2 competition', () => {
-  it.each(['immediate','deferred'])('runs %s prepare, ready, immutable operation retry, and final result', async gradingMode => {
+  it.each([
+    {mode:'arrange',gradingMode:'immediate'},
+    {mode:'arrange',gradingMode:'deferred'},
+    {mode:'name',gradingMode:'immediate'},
+    {mode:'name',gradingMode:'deferred'},
+  ])('runs $mode/$gradingMode prepare, draft restore, immutable operation retry, and final result', async ({mode,gradingMode}) => {
     now = Date.now();
-    const create = await call('createClassRoom', request('/api/class-rooms', { requestId: crypto.randomUUID(), settings: {...settings, gradingMode} }));
+    const create = await call('createClassRoom', request('/api/class-rooms', { requestId: crypto.randomUUID(), settings: {...settings, mode, gradingMode} }));
     expect(create.status, await create.clone().text()).toBe(201);
     const created = await create.json(); const id = created.room.id;
     const token = createParticipantToken();
@@ -39,7 +54,25 @@ describe('real Postgres v2 competition', () => {
     const ready = await call('ready', request(`/api/rooms/${id}/ready`, {manifestId: manifest.manifestId,evaluatorVersion:manifest.evaluatorVersion,preparationGeneration:manifest.preparationGeneration},token),id);
     expect(ready.status,await ready.clone().text()).toBe(200);
     const schedule = await ready.json();now=schedule.startAtMs+1000;
-    const operations = gradingMode === 'immediate' ? manifest.questions.flatMap((q:any,index:number)=>[{seq:index+1,operationId:crypto.randomUUID(),type:'pass',questionId:q.id,fieldId:'formula',elapsedMs:100+index}]) : [];
+    const draftQuestion=manifest.questions[0];
+    const board=Array.from({length:5},()=>Array(7).fill(null));board[2][3]={type:1,rotation:0};
+    const draftValue=mode==='arrange'?{grid:board}:{tokens:[draftQuestion.prompt.wordBank.flat()[0]]};
+    const draftsPath=`/api/rooms/${id}/drafts`;
+    const draftBody={manifestId:manifest.manifestId,writerEpoch:1,items:[{questionId:draftQuestion.id,fieldId:draftQuestion.fields[0].id,
+      value:draftValue,version:2,editedElapsedMs:800}]};
+    const draftSaved=await call('drafts',request(draftsPath,draftBody,token),id);
+    expect(draftSaved.status,await draftSaved.clone().text()).toBe(200);
+    expect((await draftSaved.json()).versions[`${draftQuestion.id}:${draftQuestion.fields[0].id}`]).toBe(2);
+    expect((await (await call('drafts',request(draftsPath,undefined,token),id)).json()).drafts[`${draftQuestion.id}:${draftQuestion.fields[0].id}`].value).toEqual(draftValue);
+    const olderValue=mode==='arrange'?{grid:Array.from({length:5},()=>Array(7).fill(null))}:{tokens:[]};
+    const olderBody={...draftBody,items:[{...draftBody.items[0],version:1,value:olderValue}]};
+    expect((await call('drafts',request(draftsPath,olderBody,token),id)).status).toBe(200);
+    expect((await (await call('drafts',request(draftsPath,undefined,token),id)).json()).drafts[`${draftQuestion.id}:${draftQuestion.fields[0].id}`].version).toBe(2);
+    expect((await call('drafts',request(draftsPath,{...draftBody,writerEpoch:2},token),id)).status).toBe(409);
+    now=schedule.deadlineAtMs;
+    expect((await call('drafts',request(draftsPath,{...draftBody,items:[{...draftBody.items[0],version:3}]},token),id)).status).toBe(409);
+    now=schedule.startAtMs+1000;
+    const operations = gradingMode === 'immediate' ? manifest.questions.flatMap((q:any,index:number)=>[{seq:index+1,operationId:crypto.randomUUID(),type:'pass',questionId:q.id,fieldId:q.fields[0].id,elapsedMs:100+index}]) : [];
     operations.push({seq:operations.length+1,operationId:crypto.randomUUID(),type:'finish',reason:gradingMode==='immediate'?'completed':'submitted',elapsedMs:900});
     const body = {requestId:crypto.randomUUID(),writerEpoch:1,manifestId:manifest.manifestId,evaluatorVersion:manifest.evaluatorVersion,operations};
     const save = await call('operations',request(`/api/rooms/${id}/operations`,body,token),id);
@@ -82,13 +115,15 @@ it('pins the actual PostgreSQL room profile across later master edits',async()=>
  // This test helper only supplies an ordinary teacher: master-only policy must hold.
  expect(saved.status).toBe(403);
  const profileModule=await import('../../src/games/alkane-puzzle/shared/question-profile');
- const first=structuredClone(profileModule.DEFAULT_QUESTION_PROFILE);first.rules.ion.normal.complexPercent=30;
+ const first=structuredClone(profileModule.DEFAULT_QUESTION_PROFILE);first.rules.arrange.easy.gridCols=6;
  await pg.query('INSERT INTO question_profiles(id,profile_json,revision,updated_at_ms) VALUES(1,$1,1,$2) ON CONFLICT(id) DO UPDATE SET profile_json=excluded.profile_json,revision=1',[JSON.stringify(first),Date.now()]);
- const created=await call('createClassRoom',request('/api/class-rooms',{requestId:crypto.randomUUID(),settings:{...settings,complexEnabled:true}}));expect(created.status).toBe(201);const {room}=await created.json();
- const next=structuredClone(first);next.rules.ion.normal.complexPercent=10;await pg.query('UPDATE question_profiles SET profile_json=$1,revision=2 WHERE id=1',[JSON.stringify(next)]);
+ const created=await call('createClassRoom',request('/api/class-rooms',{requestId:crypto.randomUUID(),settings}));expect(created.status).toBe(201);const {room}=await created.json();
+ const next=structuredClone(first);next.rules.arrange.easy.gridCols=7;await pg.query('UPDATE question_profiles SET profile_json=$1,revision=2 WHERE id=1',[JSON.stringify(next)]);
  const token=createParticipantToken();expect((await call('joinRoom',request(`/api/rooms/${room.id}/join`,{requestId:crypto.randomUUID(),nickname:'固定確認'},token),room.id)).status).toBe(201);
  const started=await call('startRoom',request(`/api/rooms/${room.id}/start`,{requestId:crypto.randomUUID(),expectedRevision:1}),room.id);expect(started.status,await started.clone().text()).toBe(200);
  const rows=await pg.query('SELECT answer_snapshot_json FROM room_questions WHERE room_id=(SELECT id FROM rooms WHERE public_id=$1)',[room.id]);
- expect(rows.rows.filter((q:any)=>JSON.parse(q.answer_snapshot_json).itemId.startsWith('complex_'))).toHaveLength(2);
- const snapshot=await pg.query('SELECT profile_revision FROM room_question_profiles WHERE room_id=(SELECT id FROM rooms WHERE public_id=$1)',[room.id]);expect(Number((snapshot.rows[0] as any).profile_revision)).toBe(1);
+ expect(rows.rows).toHaveLength(settings.questionCount);
+ const snapshot=await pg.query('SELECT profile_revision,profile_json FROM room_question_profiles WHERE room_id=(SELECT id FROM rooms WHERE public_id=$1)',[room.id]);
+ expect(Number((snapshot.rows[0] as any).profile_revision)).toBe(1);
+ expect(JSON.parse((snapshot.rows[0] as any).profile_json).rules.arrange.easy.gridCols).toBe(6);
 });

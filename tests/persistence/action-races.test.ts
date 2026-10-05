@@ -4,7 +4,7 @@ import { applyPlayerAction } from "../../src/persistence/actions";
 import { finalizeRoom } from "../../src/persistence/results";
 import { createRoom, startRoom } from "../../src/persistence/rooms";
 import { joinRoom } from "../../src/persistence/participants";
-import { QUESTION, SqliteD1, classRoomInput, joinInput, scalar } from "./helpers";
+import { CORRECT_BOARD_ANSWER, WRONG_BOARD_ANSWER, QUESTION, SqliteD1, classRoomInput, joinInput, scalar } from "./helpers";
 
 const databases: SqliteD1[] = [];
 afterEach(() => databases.splice(0).forEach((value) => value.close()));
@@ -26,7 +26,7 @@ function answer(overrides: Record<string, unknown> = {}) {
   return {
     roomId: "room-1", participantId: "p-0", requestId: "action-1", bodyHash: "action-body",
     questionId: "question-1", expectedParticipantRevision: 0, clientElapsedMs: 1_000,
-    serverNowMs: 4_000, action: { type: "answer" as const, fieldId: "formula" as const, value: "Na+" },
+    serverNowMs: 4_000, action: { type: "answer" as const, fieldId: "formula" as const, value: CORRECT_BOARD_ANSWER },
     ...overrides,
   };
 }
@@ -34,7 +34,7 @@ function answer(overrides: Record<string, unknown> = {}) {
 describe("player action races", () => {
   it("subtracts the previous accepted action's wait only once from a completed record", async () => {
     const db = await runningRoom();
-    await applyPlayerAction(db, answer({ requestId: "wrong", bodyHash: "wrong", action: { type: "answer", fieldId: "formula", value: "K+" } }));
+    await applyPlayerAction(db, answer({ requestId: "wrong", bodyHash: "wrong", action: { type: "answer", fieldId: "formula", value: WRONG_BOARD_ANSWER } }));
     db.setNow(6_000);
     const second = answer({ requestId: "correct", bodyHash: "correct", expectedParticipantRevision: 1, serverNowMs: 6_000, clientElapsedMs: 3_000, waitCredit: { sourceRequestId: "wrong", waitMs: 500 } });
     const result = await applyPlayerAction(db, second);
@@ -46,14 +46,14 @@ describe("player action races", () => {
   });
   it("ignores credit for an unrelated request and keeps the raw clock authoritative", async () => {
     const db = await runningRoom();
-    await applyPlayerAction(db, answer({ requestId: "wrong", bodyHash: "wrong", action: { type: "answer", fieldId: "formula", value: "K+" } }));
+    await applyPlayerAction(db, answer({ requestId: "wrong", bodyHash: "wrong", action: { type: "answer", fieldId: "formula", value: WRONG_BOARD_ANSWER } }));
     db.setNow(6_000);
     const result = await applyPlayerAction(db, answer({ requestId: "correct", bodyHash: "correct", expectedParticipantRevision: 1, serverNowMs: 6_000, clientElapsedMs: 3_000, waitCredit: { sourceRequestId: "not-my-previous-action", waitMs: 1_000 } }));
     expect(result).toMatchObject({ rawElapsedMs: 3_000, waitCreditMs: 0, elapsedCs: 300 });
   });
   it("preserves validated credit when the client clock falls back to server time", async () => {
     const db = await runningRoom();
-    await applyPlayerAction(db, answer({ requestId: "wrong", bodyHash: "wrong", action: { type: "answer", fieldId: "formula", value: "K+" } }));
+    await applyPlayerAction(db, answer({ requestId: "wrong", bodyHash: "wrong", action: { type: "answer", fieldId: "formula", value: WRONG_BOARD_ANSWER } }));
     db.setNow(6_000);
     const result = await applyPlayerAction(db, answer({ requestId: "correct", bodyHash: "correct", expectedParticipantRevision: 1, serverNowMs: 6_000, clientElapsedMs: 0, waitCredit: { sourceRequestId: "wrong", waitMs: 500 } }));
     expect(result).toMatchObject({ timingSource: "server_fallback", rawElapsedMs: 3_000, waitCreditMs: 500, elapsedCs: 250 });
@@ -61,7 +61,7 @@ describe("player action races", () => {
   it("credits the outgoing part of a fast response when the previous click time was verified", async () => {
     const db = await runningRoom();
     db.setNow(4_100);
-    await applyPlayerAction(db, answer({ requestId: "quick-wrong", bodyHash: "quick-wrong", serverNowMs: 4_100, clientElapsedMs: 1_000, action: { type: "answer", fieldId: "formula", value: "K+" } }));
+    await applyPlayerAction(db, answer({ requestId: "quick-wrong", bodyHash: "quick-wrong", serverNowMs: 4_100, clientElapsedMs: 1_000, action: { type: "answer", fieldId: "formula", value: WRONG_BOARD_ANSWER } }));
     db.setNow(4_120);
     const result = await applyPlayerAction(db, answer({ requestId: "quick-correct", bodyHash: "quick-correct", expectedParticipantRevision: 1, serverNowMs: 4_120, clientElapsedMs: 1_110, waitCredit: { sourceRequestId: "quick-wrong", waitMs: 110 } }));
     expect(result).toMatchObject({ rawElapsedMs: 1_110, waitCreditMs: 110, elapsedCs: 100 });
@@ -250,13 +250,13 @@ describe("last accepted answer record", () => {
     await applyPlayerAction(db, input);
     await applyPlayerAction(db, input);
     expect(db.sqlite.prepare("SELECT last_answer_json, last_answer_correct FROM participant_fields WHERE participant_id = ? AND field_id = ?").get("p-0", "formula"))
-      .toEqual({ last_answer_json: '"Na+"', last_answer_correct: 1 });
+      .toEqual({ last_answer_json: JSON.stringify(CORRECT_BOARD_ANSWER), last_answer_correct: 1 });
   });
   it("keeps the last wrong answer after pass", async () => {
     const db = await runningRoom();
-    await applyPlayerAction(db, answer({ action: { type: "answer", fieldId: "formula", value: "K+" } }));
+    await applyPlayerAction(db, answer({ action: { type: "answer", fieldId: "formula", value: WRONG_BOARD_ANSWER } }));
     await applyPlayerAction(db, answer({ requestId: "pass-after-wrong", bodyHash: "pass-after-wrong", expectedParticipantRevision: 1, action: { type: "pass", fieldId: "formula" } }));
     expect(db.sqlite.prepare("SELECT last_answer_json, last_answer_correct, state FROM participant_fields WHERE participant_id = ? AND field_id = ?").get("p-0", "formula"))
-      .toEqual({ last_answer_json: '"K+"', last_answer_correct: 0, state: "passed" });
+      .toEqual({ last_answer_json: JSON.stringify(WRONG_BOARD_ANSWER), last_answer_correct: 0, state: "passed" });
   });
 });

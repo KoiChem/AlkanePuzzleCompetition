@@ -27,7 +27,7 @@ export function randomCredential(byteLength = 32): string {
   const values = crypto.getRandomValues(new Uint8Array(byteLength));
   return btoa(String.fromCharCode(...values)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
-export const credentialKey = (roomId: string) => `ionic-formula-competition:room:${roomId}`;
+export const credentialKey = (roomId: string) => `alkane-puzzle-competition:room:${roomId}`;
 export function loadCredential(roomId: string): { token: string; participantId?: string } | null {
   try { const value = localStorage.getItem(credentialKey(roomId)); return value ? JSON.parse(value) : null; } catch { return null; }
 }

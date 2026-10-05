@@ -1,34 +1,7 @@
-import type { AnswerFieldId, FormulaEntry, QuestionPrompt } from "../../games/alkane-puzzle/shared/types";
-import { Formula } from "../results/Results";
+import type { AnswerFieldId, QuestionPrompt } from "../../games/alkane-puzzle/shared/types";
+import { AlkaneAnswerView, AlkanePromptSummary, answerIsEmpty } from "./AlkaneReview";
 
-type ReviewField = { id: AnswerFieldId; value: unknown };
-
-function isEmpty(value: unknown): boolean {
-  if (typeof value === "string") return !value.trim();
-  if (!value || typeof value !== "object" || !("tokens" in value)) return true;
-  const entry = value as FormulaEntry;
-  return entry.tokens.length === 0 && !entry.charge;
-}
-
-function ReviewAnswer({ value }: { value: unknown }) {
-  if (isEmpty(value)) return <>未解答</>;
-  if (typeof value === "string") return <>{value}</>;
-  const entry = value as FormulaEntry;
-  return <Formula value={entry.tokens.join("")} charge={entry.charge ? entry.charge.magnitude * (entry.charge.sign === "+" ? 1 : -1) : null}/>;
-}
-
-export function DeferredReviewQuestion({ number, prompt, fields, disabled, onSelect }: {
-  number: number;
-  prompt: QuestionPrompt;
-  fields: readonly ReviewField[];
-  disabled: boolean;
-  onSelect(): void;
-}) {
-  const questionNumber = String(number).replace(/[0-9]/g, digit => String.fromCharCode(digit.charCodeAt(0) + 0xfee0));
-  return <button type="button" disabled={disabled} onClick={onSelect}>
-    <span className="review-question-line"><strong>第{questionNumber}問：</strong>{prompt.values.map((part, index) => <span key={index}>{index > 0 ? " ＋ " : ""}{part.type === "formula" ? <Formula value={part.value} charge={part.charge}/> : part.value}</span>)}</span>
-    <span className={`review-answer-block ${fields.every(field => isEmpty(field.value)) ? "is-empty" : ""}`}>
-      {fields.map((field, index) => <span key={field.id} className="review-answer-line">{index === 0 ? "解答：" : field.id === "name" ? "名称：" : "組成式："}<ReviewAnswer value={field.value}/></span>)}
-    </span>
-  </button>;
+type ReviewField={id:AnswerFieldId;value:unknown};
+export function DeferredReviewQuestion({number,prompt,fields,disabled,onSelect}:{number:number;prompt:QuestionPrompt;fields:readonly ReviewField[];disabled:boolean;onSelect():void}) {
+  return <div role="button" tabIndex={disabled ? -1 : 0} aria-disabled={disabled} onClick={disabled ? undefined : onSelect} onKeyDown={disabled ? undefined : event => {if (event.key==="Enter" || event.key===" ") {event.preventDefault();onSelect();}}} className="alkane-deferred-review"><div className="review-question-line"><strong>第{number}問：</strong><AlkanePromptSummary prompt={prompt}/></div><div className={`review-answer-block ${fields.every(field => answerIsEmpty(field.value)) ? "is-empty" : ""}`}>{fields.map(field => <div key={field.id} className="review-answer-line"><strong>{field.id==="formula" ? "構造" : "名前"}：</strong><AlkaneAnswerView raw={field.value} fieldId={field.id} label={`第${number}問の解答`}/></div>)}</div></div>;
 }

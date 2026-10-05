@@ -1,4 +1,4 @@
-export function appPath(path: string, base = import.meta.env?.BASE_URL ?? '/IonicFormulaCompetition/'): string {
+export function appPath(path: string, base = import.meta.env?.BASE_URL ?? '/AlkanePuzzleCompetition/'): string {
   if (!path.startsWith('/') || path.startsWith('//') || /[\r\n\\]/u.test(path)) throw new Error('Invalid app route');
   return `${base.endsWith('/') ? base : `${base}/`}#${path}`;
 }

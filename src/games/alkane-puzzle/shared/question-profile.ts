@@ -1,28 +1,60 @@
-import ionsData from '../data/ions.json';
-import compoundsData from '../data/compounds.json';
-import complexData from '../data/complex-chemistry.json';
-import { isComplexItem } from './complex-policy';
-export type ItemDifficulty = 'normal' | 'hard' | 'both' | 'off';
-export type Rule = { complexPercent: number; categoryWeights: Record<string, number> | null };
-export type QuestionProfile = { version: 1; rules: { ion: { normal: Rule; hard: Rule }; compound: { normal: Rule; hard: Rule } }; ionDifficulties: Record<string, ItemDifficulty>; compoundDifficulties: Record<string, ItemDifficulty> };
-export type CatalogItem = { id: string; formula: string; name: string; complex: boolean; category: string; defaultDifficulty: ItemDifficulty };
-const ions = [...ionsData, ...complexData.supportIons, ...complexData.ions];
-const ionMap = new Map(ions.map(i => [i.id,i]));
-function defaultDifficulty(i: {enabled:boolean; difficulty?:string}):ItemDifficulty { return !i.enabled ? 'off' : i.difficulty === 'normal' || i.difficulty === 'hard' ? i.difficulty : 'both'; }
-function gcd(a:number,b:number):number { return b ? gcd(b,a%b) : Math.abs(a); }
-export function questionProfileCatalog(): {ions:CatalogItem[];compounds:CatalogItem[]} {
- return {
- ions:ions.filter(i=>!('ionQuestionEnabled' in i) || i.ionQuestionEnabled!==false).map(i=>({id:i.id,formula:`${i.formula}${Math.abs(i.charge)===1?'':Math.abs(i.charge)}${i.charge>0?'+':'-'}`,name:i.name,complex:isComplexItem(i,ionMap),category:i.requiresOxidationNumeral?'ionVariableOx':i.atomicity==='polyatomic'?'ionPolyatomic':'ionSimple',defaultDifficulty:defaultDifficulty(i)})),
- compounds:[...compoundsData,...complexData.compounds].map(i=>{const c=ionMap.get(i.cation)!;const a=ionMap.get(i.anion)!;return {id:i.id,formula:i.formula??'',name:i.name,complex:isComplexItem(i,ionMap),category:c.requiresOxidationNumeral||a.requiresOxidationNumeral?'variableOx':c.atomicity==='polyatomic'||a.atomicity==='polyatomic'?'polyatomic':Math.abs(a.charge)/gcd(c.charge,a.charge)===1&&c.charge/gcd(c.charge,a.charge)===1?'simple11':'simpleRatio',defaultDifficulty:defaultDifficulty(i)};})
- };
+export type Rule = {
+  typeMin: number; typeMax: number; lenMin: number; lenMax: number;
+  subMin: number; subMax: number; ringSizes: number[];
+  cycloSubstituentCount: 0 | 1 | 2;
+  gridCols?: number; gridRows?: number;
+  bendMin?: number; bendMax?: number;
+  shuffleWordBankGroups?: boolean;
+  alcoholRate: number; hydroxylLimitOne: boolean; hydroxylCountsAsSubstituent: boolean;
+};
+export type QuestionProfile = {
+  version: 1;
+  rules: { arrange: { easy: Rule; medium: Rule }; name: { easy: Rule; medium: Rule } };
+};
+const easyBase = {typeMin:1,typeMax:1,lenMin:1,lenMax:6,subMin:0,subMax:4,ringSizes:[4,6],cycloSubstituentCount:0,alcoholRate:40,hydroxylLimitOne:true,hydroxylCountsAsSubstituent:true} as const;
+const mediumBase = {typeMin:1,typeMax:2,lenMin:4,lenMax:8,subMin:3,subMax:6,ringSizes:[6,8],cycloSubstituentCount:1,alcoholRate:40,hydroxylLimitOne:false,hydroxylCountsAsSubstituent:true} as const;
+export const DEFAULT_QUESTION_PROFILE: QuestionProfile = Object.freeze({
+  version:1,
+  rules:{
+    arrange:{easy:{...easyBase,ringSizes:[4,6],gridCols:7,gridRows:5},medium:{...mediumBase,ringSizes:[6,8],gridCols:7,gridRows:5}},
+    name:{easy:{...easyBase,ringSizes:[4,6],bendMin:0,bendMax:1,shuffleWordBankGroups:false},medium:{...mediumBase,typeMax:1,ringSizes:[6,8],bendMin:2,bendMax:3,shuffleWordBankGroups:false}}
+  }
+});
+const isObject = (v:unknown):v is Record<string,unknown> => !!v && typeof v==='object' && !Array.isArray(v);
+const between = (v:unknown,min:number,max:number) => Number.isInteger(v) && Number(v)>=min && Number(v)<=max;
+function checkKeys(o:Record<string,unknown>,allowed:readonly string[],required:readonly string[]=allowed) {
+  if(Object.keys(o).some(k=>!allowed.includes(k)) || required.some(k=>!Object.hasOwn(o,k))) throw new TypeError('出題設定の項目が不正です');
 }
-function freeze<T>(x:T):T { if(x&&typeof x==='object') {Object.values(x).forEach(freeze);Object.freeze(x);}return x; }
-export const DEFAULT_QUESTION_PROFILE:QuestionProfile=freeze({version:1,rules:{ion:{normal:{complexPercent:10,categoryWeights:null},hard:{complexPercent:20,categoryWeights:null}},compound:{normal:{complexPercent:10,categoryWeights:null},hard:{complexPercent:20,categoryWeights:null}}},ionDifficulties:{},compoundDifficulties:{}});
-function object(x:unknown):Record<string,unknown> {if(!x||typeof x!=='object'||Array.isArray(x))throw new TypeError('出題設定が不正です');return x as Record<string,unknown>;}
-function keys(x:Record<string,unknown>,allowed:string[],required=allowed) {if(Object.keys(x).some(k=>!allowed.includes(k))||required.some(k=>!Object.hasOwn(x,k)))throw new TypeError('出題設定の項目が不正です');}
 export function validateQuestionProfileShape(raw:unknown):QuestionProfile {
- const p=object(raw);keys(p,['version','rules','ionDifficulties','compoundDifficulties']);if(p.version!==1)throw new TypeError('出題設定の版が不正です');const rules=object(p.rules);keys(rules,['ion','compound']);const catalog=questionProfileCatalog();
- for(const mode of ['ion','compound'] as const){const levels=object(rules[mode]);keys(levels,['normal','hard']);for(const level of ['normal','hard'] as const){const r=object(levels[level]);keys(r,['complexPercent','categoryWeights']);if(!Number.isInteger(r.complexPercent)||Number(r.complexPercent)<(level==='hard'?20:0)||Number(r.complexPercent)>100)throw new TypeError('錯イオンの割合が不正です');if(r.categoryWeights!==null){const w=object(r.categoryWeights);const categories=mode==='ion'?['ionSimple','ionPolyatomic','ionVariableOx']:['simple11','simpleRatio','polyatomic','variableOx'];keys(w,categories,[]);if(Object.values(w).some(v=>typeof v!=='number'||!Number.isFinite(v)||v<0||v>10000)||Object.values(w).reduce<number>((s,v)=>s+Number(v),0)<=0)throw new TypeError('カテゴリの重みが不正です');}}
- const overrides=object(p[mode==='ion'?'ionDifficulties':'compoundDifficulties']);const ids=new Set((mode==='ion'?catalog.ions:catalog.compounds).map(i=>i.id));if(Object.entries(overrides).some(([id,v])=>!ids.has(id)||(typeof v!=='string'||!['normal','hard','both','off'].includes(v))))throw new TypeError('教材の難易度が不正です');}
- return structuredClone(p) as QuestionProfile;
+  if(!isObject(raw)) throw new TypeError('出題設定が不正です');
+  checkKeys(raw,['version','rules']);
+  if(raw.version!==1 || !isObject(raw.rules)) throw new TypeError('出題設定の版が不正です');
+  checkKeys(raw.rules,['arrange','name']);
+  for(const mode of ['arrange','name'] as const) {
+    const levels=raw.rules[mode];
+    if(!isObject(levels)) throw new TypeError('難易度設定が不正です');
+    checkKeys(levels,['easy','medium']);
+    for(const difficulty of ['easy','medium'] as const) {
+      const rule=levels[difficulty];
+      if(!isObject(rule)) throw new TypeError('詳細設定が不正です');
+      const common=['typeMin','typeMax','lenMin','lenMax','subMin','subMax','ringSizes','cycloSubstituentCount','alcoholRate','hydroxylLimitOne','hydroxylCountsAsSubstituent'];
+      const special=mode==='arrange'?['gridCols','gridRows']:['bendMin','bendMax','shuffleWordBankGroups'];
+      checkKeys(rule,[...common,...special],[...common,...special]);
+      const ranges=[['typeMin','typeMax',1,6],['lenMin','lenMax',1,10],['subMin','subMax',0,10]] as const;
+      for(const [low,high,min,max] of ranges) if(!between(rule[low],min,max)||!between(rule[high],min,max)||Number(rule[low])>Number(rule[high])) throw new RangeError('設定範囲が不正です');
+      if(!Array.isArray(rule.ringSizes)||rule.ringSizes.length===0||new Set(rule.ringSizes).size!==rule.ringSizes.length||rule.ringSizes.some((n:unknown)=>typeof n!=='number'||![4,6,8,10].includes(n))) throw new RangeError('シクロ主鎖が不正です');
+      if(typeof rule.cycloSubstituentCount!=='number'||![0,1,2].includes(rule.cycloSubstituentCount)) throw new RangeError('シクロ置換基数が不正です');
+      if(!between(rule.alcoholRate,0,100)||Number(rule.alcoholRate)%10!==0) throw new RangeError('アルコール出題率が不正です');
+      if(typeof rule.hydroxylLimitOne!=='boolean'||typeof rule.hydroxylCountsAsSubstituent!=='boolean') throw new TypeError('OH設定が不正です');
+      if(mode==='arrange') {
+        if(!between(rule.gridCols,3,7)||!between(rule.gridRows,3,5)) throw new RangeError('枠数が不正です');
+      } else {
+        if(!between(rule.bendMin,0,10)||!between(rule.bendMax,0,10)||Number(rule.bendMin)>Number(rule.bendMax)||typeof rule.shuffleWordBankGroups!=='boolean') throw new RangeError('折れ曲がり設定が不正です');
+      }
+    }
+  }
+  return structuredClone(raw) as QuestionProfile;
+}
+export function questionProfileCatalog() {
+  return { modes:['arrange','name'] as const, difficulties:['easy','medium'] as const, ringSizes:[4,6,8,10] as const };
 }

@@ -68,11 +68,9 @@ export function createApiTestContext(options: {
 export const SETTINGS = {
   questionCount: 5,
   timeLimitMinutes: 3,
-  mode: "ion",
-  difficulty: "normal",
-  ionAnswer: "formula",
-  compoundPrompts: { formula: true, name: false },
-  compoundAnswer: "formula",
+  mode: "arrange",
+  difficulty: "easy",
+  alcoholEnabled: false,
 } as const;
 
 export async function createClassRoom(

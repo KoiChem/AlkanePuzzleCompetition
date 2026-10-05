@@ -1,3 +1,4 @@
+import {pruneExpiredMarkup} from '../games/alkane-puzzle/client/QuestionView';
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Home from '../../app/page';
@@ -16,6 +17,7 @@ function Application() {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   useEffect(() => {
+    try {pruneExpiredMarkup(localStorage,Date.now());} catch { /* storage may be unavailable */ }
     const changed = () => setRoute(parseRoute(location.hash));
     window.addEventListener('hashchange', changed);
     void completeOAuth().catch(reason => setError(reason.message)).finally(() => { changed(); setReady(true); });
@@ -23,7 +25,7 @@ function Application() {
   }, []);
   if (!ready) return <main className="page-shell"><p role="status">読み込み中…</p></main>;
   if (error) return <main className="page-shell"><p role="alert">{error}</p><a href={appPath('/teacher')}>教員ログインへ</a></main>;
-  if (!isConfigured()) return <main className="page-shell"><section className="panel"><h1>Ionic Formula Competition</h1><p role="status">接続設定を準備中です。</p></section></main>;
+  if (!isConfigured()) return <main className="page-shell"><section className="panel"><h1>Alkane Puzzle Competition</h1><p role="status">接続設定を準備中です。</p></section></main>;
   const parts = route.path.split('/').filter(Boolean);
   if (!parts.length) return <Home/>;
   if (route.path === '/teacher') return <TeacherPage/>;
@@ -35,4 +37,7 @@ function Application() {
   if (parts[0] === 'history' && parts.length === 2) return <HistoryResult key={parts[1]} roomId={decodeURIComponent(parts[1])} role={new URLSearchParams(route.search).get('role') === 'teacher' ? 'teacher' : 'participant'}/>;
   return <main className="page-shell"><h1>ページが見つかりません</h1><a href={appPath('/')}>ホームへ戻る</a></main>;
 }
-createRoot(document.getElementById('root')!).render(<Application/>);
+const container=document.getElementById('root')!;
+const root=import.meta.hot?.data.root ?? createRoot(container);
+if(import.meta.hot)import.meta.hot.data.root=root;
+root.render(<Application/>);

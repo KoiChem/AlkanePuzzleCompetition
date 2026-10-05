@@ -1,14 +1,14 @@
 :root {
   color-scheme: light;
-  --ink: #35665f;
-  --muted: #6c8c84;
-  --paper: #fffefa;
-  --background: #f5fcf7;
-  --line: #cbe4db;
-  --grid-line: rgba(93, 169, 142, .12);
-  --primary: #398d75;
-  --primary-dark: #286f5c;
-  --shadow: 0 13px 34px rgba(61, 122, 103, .1);
+  --ink: #33302a;
+  --muted: #6f6a5d;
+  --paper: #fffdf6;
+  --background: #faf8f0;
+  --line: #d8d3c0;
+  --grid-line: rgba(90, 150, 190, .13);
+  --primary: #2a9d8f;
+  --primary-dark: #1f8175;
+  --shadow: 0 13px 34px rgba(60, 55, 40, .14);
   font-family: ui-rounded, "Hiragino Maru Gothic ProN", "ヒラギノ丸ゴ ProN W4", "Yu Gothic", YuGothic, sans-serif;
   font-synthesis: none;
   color: var(--ink);
@@ -23,9 +23,9 @@ main {
   padding: 24px;
   background: linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0 / 22px 22px,
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0 / 22px 22px,
-    radial-gradient(circle at 5% 0%, rgba(123, 209, 174, .15), transparent 30rem), var(--background);
+    radial-gradient(circle at 5% 0%, rgba(42, 157, 143, .08), transparent 30rem), var(--background);
 }
-.home-card { width: min(100%, 520px); padding: clamp(28px, 7vw, 48px); border: 1px solid var(--line); border-radius: 28px; background: rgba(255,254,250,.96); box-shadow: var(--shadow); }
+.home-card { width: min(100%, 520px); padding: clamp(28px, 7vw, 48px); border: 1px solid var(--line); border-radius: 28px; background: rgba(255,253,246,.96); box-shadow: var(--shadow); }
 .eyebrow { margin: 0 0 6px; color: var(--primary-dark); font-size: .875rem; font-weight: 800; letter-spacing: .16em; }
 h1 { margin: 0; font-size: clamp(2rem, 8vw, 3.25rem); line-height: 1; }
 .join-form { margin-top: 40px; }

@@ -6,6 +6,7 @@ import { Results } from "../../src/features/results/Results";
 import { teacherTopRank, topRankingRows } from "../../src/features/results/ranking-visibility";
 import { ReturnHomeButton } from "../../src/features/setup/ReturnHomeButton";
 import { EndRoomButton } from "../../src/features/lobby/EndRoomButton";
+import { DEFAULT_SETTINGS } from "../../src/features/setup/CompetitionSettingsForm";
 
 const ranking = Array.from({ length: 12 }, (_, index) => ({
   rank: index + 1,
@@ -18,16 +19,17 @@ const ranking = Array.from({ length: 12 }, (_, index) => ({
 describe("class result visibility", () => {
   it("shows the correct answer and an incorrect-colored unanswered badge in deferred results", () => {
     const html = renderToStaticMarkup(createElement(Results, { data: {
-      room: { kind: "class", settings: { gradingMode: "deferred", mode: "ion", difficulty: "normal", ionAnswer: "formula", compoundPrompts: { formula: true, name: true }, compoundAnswer: "formula", questionCount: 5, timeLimitMinutes: 5 } },
+      room: { kind: "class", settings: { gradingMode: "deferred", mode: "arrange", difficulty: "easy", alcoholEnabled: false, questionCount: 5, timeLimitMinutes: 5 } },
       questions: [
-        { id: "empty", ordinal: 0, prompt: { kind: "ionName", values: [{ type: "name", value: "ナトリウムイオン" }] }, fields: [{ id: "formula", state: "unanswered", correctAnswer: "Na+", correctFormulaCore: "Na", correctFormulaCharge: 1, lastAnswer: null, lastAnswerCorrect: null }] },
-        { id: "right", ordinal: 1, prompt: { kind: "ionFormula", values: [{ type: "formula", value: "HCO3", charge: -1 }] }, fields: [{ id: "name", state: "correct", correctAnswer: "炭酸水素イオン", lastAnswer: "炭酸水素イオン", lastAnswerCorrect: true }] },
+        { id: "empty", ordinal: 0, prompt: { kind: "alkane", mode: "arrange", name: "メタン", grid: null, alcoholEnabled: false, values: [] }, fields: [{ id: "formula", state: "unanswered", correctAnswer: JSON.stringify({grid:[[{type:1,rotation:0}]]}), correctAnswerValue:{grid:[[{type:1,rotation:0}]]}, lastAnswer: null, lastAnswerCorrect: null }] },
+        { id: "right", ordinal: 1, prompt: { kind: "alkane", mode: "name", grid: [[{type:1,rotation:0}]], alcoholEnabled: false, values: [] }, fields: [{ id: "name", state: "correct", correctAnswer: JSON.stringify({tokens:["メタン"]}), correctAnswerValue:{tokens:["メタン"]}, lastAnswer: JSON.stringify({tokens:["メタン"]}), lastAnswerCorrect: true }] },
       ],
     } }));
-    expect(html).toContain("第１問：");
-    expect(html).toContain("第２問：");
+    expect(html).toContain("第1問");
+    expect(html).toContain("第2問");
     expect(html).toContain('class="verdict incorrect">未解答');
-    expect(html).toContain("炭酸水素イオン");
+    expect(html).toContain("メタン");
+    expect(html).toContain('aria-label="正解の構造"');
     expect(html).not.toContain("問題：");
   });
   it("labels interrupted participants and unresolved fields without calling them timed out", () => {
@@ -35,11 +37,17 @@ describe("class result visibility", () => {
       room: { kind: "class", endReason: "interrupted" },
       ranking: [{ rank: 1, nickname: "A", correctCount: 0, elapsedCs: 100, finishReason: "interrupted" }],
       own: { rank: 1, correctCount: 0, elapsedCs: 100, finishReason: "interrupted" },
-      questions: [{ id: "q", ordinal: 0, prompt: { kind: "ionName", values: [{ type: "name", value: "ナトリウムイオン" }] }, fields: [{ id: "formula", state: "unanswered", correctAnswer: "Na+", lastAnswer: null, lastAnswerCorrect: null }] }],
+      questions: [{ id: "q", ordinal: 0, prompt: { kind: "alkane", mode: "arrange", name: "メタン", grid: null, alcoholEnabled: false, values: [] }, fields: [{ id: "formula", state: "unanswered", correctAnswer: JSON.stringify({grid:[[{type:1,rotation:0}]]}), lastAnswer: null, lastAnswerCorrect: null }] }],
     } }));
     expect(html).toContain("中断時の結果");
     expect(html).toContain("中断時未回答");
     expect(html).not.toContain("時間切れ");
+  });
+  it("renders the correct and submitted structures separately after a deferred error", () => {
+    const html=renderToStaticMarkup(createElement(Results,{data:{room:{kind:"class",settings:{...DEFAULT_SETTINGS,gradingMode:"deferred"}},questions:[{id:"q",ordinal:0,prompt:{kind:"alkane",mode:"arrange",name:"メタン",grid:null,alcoholEnabled:false,values:[]},fields:[{id:"formula",state:"incorrect",correctAnswer:JSON.stringify({grid:[[{type:1,rotation:0}]]}),correctAnswerValue:{grid:[[{type:1,rotation:0}]]},lastAnswer:null,lastAnswerValue:{grid:[[{type:2,rotation:90}]]},lastAnswerCorrect:false}]}]}}));
+    expect(html).toContain('aria-label="正解の構造"');
+    expect(html).toContain('aria-label="あなたの解答"');
+    expect(html).toContain("× 不正解");
   });
   it.each([[1, 1], [2, 2], [3, 3], [5, 3], [8, 3], [10, 5], [19, 5], [20, 10], [25, 10], [29, 10], [30, 15], [40, 15], [42, 15]])("shows the expected top rank for %i participants", (count, expected) => {
     expect(teacherTopRank(count)).toBe(expected);

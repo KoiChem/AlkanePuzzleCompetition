@@ -36,6 +36,8 @@ export type PersistenceErrorCode =
   | "not_ready"
   | "rate_limited"
   | "request_id_reused"
+  | "stale_manifest"
+  | "stale_writer"
   | "stale_participant_revision"
   | "stale_question_profile"
   | "stale_room_revision";

@@ -23,7 +23,7 @@ export default function TeacherPage() {
   }, []);
   const login = async () => {
     setError('');
-    sessionStorage.setItem('ionic-competition-github:return', '/teacher');
+    sessionStorage.setItem('alkane-competition-github:return', '/teacher');
     const { error } = await getSupabaseClient().auth.signInWithOAuth({ provider: 'google', options: {
       redirectTo: new URL(import.meta.env.BASE_URL, location.origin).href,
       queryParams: { prompt: 'select_account' }, scopes: 'openid email profile',

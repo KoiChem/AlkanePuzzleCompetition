@@ -3,7 +3,7 @@ import { applyPlayerAction } from "../../src/persistence/actions";
 import { interruptRoom } from "../../src/persistence/results";
 import { createRoom, startRoom } from "../../src/persistence/rooms";
 import { joinRoom } from "../../src/persistence/participants";
-import { QUESTION, SqliteD1, classRoomInput, joinInput, scalar } from "./helpers";
+import { CORRECT_BOARD_ANSWER, WRONG_BOARD_ANSWER, QUESTION, SqliteD1, classRoomInput, joinInput, scalar } from "./helpers";
 
 const databases: SqliteD1[] = [];
 afterEach(() => databases.splice(0).forEach(database => database.close()));
@@ -21,7 +21,7 @@ async function activeRoom() {
 
 const answer = { roomId: "room-1", participantId: "p-0", requestId: "answer", bodyHash: "answer",
   questionId: "question-1", expectedParticipantRevision: 0, clientElapsedMs: 1_000, serverNowMs: 4_000,
-  action: { type: "answer" as const, fieldId: "formula" as const, value: "Na+" } };
+  action: { type: "answer" as const, fieldId: "formula" as const, value: CORRECT_BOARD_ANSWER } };
 const interrupt = { roomId: "room-1", requestId: "interrupt", bodyHash: "interrupt", expectedRoomRevision: 3, nowMs: 4_000 };
 
 it("rejects answers submitted after interruption without changing the frozen result", async () => {

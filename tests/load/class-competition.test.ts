@@ -22,10 +22,10 @@ async function json(response: Response): Promise<Record<string, any>> {
 const loadIt = process.env.RUN_LOAD === "1" ? it : it.skip;
 
 describe("42-player class competition load profile", () => {
-loadIt("completes 15 compound questions with both answer fields", async () => {
+loadIt("completes 15 arrange questions with 42 players", async () => {
   const players = 42;
   const questionCount = 15;
-  const answer = "both";
+  const mode = "arrange";
   const test = createApiTestContext();
   const latenciesMs: number[] = [];
   let serverErrors = 0;
@@ -35,9 +35,7 @@ loadIt("completes 15 compound questions with both answer fields", async () => {
   const settings = {
     ...SETTINGS,
     questionCount: 15 as const,
-    mode: "compound" as const,
-    compoundPrompts: { formula: true, name: true },
-    compoundAnswer: "both" as const,
+    mode: "arrange" as const,
   };
   const created = await createClassRoom(test, crypto.randomUUID(), settings);
   if (created.response.status !== 201) throw new Error(`class creation failed: ${created.response.status}`);
@@ -75,46 +73,43 @@ loadIt("completes 15 compound questions with both answer fields", async () => {
   `).all() as Array<{ question_id: string; answer_snapshot_json: string }>;
   const answers = new Map(questionRows.map((row) => {
     const question = JSON.parse(row.answer_snapshot_json) as InternalQuestion;
-    if (question.answer.type !== "both") throw new Error("load question does not have both answer fields");
-    return [row.question_id, {
-      formula: question.answer.formula.canonical,
-      name: question.answer.name.canonical,
-    }];
+    if (question.prompt.mode !== "arrange" || question.answer.type !== "formula" || question.fields.length !== 1 || question.fields[0]?.id !== "formula") {
+      throw new Error("load question does not have one arrange field");
+    }
+    return [row.question_id, question.answer.canonical];
   }));
 
   await Promise.all(participants.map(async ({ token }, playerIndex) => {
     for (let ordinal = 0; ordinal < questionCount; ordinal += 1) {
-      for (const fieldId of ["formula", "name"] as const) {
-        const stateResponse = await test.handlers.state(apiRequest(`/api/rooms/${roomId}/state`, { token }), { id: roomId });
-        if (stateResponse.status >= 500) serverErrors += 1;
-        if (stateResponse.status !== 200) {
-          unhandledCompetitionErrors += 1;
-          throw new Error(`state failed for player ${playerIndex}: ${stateResponse.status}`);
-        }
-        const state = await json(stateResponse);
-        const expected = answers.get(state.question.id)?.[fieldId];
-        if (!expected) throw new Error(`missing ${fieldId} answer for ${state.question.id}`);
-        const startedAt = performance.now();
-        const actionResponse = await test.handlers.actions(apiRequest(`/api/rooms/${roomId}/actions`, {
-          method: "POST",
-          token,
-          json: {
-            requestId: `answer-${playerIndex}-${ordinal}-${fieldId}`,
-            questionId: state.question.id,
-            expectedParticipantRevision: state.participant.revision,
-            clientElapsedMs: ordinal * 100 + (fieldId === "formula" ? 1 : 2),
-            action: { type: "answer", fieldId, value: expected },
-          },
-        }), { id: roomId });
-        latenciesMs.push(performance.now() - startedAt);
-        if (actionResponse.status >= 500) serverErrors += 1;
-        if (actionResponse.status !== 200) {
-          unhandledCompetitionErrors += 1;
-          throw new Error(`action failed for player ${playerIndex}/${ordinal}/${fieldId}: ${actionResponse.status} ${JSON.stringify(await json(actionResponse))}`);
-        }
-        const actionResult = await json(actionResponse);
-        if (actionResult.correct !== true) throw new Error(`canonical ${fieldId} answer was rejected`);
+      const stateResponse = await test.handlers.state(apiRequest(`/api/rooms/${roomId}/state`, { token }), { id: roomId });
+      if (stateResponse.status >= 500) serverErrors += 1;
+      if (stateResponse.status !== 200) {
+        unhandledCompetitionErrors += 1;
+        throw new Error(`state failed for player ${playerIndex}: ${stateResponse.status}`);
       }
+      const state = await json(stateResponse);
+      const expected = answers.get(state.question.id);
+      if (!expected) throw new Error(`missing answer for ${state.question.id}`);
+      const startedAt = performance.now();
+      const actionResponse = await test.handlers.actions(apiRequest(`/api/rooms/${roomId}/actions`, {
+        method: "POST",
+        token,
+        json: {
+          requestId: `answer-${playerIndex}-${ordinal}`,
+          questionId: state.question.id,
+          expectedParticipantRevision: state.participant.revision,
+          clientElapsedMs: ordinal * 100 + 1,
+          action: { type: "answer", fieldId: "formula", value: expected },
+        },
+      }), { id: roomId });
+      latenciesMs.push(performance.now() - startedAt);
+      if (actionResponse.status >= 500) serverErrors += 1;
+      if (actionResponse.status !== 200) {
+        unhandledCompetitionErrors += 1;
+        throw new Error(`action failed for player ${playerIndex}/${ordinal}: ${actionResponse.status} ${JSON.stringify(await json(actionResponse))}`);
+      }
+      const actionResult = await json(actionResponse);
+      if (actionResult.correct !== true) throw new Error("canonical arrange answer was rejected");
     }
   }));
 
@@ -134,7 +129,7 @@ loadIt("completes 15 compound questions with both answer fields", async () => {
 
   const summary = test.database.sqlite.prepare(`
     SELECT COUNT(*) AS participants,
-      SUM(CASE WHEN correct_count = 30 THEN 1 ELSE 0 END) AS full_scores,
+      SUM(CASE WHEN correct_count = 15 THEN 1 ELSE 0 END) AS full_scores,
       SUM(CASE WHEN status = 'FINISHED' THEN 1 ELSE 0 END) AS finished
     FROM participants WHERE room_id = (SELECT id FROM rooms WHERE public_id = ?)
   `).get(roomId) as { participants: number; full_scores: number; finished: number };
@@ -146,7 +141,7 @@ loadIt("completes 15 compound questions with both answer fields", async () => {
   if (JSON.stringify(summary) !== JSON.stringify({ participants: 42, full_scores: 42, finished: 42 })) {
     throw new Error(`participant invariant failed: ${JSON.stringify(summary)}`);
   }
-  if (correctFields.count !== 42 * 15 * 2) throw new Error(`field invariant failed: ${correctFields.count}`);
+  if (correctFields.count !== 42 * 15) throw new Error(`field invariant failed: ${correctFields.count}`);
   if (room.state !== "FINISHED") throw new Error(`room not finalized: ${room.state}`);
   if (serverErrors !== 0 || unhandledCompetitionErrors !== 0) {
     throw new Error(`unexpected errors: 5xx=${serverErrors}, competition=${unhandledCompetitionErrors}`);
@@ -154,7 +149,7 @@ loadIt("completes 15 compound questions with both answer fields", async () => {
 
   const metrics = test.database.metrics();
   console.log(JSON.stringify({
-    profile: { players, questions: questionCount, answer },
+    profile: { players, questions: questionCount, mode, fieldsPerQuestion: 1 },
     correctness: { serverErrors, unhandledCompetitionErrors, ...summary, correctFields: correctFields.count },
     latencyMs: { samples: latenciesMs.length, p95: Number(percentile95(latenciesMs).toFixed(2)) },
     d1Operations: metrics,

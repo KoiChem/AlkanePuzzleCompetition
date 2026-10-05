@@ -1,16 +1,16 @@
 import { it, expect, vi } from 'vitest';
 import { createApiTestContext, createClassRoom, joinClassRoom, apiRequest, SETTINGS } from './helpers';
-it.each(['name', 'formula'] as const)('returns participant results after blank pass for %s', async ionAnswer => {
+it.each([{ mode: 'name', fieldId: 'name' }, { mode: 'arrange', fieldId: 'formula' }] as const)('returns participant results after blank pass for $mode', async ({ mode, fieldId }) => {
  const t=createApiTestContext();
  try {
-  const c=await createClassRoom(t, crypto.randomUUID(), {...SETTINGS,gradingMode:'immediate',ionAnswer}); const id=c.body.room.id;
+  const c=await createClassRoom(t, crypto.randomUUID(), {...SETTINGS,gradingMode:'immediate',mode}); const id=c.body.room.id;
   const p=await joinClassRoom(t,id);
   await t.handlers.startRoom(apiRequest(`/api/rooms/${id}/start`,{method:'POST',json:{requestId:crypto.randomUUID(),expectedRevision:1}}),{id});
   const m=await (await t.handlers.manifest(apiRequest(`/api/rooms/${id}/manifest`,{token:p.token}),{id})).json() as any;
   const s=await (await t.handlers.ready(apiRequest(`/api/rooms/${id}/ready`,{method:'POST',token:p.token,json:{manifestId:m.manifestId,evaluatorVersion:m.evaluatorVersion,preparationGeneration:m.preparationGeneration}}),{id})).json() as any;
   t.setNow(s.startAtMs+1000);
   const q=m.questions[0];
-  const saved=await t.handlers.operations(apiRequest(`/api/rooms/${id}/operations`,{method:'POST',token:p.token,json:{requestId:crypto.randomUUID(),writerEpoch:1,manifestId:m.manifestId,evaluatorVersion:m.evaluatorVersion,operations:[{seq:1,operationId:crypto.randomUUID(),type:'pass',questionId:q.id,fieldId:ionAnswer,elapsedMs:1000}]}}),{id});
+  const saved=await t.handlers.operations(apiRequest(`/api/rooms/${id}/operations`,{method:'POST',token:p.token,json:{requestId:crypto.randomUUID(),writerEpoch:1,manifestId:m.manifestId,evaluatorVersion:m.evaluatorVersion,operations:[{seq:1,operationId:crypto.randomUUID(),type:'pass',questionId:q.id,fieldId,elapsedMs:1000}]}}),{id});
   expect(saved.status).toBe(200);
   t.setNow(s.deadlineAtMs+10001);
   const state=await t.handlers.state(apiRequest(`/api/rooms/${id}/state`,{token:p.token}),{id}); expect((await state.json() as any).room.state).toBe('FINISHED');

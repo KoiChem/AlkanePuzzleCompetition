@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseJoinQr, joinQrPath } from '../../src/features/setup/join-qr';
 const origin = 'https://koichem.github.io';
-const base = '/IonicFormulaCompetition/';
+const base = '/AlkanePuzzleCompetition/';
 describe('QR participation targets', () => {
   it('reflects a normalized code from a current invitation', () => {
     expect(parseJoinQr(`${origin}${base}#/join/room-123?code=ab2345`, origin, base)).toEqual({ code: 'AB2345' });
@@ -12,7 +12,7 @@ describe('QR participation targets', () => {
     expect(parseJoinQr(`${origin}${base}#/join/room-123`, origin, base)).toEqual({ roomId: 'room-123' });
   });
   it.each([
-    'https://evil.example/IonicFormulaCompetition/#/join/room-123?code=AB2345',
+    'https://evil.example/AlkanePuzzleCompetition/#/join/room-123?code=AB2345',
     `${origin}/IonicFormula/#/join/room-123?code=AB2345`,
     `${origin}${base}#/teacher?code=AB2345`,
     `${origin}${base}#/join/room-123?code=invalid`,
@@ -23,6 +23,6 @@ describe('QR participation targets', () => {
     expect(parseJoinQr(value, origin, base)).toBeNull();
   });
   it('adds the code while preserving the direct nickname route', () => {
-    expect(joinQrPath('room-123', 'ab2345', base)).toBe('/IonicFormulaCompetition/#/join/room-123?code=AB2345');
+    expect(joinQrPath('room-123', 'ab2345', base)).toBe('/AlkanePuzzleCompetition/#/join/room-123?code=AB2345');
   });
 });

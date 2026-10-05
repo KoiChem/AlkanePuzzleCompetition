@@ -1,5 +1,5 @@
 export type SoundLevel = "off" | "medium" | "high";
-const KEY = "ionic-formula-competition:sound-level";
+const KEY = "alkane-puzzle-competition:sound-level";
 let context: AudioContext | null = null;
 
 export function savedSoundLevel(): SoundLevel {
@@ -46,16 +46,17 @@ export function playAnswerSound(kind: "correct" | "incorrect", level: SoundLevel
     primeAudio(level);
     const audio = context;
     if (!audio || audio.state !== "running") return;
-    const volume = level === "high" ? 0.085 : 0.045;
+    // Original AlkanePuzzle correct/incorrect motifs (index.html 4023-4037).
+    const scale = level === "high" ? 0.88 : 0.44;
     const start = audio.currentTime + 0.003;
     if (kind === "correct") {
-      note(audio, 523.25, start, 0.12, volume);
-      note(audio, 659.25, start + 0.055, 0.14, volume * 0.88);
-      note(audio, 783.99, start + 0.105, 0.19, volume * 0.78);
+      note(audio,523.25,start,0.08,0.15*scale);
+      note(audio,659.25,start+0.06,0.08,0.16*scale);
+      note(audio,783.99,start+0.12,0.1,0.17*scale);
+      note(audio,1046.5,start+0.19,0.22,0.16*scale,"triangle");
     } else {
-      note(audio, 392, start, 0.15, volume * 0.8, "triangle");
-      note(audio, 311.13, start + 0.1, 0.21, volume * 0.9, "triangle");
-      note(audio, 233.08, start + 0.22, 0.3, volume * 0.62, "sine");
+      note(audio,493.88,start,0.13,0.12*scale);
+      note(audio,392,start+0.11,0.22,0.13*scale);
     }
   } catch { /* audio must never interrupt grading */ }
 }

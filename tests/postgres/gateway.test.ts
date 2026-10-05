@@ -8,7 +8,8 @@ const origin='https://koichem.github.io';
 const master={id:'11111111-1111-4111-8111-111111111111',email:'teacher@example.com',email_confirmed_at:'2026-10-01',is_anonymous:false,identities:[{provider:'google'}]};
 let currentUser:any=master;
 const transact=async<T>(_scope:string,run:(db:PostgresDatabase)=>Promise<T>)=>pg.transaction(tx=>run(new PostgresDatabase(async(q,v)=>{try{return await tx.query(q,v)}catch(e){console.error(q,e);throw e;}})));
-const gateway=createSupabaseGateway({transact,verifyUser:async()=>currentUser,masterEmail:'teacher@example.com',allowedOrigins:[origin],flush:async()=>{}});
+const gateway=createSupabaseGateway({transact,verifyUser:async()=>currentUser,masterEmail:'teacher@example.com',allowedOrigins:[origin],flush:async()=>{},
+ sharedTeacher:{authorize:async()=>({allowed:true,master:true,email:'teacher@example.com',revision:0}),allowlist:async()=>new Response(null,{status:503})}});
 function req(path:string,body?:unknown,token?:string,method=body?'POST':'GET'){
   return new Request('https://project.supabase.co/functions/v1/competition'+path,{method,headers:{origin,authorization:'Bearer auth','content-type':'application/json','x-competition-csrf':'1',...(token?{'x-participant-authorization':`Bearer ${token}`}:{})},body:body?JSON.stringify(body):undefined});
 }
@@ -19,6 +20,7 @@ beforeAll(async()=>{
  CREATE FUNCTION realtime.topic() RETURNS text LANGUAGE sql AS $$ SELECT current_setting('request.topic',true) $$;`);
  await pg.exec(readFileSync('supabase/migrations/202610010002_auth_realtime.sql','utf8'));
  await pg.exec(readFileSync('supabase/migrations/202610010003_permissions_maintenance.sql','utf8')); await pg.exec(readFileSync('supabase/migrations/202610020001_question_profiles.sql','utf8'));
+ await pg.exec(readFileSync('supabase/migrations/202610040001_teacher_leases.sql','utf8'));
 });
 afterAll(async()=>pg.close());
 it('rejects untrusted origins and anonymous teacher impersonation',async()=>{
@@ -30,7 +32,7 @@ it('rejects untrusted origins and anonymous teacher impersonation',async()=>{
 });
 it('binds participants by token and rotates topics when their identity is recovered',async()=>{
  currentUser=master;
- const settings={questionCount:5,timeLimitMinutes:3,mode:'ion',difficulty:'normal',ionAnswer:'formula',compoundPrompts:{formula:true,name:false},compoundAnswer:'formula',gradingMode:'immediate'};
+ const settings={questionCount:5,timeLimitMinutes:3,mode:'arrange',difficulty:'easy',alcoholEnabled:false,gradingMode:'immediate'};
  const create=await gateway(req('/api/class-rooms',{requestId:crypto.randomUUID(),settings}));
  expect(create.status,await create.clone().text()).toBe(201);
  const {room}=await create.json();

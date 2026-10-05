@@ -1,24 +1,12 @@
-// src/platform/database-url.ts
-function transactionPoolerUrl(directUrl, projectRef, poolerHost) {
-  const url2 = new URL(directUrl);
-  if (url2.hostname !== `db.${projectRef}.supabase.co` || url2.username !== "postgres") {
-    throw new Error("Unexpected built-in database topology");
-  }
-  url2.hostname = poolerHost;
-  url2.port = "6543";
-  url2.username = `postgres.${projectRef}`;
-  return url2.toString();
-}
-
 // src/platform/postgres-runtime.ts
 import postgres from "npm:postgres@3.4.9";
 
 // src/platform/postgres-database.ts
 function postgresQuery(input, values = []) {
   let sql = input.replaceAll("`", '"').replace(/CAST\(unixepoch\('subsec'\) \* 1000 AS INTEGER\)/g, "floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint").replace(/CAST\(([^()]+) AS INTEGER\)/gi, "CAST($1 AS bigint)").replace(/json_object\(/g, "json_build_object(").replace(/(?<!CROSS )\bJOIN\s+json_each\(/g, "CROSS JOIN LATERAL json_each(").replace(/json_each\(([^()]+)\)/g, "jsonb_array_elements(($1)::text::jsonb)").replace(/json_extract\(([^,()]+),\s*'\$((?:\.[A-Za-z_][A-Za-z0-9_]*|\[\d+\])+)'\)/g, (_match, expression, path) => {
-    const keys2 = Array.from(path.matchAll(/\.([A-Za-z_][A-Za-z0-9_]*)|\[(\d+)\]/g), (m) => m[1] ?? m[2]);
-    const extract = `((${expression})::text::jsonb #>> '{${keys2.join(",")}}')`;
-    return ["correctCount", "elapsedCs", "rank"].includes(keys2.at(-1)) ? `${extract}::bigint` : extract;
+    const keys = Array.from(path.matchAll(/\.([A-Za-z_][A-Za-z0-9_]*)|\[(\d+)\]/g), (m) => m[1] ?? m[2]);
+    const extract = `((${expression})::text::jsonb #>> '{${keys.join(",")}}')`;
+    return ["correctCount", "elapsedCs", "rank"].includes(keys.at(-1)) ? `${extract}::bigint` : extract;
   }).replace(/MAX\((expires_at_ms|0),/g, "GREATEST($1,");
   const ignore = /\bINSERT OR IGNORE\b/i.test(sql);
   sql = sql.replace(/\bINSERT OR IGNORE\b/gi, "INSERT");
@@ -124,4362 +112,6 @@ function postgresTransactions(connectionString) {
   };
 }
 
-// src/games/ionic-formula/data/ions.json
-var ions_default = [
-  {
-    id: "lithium",
-    formula: "Li",
-    charge: 1,
-    name: "\u30EA\u30C1\u30A6\u30E0\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "sodium",
-    formula: "Na",
-    charge: 1,
-    name: "\u30CA\u30C8\u30EA\u30A6\u30E0\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "potassium",
-    formula: "K",
-    charge: 1,
-    name: "\u30AB\u30EA\u30A6\u30E0\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "silver",
-    formula: "Ag",
-    charge: 1,
-    name: "\u9280\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "magnesium",
-    formula: "Mg",
-    charge: 2,
-    name: "\u30DE\u30B0\u30CD\u30B7\u30A6\u30E0\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "calcium",
-    formula: "Ca",
-    charge: 2,
-    name: "\u30AB\u30EB\u30B7\u30A6\u30E0\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "barium",
-    formula: "Ba",
-    charge: 2,
-    name: "\u30D0\u30EA\u30A6\u30E0\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "zinc",
-    formula: "Zn",
-    charge: 2,
-    name: "\u4E9C\u925B\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "aluminum",
-    formula: "Al",
-    charge: 3,
-    name: "\u30A2\u30EB\u30DF\u30CB\u30A6\u30E0\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "ammonium",
-    formula: "NH4",
-    charge: 1,
-    name: "\u30A2\u30F3\u30E2\u30CB\u30A6\u30E0\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "hydronium",
-    formula: "H3O",
-    charge: 1,
-    name: "\u30AA\u30AD\u30BD\u30CB\u30A6\u30E0\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    ionQuestionEnabled: true,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "iron2",
-    formula: "Fe",
-    charge: 2,
-    name: "\u9244(\u2161)\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: true,
-    enabled: true
-  },
-  {
-    id: "iron3",
-    formula: "Fe",
-    charge: 3,
-    name: "\u9244(\u2162)\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: true,
-    enabled: true
-  },
-  {
-    id: "copper1",
-    formula: "Cu",
-    charge: 1,
-    name: "\u9285(\u2160)\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: true,
-    enabled: true
-  },
-  {
-    id: "copper2",
-    formula: "Cu",
-    charge: 2,
-    name: "\u9285(\u2161)\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: true,
-    enabled: true
-  },
-  {
-    id: "chromium3",
-    formula: "Cr",
-    charge: 3,
-    name: "\u30AF\u30ED\u30E0(\u2162)\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: true,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "manganese2",
-    formula: "Mn",
-    charge: 2,
-    name: "\u30DE\u30F3\u30AC\u30F3(\u2161)\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: true,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "tin2",
-    formula: "Sn",
-    charge: 2,
-    name: "\u30B9\u30BA(\u2161)\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: true,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "tin4",
-    formula: "Sn",
-    charge: 4,
-    name: "\u30B9\u30BA(\u2163)\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: true,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "gold3",
-    formula: "Au",
-    charge: 3,
-    name: "\u91D1(\u2162)\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: true,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "lead2",
-    formula: "Pb",
-    charge: 2,
-    name: "\u925B(\u2161)\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: true,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "lead4",
-    formula: "Pb",
-    charge: 4,
-    name: "\u925B(\u2163)\u30A4\u30AA\u30F3",
-    type: "cation",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: true,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "nitride",
-    formula: "N",
-    charge: -3,
-    name: "\u7A92\u5316\u7269\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "fluoride",
-    formula: "F",
-    charge: -1,
-    name: "\u30D5\u30C3\u5316\u7269\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "chloride",
-    formula: "Cl",
-    charge: -1,
-    name: "\u5869\u5316\u7269\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "bromide",
-    formula: "Br",
-    charge: -1,
-    name: "\u81ED\u5316\u7269\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "iodide",
-    formula: "I",
-    charge: -1,
-    name: "\u30E8\u30A6\u5316\u7269\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "oxide",
-    formula: "O",
-    charge: -2,
-    name: "\u9178\u5316\u7269\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "sulfide",
-    formula: "S",
-    charge: -2,
-    name: "\u786B\u5316\u7269\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "monatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "hydroxide",
-    formula: "OH",
-    charge: -1,
-    name: "\u6C34\u9178\u5316\u7269\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "nitrate",
-    formula: "NO3",
-    charge: -1,
-    name: "\u785D\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "sulfate",
-    formula: "SO4",
-    charge: -2,
-    name: "\u786B\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "carbonate",
-    formula: "CO3",
-    charge: -2,
-    name: "\u70AD\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "bicarbonate",
-    formula: "HCO3",
-    charge: -1,
-    name: "\u70AD\u9178\u6C34\u7D20\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "phosphate",
-    formula: "PO4",
-    charge: -3,
-    name: "\u30EA\u30F3\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "acetate",
-    formula: "CH3COO",
-    charge: -1,
-    name: "\u9162\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    enabled: true
-  },
-  {
-    id: "sulfite",
-    formula: "SO3",
-    charge: -2,
-    name: "\u4E9C\u786B\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "nitrite",
-    formula: "NO2",
-    charge: -1,
-    name: "\u4E9C\u785D\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "hypochlorite",
-    formula: "ClO",
-    charge: -1,
-    name: "\u6B21\u4E9C\u5869\u7D20\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "chlorate",
-    formula: "ClO3",
-    charge: -1,
-    name: "\u5869\u7D20\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "thiosulfate",
-    formula: "S2O3",
-    charge: -2,
-    name: "\u30C1\u30AA\u786B\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "thiocyanate",
-    formula: "SCN",
-    charge: -1,
-    name: "\u30C1\u30AA\u30B7\u30A2\u30F3\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "cyanide",
-    formula: "CN",
-    charge: -1,
-    name: "\u30B7\u30A2\u30F3\u5316\u7269\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "iodate",
-    formula: "IO3",
-    charge: -1,
-    name: "\u30E8\u30A6\u7D20\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "permanganate",
-    formula: "MnO4",
-    charge: -1,
-    name: "\u904E\u30DE\u30F3\u30AC\u30F3\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "chromate",
-    formula: "CrO4",
-    charge: -2,
-    name: "\u30AF\u30ED\u30E0\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  },
-  {
-    id: "dichromate",
-    formula: "Cr2O7",
-    charge: -2,
-    name: "\u4E8C\u30AF\u30ED\u30E0\u9178\u30A4\u30AA\u30F3",
-    type: "anion",
-    atomicity: "polyatomic",
-    requiresOxidationNumeral: false,
-    compoundPromptDisplay: "formulaAndName",
-    ionQuestionEnabled: false,
-    difficulty: "hard",
-    enabled: true
-  }
-];
-
-// src/games/ionic-formula/data/compounds.json
-var compounds_default = [
-  {
-    id: "sodium_chloride",
-    cation: "sodium",
-    anion: "chloride",
-    formula: "NaCl",
-    name: "\u5869\u5316\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "potassium_chloride",
-    cation: "potassium",
-    anion: "chloride",
-    formula: "KCl",
-    name: "\u5869\u5316\u30AB\u30EA\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "silver_chloride",
-    cation: "silver",
-    anion: "chloride",
-    formula: "AgCl",
-    name: "\u5869\u5316\u9280",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "silver_bromide",
-    cation: "silver",
-    anion: "bromide",
-    formula: "AgBr",
-    name: "\u81ED\u5316\u9280",
-    solidColor: "\u6DE1\u9EC4\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "silver_iodide",
-    cation: "silver",
-    anion: "iodide",
-    formula: "AgI",
-    name: "\u30E8\u30A6\u5316\u9280",
-    solidColor: "\u9EC4\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "sodium_fluoride",
-    cation: "sodium",
-    anion: "fluoride",
-    formula: "NaF",
-    name: "\u30D5\u30C3\u5316\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "sodium_bromide",
-    cation: "sodium",
-    anion: "bromide",
-    formula: "NaBr",
-    name: "\u81ED\u5316\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "sodium_iodide",
-    cation: "sodium",
-    anion: "iodide",
-    formula: "NaI",
-    name: "\u30E8\u30A6\u5316\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "potassium_bromide",
-    cation: "potassium",
-    anion: "bromide",
-    formula: "KBr",
-    name: "\u81ED\u5316\u30AB\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "potassium_iodide",
-    cation: "potassium",
-    anion: "iodide",
-    formula: "KI",
-    name: "\u30E8\u30A6\u5316\u30AB\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "magnesium_oxide",
-    cation: "magnesium",
-    anion: "oxide",
-    formula: "MgO",
-    name: "\u9178\u5316\u30DE\u30B0\u30CD\u30B7\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "calcium_oxide",
-    cation: "calcium",
-    anion: "oxide",
-    formula: "CaO",
-    name: "\u9178\u5316\u30AB\u30EB\u30B7\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "barium_oxide",
-    cation: "barium",
-    anion: "oxide",
-    formula: "BaO",
-    name: "\u9178\u5316\u30D0\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "zinc_oxide",
-    cation: "zinc",
-    anion: "oxide",
-    formula: "ZnO",
-    name: "\u9178\u5316\u4E9C\u925B",
-    solidColor: "\u767D\u8272",
-    solidColorNote: "\u52A0\u71B1\u6642\u306F\u9EC4\u8272",
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "magnesium_sulfide",
-    cation: "magnesium",
-    anion: "sulfide",
-    formula: "MgS",
-    name: "\u786B\u5316\u30DE\u30B0\u30CD\u30B7\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "calcium_sulfide",
-    cation: "calcium",
-    anion: "sulfide",
-    formula: "CaS",
-    name: "\u786B\u5316\u30AB\u30EB\u30B7\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "zinc_sulfide",
-    cation: "zinc",
-    anion: "sulfide",
-    formula: "ZnS",
-    name: "\u786B\u5316\u4E9C\u925B",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "sodium_oxide",
-    cation: "sodium",
-    anion: "oxide",
-    formula: "Na2O",
-    name: "\u9178\u5316\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "potassium_oxide",
-    cation: "potassium",
-    anion: "oxide",
-    formula: "K2O",
-    name: "\u9178\u5316\u30AB\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "sodium_sulfide",
-    cation: "sodium",
-    anion: "sulfide",
-    formula: "Na2S",
-    name: "\u786B\u5316\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "potassium_sulfide",
-    cation: "potassium",
-    anion: "sulfide",
-    formula: "K2S",
-    name: "\u786B\u5316\u30AB\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "magnesium_chloride",
-    cation: "magnesium",
-    anion: "chloride",
-    formula: "MgCl2",
-    name: "\u5869\u5316\u30DE\u30B0\u30CD\u30B7\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "calcium_chloride",
-    cation: "calcium",
-    anion: "chloride",
-    formula: "CaCl2",
-    name: "\u5869\u5316\u30AB\u30EB\u30B7\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "barium_chloride",
-    cation: "barium",
-    anion: "chloride",
-    formula: "BaCl2",
-    name: "\u5869\u5316\u30D0\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "zinc_chloride",
-    cation: "zinc",
-    anion: "chloride",
-    formula: "ZnCl2",
-    name: "\u5869\u5316\u4E9C\u925B",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "aluminum_chloride",
-    cation: "aluminum",
-    anion: "chloride",
-    formula: "AlCl3",
-    name: "\u5869\u5316\u30A2\u30EB\u30DF\u30CB\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "aluminum_oxide",
-    cation: "aluminum",
-    anion: "oxide",
-    formula: "Al2O3",
-    name: "\u9178\u5316\u30A2\u30EB\u30DF\u30CB\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "aluminum_sulfide",
-    cation: "aluminum",
-    anion: "sulfide",
-    formula: "Al2S3",
-    name: "\u786B\u5316\u30A2\u30EB\u30DF\u30CB\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "silver_oxide",
-    cation: "silver",
-    anion: "oxide",
-    formula: "Ag2O",
-    name: "\u9178\u5316\u9280",
-    solidColor: "\u8910\u8272\u301C\u9ED2\u8910\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "sodium_hydroxide",
-    cation: "sodium",
-    anion: "hydroxide",
-    formula: "NaOH",
-    name: "\u6C34\u9178\u5316\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "potassium_hydroxide",
-    cation: "potassium",
-    anion: "hydroxide",
-    formula: "KOH",
-    name: "\u6C34\u9178\u5316\u30AB\u30EA\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "magnesium_hydroxide",
-    cation: "magnesium",
-    anion: "hydroxide",
-    formula: "Mg(OH)2",
-    name: "\u6C34\u9178\u5316\u30DE\u30B0\u30CD\u30B7\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "calcium_hydroxide",
-    cation: "calcium",
-    anion: "hydroxide",
-    formula: "Ca(OH)2",
-    name: "\u6C34\u9178\u5316\u30AB\u30EB\u30B7\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "barium_hydroxide",
-    cation: "barium",
-    anion: "hydroxide",
-    formula: "Ba(OH)2",
-    name: "\u6C34\u9178\u5316\u30D0\u30EA\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "aluminum_hydroxide",
-    cation: "aluminum",
-    anion: "hydroxide",
-    formula: "Al(OH)3",
-    name: "\u6C34\u9178\u5316\u30A2\u30EB\u30DF\u30CB\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "zinc_hydroxide",
-    cation: "zinc",
-    anion: "hydroxide",
-    formula: "Zn(OH)2",
-    name: "\u6C34\u9178\u5316\u4E9C\u925B",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "sodium_nitrate",
-    cation: "sodium",
-    anion: "nitrate",
-    formula: "NaNO3",
-    name: "\u785D\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "potassium_nitrate",
-    cation: "potassium",
-    anion: "nitrate",
-    formula: "KNO3",
-    name: "\u785D\u9178\u30AB\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "silver_nitrate",
-    cation: "silver",
-    anion: "nitrate",
-    formula: "AgNO3",
-    name: "\u785D\u9178\u9280",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "magnesium_nitrate",
-    cation: "magnesium",
-    anion: "nitrate",
-    formula: "Mg(NO3)2",
-    name: "\u785D\u9178\u30DE\u30B0\u30CD\u30B7\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "calcium_nitrate",
-    cation: "calcium",
-    anion: "nitrate",
-    formula: "Ca(NO3)2",
-    name: "\u785D\u9178\u30AB\u30EB\u30B7\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "barium_nitrate",
-    cation: "barium",
-    anion: "nitrate",
-    formula: "Ba(NO3)2",
-    name: "\u785D\u9178\u30D0\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "zinc_nitrate",
-    cation: "zinc",
-    anion: "nitrate",
-    formula: "Zn(NO3)2",
-    name: "\u785D\u9178\u4E9C\u925B",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "aluminum_nitrate",
-    cation: "aluminum",
-    anion: "nitrate",
-    formula: "Al(NO3)3",
-    name: "\u785D\u9178\u30A2\u30EB\u30DF\u30CB\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "ammonium_nitrate",
-    cation: "ammonium",
-    anion: "nitrate",
-    formula: "NH4NO3",
-    name: "\u785D\u9178\u30A2\u30F3\u30E2\u30CB\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "sodium_sulfate",
-    cation: "sodium",
-    anion: "sulfate",
-    formula: "Na2SO4",
-    name: "\u786B\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "potassium_sulfate",
-    cation: "potassium",
-    anion: "sulfate",
-    formula: "K2SO4",
-    name: "\u786B\u9178\u30AB\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "magnesium_sulfate",
-    cation: "magnesium",
-    anion: "sulfate",
-    formula: "MgSO4",
-    name: "\u786B\u9178\u30DE\u30B0\u30CD\u30B7\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "calcium_sulfate",
-    cation: "calcium",
-    anion: "sulfate",
-    formula: "CaSO4",
-    name: "\u786B\u9178\u30AB\u30EB\u30B7\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "barium_sulfate",
-    cation: "barium",
-    anion: "sulfate",
-    formula: "BaSO4",
-    name: "\u786B\u9178\u30D0\u30EA\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "zinc_sulfate",
-    cation: "zinc",
-    anion: "sulfate",
-    formula: "ZnSO4",
-    name: "\u786B\u9178\u4E9C\u925B",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "aluminum_sulfate",
-    cation: "aluminum",
-    anion: "sulfate",
-    formula: "Al2(SO4)3",
-    name: "\u786B\u9178\u30A2\u30EB\u30DF\u30CB\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "ammonium_sulfate",
-    cation: "ammonium",
-    anion: "sulfate",
-    formula: "(NH4)2SO4",
-    name: "\u786B\u9178\u30A2\u30F3\u30E2\u30CB\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "sodium_carbonate",
-    cation: "sodium",
-    anion: "carbonate",
-    formula: "Na2CO3",
-    name: "\u70AD\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "potassium_carbonate",
-    cation: "potassium",
-    anion: "carbonate",
-    formula: "K2CO3",
-    name: "\u70AD\u9178\u30AB\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "magnesium_carbonate",
-    cation: "magnesium",
-    anion: "carbonate",
-    formula: "MgCO3",
-    name: "\u70AD\u9178\u30DE\u30B0\u30CD\u30B7\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "calcium_carbonate",
-    cation: "calcium",
-    anion: "carbonate",
-    formula: "CaCO3",
-    name: "\u70AD\u9178\u30AB\u30EB\u30B7\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "barium_carbonate",
-    cation: "barium",
-    anion: "carbonate",
-    formula: "BaCO3",
-    name: "\u70AD\u9178\u30D0\u30EA\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "zinc_carbonate",
-    cation: "zinc",
-    anion: "carbonate",
-    formula: "ZnCO3",
-    name: "\u70AD\u9178\u4E9C\u925B",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "sodium_bicarbonate",
-    cation: "sodium",
-    anion: "bicarbonate",
-    formula: "NaHCO3",
-    name: "\u70AD\u9178\u6C34\u7D20\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "potassium_bicarbonate",
-    cation: "potassium",
-    anion: "bicarbonate",
-    formula: "KHCO3",
-    name: "\u70AD\u9178\u6C34\u7D20\u30AB\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "ammonium_chloride",
-    cation: "ammonium",
-    anion: "chloride",
-    formula: "NH4Cl",
-    name: "\u5869\u5316\u30A2\u30F3\u30E2\u30CB\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "ammonium_bromide",
-    cation: "ammonium",
-    anion: "bromide",
-    formula: "NH4Br",
-    name: "\u81ED\u5316\u30A2\u30F3\u30E2\u30CB\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "ammonium_iodide",
-    cation: "ammonium",
-    anion: "iodide",
-    formula: "NH4I",
-    name: "\u30E8\u30A6\u5316\u30A2\u30F3\u30E2\u30CB\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "sodium_phosphate",
-    cation: "sodium",
-    anion: "phosphate",
-    formula: "Na3PO4",
-    name: "\u30EA\u30F3\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "potassium_phosphate",
-    cation: "potassium",
-    anion: "phosphate",
-    formula: "K3PO4",
-    name: "\u30EA\u30F3\u9178\u30AB\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "calcium_phosphate",
-    cation: "calcium",
-    anion: "phosphate",
-    formula: "Ca3(PO4)2",
-    name: "\u30EA\u30F3\u9178\u30AB\u30EB\u30B7\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "aluminum_phosphate",
-    cation: "aluminum",
-    anion: "phosphate",
-    formula: "AlPO4",
-    name: "\u30EA\u30F3\u9178\u30A2\u30EB\u30DF\u30CB\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "sodium_acetate",
-    cation: "sodium",
-    anion: "acetate",
-    formula: "CH3COONa",
-    name: "\u9162\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    },
-    acceptedFormulaVariants: [
-      {
-        formula: "NaCH3COO",
-        note: "\u3053\u306E\u30A2\u30D7\u30EA\u3067\u306F CH\u2083COONa \u3092\u63A8\u5968\u8868\u8A18\u3068\u3057\u307E\u3059\u3002"
-      }
-    ]
-  },
-  {
-    id: "potassium_acetate",
-    cation: "potassium",
-    anion: "acetate",
-    formula: "CH3COOK",
-    name: "\u9162\u9178\u30AB\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    },
-    acceptedFormulaVariants: [
-      {
-        formula: "KCH3COO",
-        note: "\u3053\u306E\u30A2\u30D7\u30EA\u3067\u306F CH\u2083COOK \u3092\u63A8\u5968\u8868\u8A18\u3068\u3057\u307E\u3059\u3002"
-      }
-    ]
-  },
-  {
-    id: "lithium_fluoride",
-    cation: "lithium",
-    anion: "fluoride",
-    formula: "LiF",
-    name: "\u30D5\u30C3\u5316\u30EA\u30C1\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "lithium_chloride",
-    cation: "lithium",
-    anion: "chloride",
-    formula: "LiCl",
-    name: "\u5869\u5316\u30EA\u30C1\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "lithium_bromide",
-    cation: "lithium",
-    anion: "bromide",
-    formula: "LiBr",
-    name: "\u81ED\u5316\u30EA\u30C1\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "lithium_iodide",
-    cation: "lithium",
-    anion: "iodide",
-    formula: "LiI",
-    name: "\u30E8\u30A6\u5316\u30EA\u30C1\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "lithium_oxide",
-    cation: "lithium",
-    anion: "oxide",
-    formula: "Li2O",
-    name: "\u9178\u5316\u30EA\u30C1\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "lithium_sulfide",
-    cation: "lithium",
-    anion: "sulfide",
-    formula: "Li2S",
-    name: "\u786B\u5316\u30EA\u30C1\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "lithium_hydroxide",
-    cation: "lithium",
-    anion: "hydroxide",
-    formula: "LiOH",
-    name: "\u6C34\u9178\u5316\u30EA\u30C1\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "lithium_nitrate",
-    cation: "lithium",
-    anion: "nitrate",
-    formula: "LiNO3",
-    name: "\u785D\u9178\u30EA\u30C1\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "lithium_sulfate",
-    cation: "lithium",
-    anion: "sulfate",
-    formula: "Li2SO4",
-    name: "\u786B\u9178\u30EA\u30C1\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "lithium_carbonate",
-    cation: "lithium",
-    anion: "carbonate",
-    formula: "Li2CO3",
-    name: "\u70AD\u9178\u30EA\u30C1\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "lithium_phosphate",
-    cation: "lithium",
-    anion: "phosphate",
-    formula: "Li3PO4",
-    name: "\u30EA\u30F3\u9178\u30EA\u30C1\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "lithium_acetate",
-    cation: "lithium",
-    anion: "acetate",
-    formula: "CH3COOLi",
-    name: "\u9162\u9178\u30EA\u30C1\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    acceptedFormulaVariants: [{ formula: "LiCH3COO", note: "\u9162\u9178\u5869\u306F\u793A\u6027\u5F0FCH\u2083COOLi\u3067\u306E\u8868\u8A18\u3092\u63A8\u5968\u3057\u307E\u3059\u3002" }],
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "lithium_nitride",
-    cation: "lithium",
-    anion: "nitride",
-    formula: "Li3N",
-    name: "\u7A92\u5316\u30EA\u30C1\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "magnesium_nitride",
-    cation: "magnesium",
-    anion: "nitride",
-    formula: "Mg3N2",
-    name: "\u7A92\u5316\u30DE\u30B0\u30CD\u30B7\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "calcium_nitride",
-    cation: "calcium",
-    anion: "nitride",
-    formula: "Ca3N2",
-    name: "\u7A92\u5316\u30AB\u30EB\u30B7\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "barium_nitride",
-    cation: "barium",
-    anion: "nitride",
-    formula: "Ba3N2",
-    name: "\u7A92\u5316\u30D0\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "zinc_nitride",
-    cation: "zinc",
-    anion: "nitride",
-    formula: "Zn3N2",
-    name: "\u7A92\u5316\u4E9C\u925B",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "aluminum_nitride",
-    cation: "aluminum",
-    anion: "nitride",
-    formula: "AlN",
-    name: "\u7A92\u5316\u30A2\u30EB\u30DF\u30CB\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: { nameToFormula: true, formulaToName: true, ionsToFormula: true, ionsToName: true }
-  },
-  {
-    id: "chromium3_chloride",
-    cation: "chromium3",
-    anion: "chloride",
-    formula: "CrCl3",
-    name: "\u5869\u5316\u30AF\u30ED\u30E0(\u2162)",
-    solidColor: null,
-    solidColorNote: "\u7121\u6C34\u7269\u3068\u6C34\u548C\u7269\u3067\u8272\u304C\u7570\u306A\u308B",
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/24808",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "manganese2_chloride",
-    cation: "manganese2",
-    anion: "chloride",
-    formula: "MnCl2",
-    name: "\u5869\u5316\u30DE\u30F3\u30AC\u30F3(\u2161)",
-    solidColor: null,
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/24480",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "tin2_chloride",
-    cation: "tin2",
-    anion: "chloride",
-    formula: "SnCl2",
-    name: "\u5869\u5316\u30B9\u30BA(\u2161)",
-    solidColor: null,
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/24479",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "tin4_chloride",
-    cation: "tin4",
-    anion: "chloride",
-    formula: "SnCl4",
-    name: "\u5869\u5316\u30B9\u30BA(\u2163)",
-    solidColor: null,
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/24287",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "gold3_chloride",
-    cation: "gold3",
-    anion: "chloride",
-    formula: "AuCl3",
-    name: "\u5869\u5316\u91D1(\u2162)",
-    solidColor: null,
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/26030",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "sodium_sulfite",
-    cation: "sodium",
-    anion: "sulfite",
-    formula: "Na2SO3",
-    name: "\u4E9C\u786B\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/24437",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "sodium_nitrite",
-    cation: "sodium",
-    anion: "nitrite",
-    formula: "NaNO2",
-    name: "\u4E9C\u785D\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/23668193",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "sodium_hypochlorite",
-    cation: "sodium",
-    anion: "hypochlorite",
-    formula: "NaClO",
-    name: "\u6B21\u4E9C\u5869\u7D20\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: "\u901A\u5E38\u306F\u6C34\u6EB6\u6DB2\u3068\u3057\u3066\u6271\u308F\u308C\u308B",
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/23665760",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "potassium_chlorate",
-    cation: "potassium",
-    anion: "chlorate",
-    formula: "KClO3",
-    name: "\u5869\u7D20\u9178\u30AB\u30EA\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/6426889",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "sodium_thiosulfate",
-    cation: "sodium",
-    anion: "thiosulfate",
-    formula: "Na2S2O3",
-    name: "\u30C1\u30AA\u786B\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: "\u7121\u6C34\u5869\u3002\u4E00\u822C\u7684\u306A\u7D50\u6676\u306F\u4E94\u6C34\u548C\u7269",
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/24477",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "potassium_thiocyanate",
-    cation: "potassium",
-    anion: "thiocyanate",
-    formula: "KSCN",
-    name: "\u30C1\u30AA\u30B7\u30A2\u30F3\u9178\u30AB\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/516872",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "potassium_cyanide",
-    cation: "potassium",
-    anion: "cyanide",
-    formula: "KCN",
-    name: "\u30B7\u30A2\u30F3\u5316\u30AB\u30EA\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/9032",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "potassium_iodate",
-    cation: "potassium",
-    anion: "iodate",
-    formula: "KIO3",
-    name: "\u30E8\u30A6\u7D20\u9178\u30AB\u30EA\u30A6\u30E0",
-    solidColor: null,
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/23665710",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "potassium_permanganate",
-    cation: "potassium",
-    anion: "permanganate",
-    formula: "KMnO4",
-    name: "\u904E\u30DE\u30F3\u30AC\u30F3\u9178\u30AB\u30EA\u30A6\u30E0",
-    solidColor: "\u6697\u7D2B\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/516875",
-    enabled: true,
-    questionModes: {
-      ionsToFormula: true,
-      ionsToName: true,
-      ionNamesToFormula: true,
-      ionNamesToName: true
-    }
-  },
-  {
-    id: "potassium_chromate",
-    cation: "potassium",
-    anion: "chromate",
-    formula: "K2CrO4",
-    name: "\u30AF\u30ED\u30E0\u9178\u30AB\u30EA\u30A6\u30E0",
-    solidColor: "\u9EC4\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/24597",
-    enabled: true,
-    questionModes: {
-      ionsToFormula: true,
-      ionsToName: true,
-      ionNamesToFormula: true,
-      ionNamesToName: true
-    }
-  },
-  {
-    id: "potassium_dichromate",
-    cation: "potassium",
-    anion: "dichromate",
-    formula: "K2Cr2O7",
-    name: "\u4E8C\u30AF\u30ED\u30E0\u9178\u30AB\u30EA\u30A6\u30E0",
-    solidColor: "\u6A59\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/24502",
-    enabled: true,
-    questionModes: {
-      ionsToFormula: true,
-      ionsToName: true,
-      ionNamesToFormula: true,
-      ionNamesToName: true
-    }
-  },
-  {
-    id: "iron2_chloride",
-    cation: "iron2",
-    anion: "chloride",
-    formula: "FeCl2",
-    name: "\u5869\u5316\u9244(\u2161)",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "iron3_chloride",
-    cation: "iron3",
-    anion: "chloride",
-    formula: "FeCl3",
-    name: "\u5869\u5316\u9244(\u2162)",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "iron2_oxide",
-    cation: "iron2",
-    anion: "oxide",
-    formula: "FeO",
-    name: "\u9178\u5316\u9244(\u2161)",
-    solidColor: "\u9ED2\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "iron3_oxide",
-    cation: "iron3",
-    anion: "oxide",
-    formula: "Fe2O3",
-    name: "\u9178\u5316\u9244(\u2162)",
-    solidColor: "\u8D64\u8910\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "iron2_sulfide",
-    cation: "iron2",
-    anion: "sulfide",
-    formula: "FeS",
-    name: "\u786B\u5316\u9244(\u2161)",
-    solidColor: "\u9ED2\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "iron2_sulfate",
-    cation: "iron2",
-    anion: "sulfate",
-    formula: "FeSO4",
-    name: "\u786B\u9178\u9244(\u2161)",
-    solidColor: null,
-    solidColorNote: "\u6C34\u548C\u72B6\u614B\u306B\u3088\u308A\u7570\u306A\u308B",
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "iron3_sulfate",
-    cation: "iron3",
-    anion: "sulfate",
-    formula: "Fe2(SO4)3",
-    name: "\u786B\u9178\u9244(\u2162)",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "iron2_nitrate",
-    cation: "iron2",
-    anion: "nitrate",
-    formula: "Fe(NO3)2",
-    name: "\u785D\u9178\u9244(\u2161)",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "iron3_nitrate",
-    cation: "iron3",
-    anion: "nitrate",
-    formula: "Fe(NO3)3",
-    name: "\u785D\u9178\u9244(\u2162)",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "iron2_hydroxide",
-    cation: "iron2",
-    anion: "hydroxide",
-    formula: "Fe(OH)2",
-    name: "\u6C34\u9178\u5316\u9244(\u2161)",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "iron3_hydroxide",
-    cation: "iron3",
-    anion: "hydroxide",
-    formula: null,
-    name: "\u6C34\u9178\u5316\u9244(\u2162)",
-    solidColor: "\u8D64\u8910\u8272",
-    solidColorNote: "\u6C88\u6BBF",
-    enabled: true,
-    questionModes: {
-      nameToFormula: false,
-      formulaToName: false,
-      ionsToFormula: false,
-      ionsToName: true
-    }
-  },
-  {
-    id: "copper1_chloride",
-    cation: "copper1",
-    anion: "chloride",
-    formula: "CuCl",
-    name: "\u5869\u5316\u9285(\u2160)",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "copper2_chloride",
-    cation: "copper2",
-    anion: "chloride",
-    formula: "CuCl2",
-    name: "\u5869\u5316\u9285(\u2161)",
-    solidColor: null,
-    solidColorNote: "\u6C34\u548C\u72B6\u614B\u306B\u3088\u308A\u7570\u306A\u308B",
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "copper1_oxide",
-    cation: "copper1",
-    anion: "oxide",
-    formula: "Cu2O",
-    name: "\u9178\u5316\u9285(\u2160)",
-    solidColor: "\u8D64\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "copper2_oxide",
-    cation: "copper2",
-    anion: "oxide",
-    formula: "CuO",
-    name: "\u9178\u5316\u9285(\u2161)",
-    solidColor: "\u9ED2\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "copper1_sulfide",
-    cation: "copper1",
-    anion: "sulfide",
-    formula: "Cu2S",
-    name: "\u786B\u5316\u9285(\u2160)",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "copper2_sulfide",
-    cation: "copper2",
-    anion: "sulfide",
-    formula: "CuS",
-    name: "\u786B\u5316\u9285(\u2161)",
-    solidColor: "\u9ED2\u8272",
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "copper2_sulfate",
-    cation: "copper2",
-    anion: "sulfate",
-    formula: "CuSO4",
-    name: "\u786B\u9178\u9285(\u2161)",
-    solidColor: null,
-    solidColorNote: "\u7121\u6C34\u5869\u3068\u6C34\u548C\u7269\u3067\u8272\u304C\u7570\u306A\u308B",
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "copper2_nitrate",
-    cation: "copper2",
-    anion: "nitrate",
-    formula: "Cu(NO3)2",
-    name: "\u785D\u9178\u9285(\u2161)",
-    solidColor: null,
-    solidColorNote: null,
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "copper2_hydroxide",
-    cation: "copper2",
-    anion: "hydroxide",
-    formula: "Cu(OH)2",
-    name: "\u6C34\u9178\u5316\u9285(\u2161)",
-    solidColor: "\u9752\u8272",
-    solidColorNote: "\u6C88\u6BBF",
-    enabled: true,
-    questionModes: {
-      nameToFormula: true,
-      formulaToName: true,
-      ionsToFormula: true,
-      ionsToName: true
-    }
-  },
-  {
-    id: "silver_chromate",
-    cation: "silver",
-    anion: "chromate",
-    formula: "Ag2CrO4",
-    name: "\u30AF\u30ED\u30E0\u9178\u9280",
-    solidColor: null,
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/62666",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "chromium3_oxide",
-    cation: "chromium3",
-    anion: "oxide",
-    formula: "Cr2O3",
-    name: "\u9178\u5316\u30AF\u30ED\u30E0(\u2162)",
-    solidColor: "\u7DD1\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Chromium_III_-oxide-_Cr2O3",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "manganese2_oxide",
-    cation: "manganese2",
-    anion: "oxide",
-    formula: "MnO",
-    name: "\u9178\u5316\u30DE\u30F3\u30AC\u30F3(\u2161)",
-    solidColor: "\u7DD1\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/1344-43-0",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "tin2_sulfide",
-    cation: "tin2",
-    anion: "sulfide",
-    formula: "SnS",
-    name: "\u786B\u5316\u30B9\u30BA(\u2161)",
-    solidColor: "\u8910\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Tin_II_-sulfide",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "manganese2_sulfide",
-    cation: "manganese2",
-    anion: "sulfide",
-    formula: "MnS",
-    name: "\u786B\u5316\u30DE\u30F3\u30AC\u30F3(\u2161)",
-    solidColor: "\u6DE1\u8D64\u8272",
-    solidColorNote: "\u6C88\u6BBF",
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Manganese-sulfide-_MNS",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "lead2_fluoride",
-    cation: "lead2",
-    anion: "fluoride",
-    formula: "PbF2",
-    name: "\u30D5\u30C3\u5316\u925B(\u2161)",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-fluoride",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "lead4_fluoride",
-    cation: "lead4",
-    anion: "fluoride",
-    formula: "PbF4",
-    name: "\u30D5\u30C3\u5316\u925B(\u2163)",
-    solidColor: null,
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/lead_IV_-fluoride",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "lead2_oxide",
-    cation: "lead2",
-    anion: "oxide",
-    formula: "PbO",
-    name: "\u9178\u5316\u925B(\u2161)",
-    solidColor: "\u9EC4\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-monoxide",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "lead2_sulfide",
-    cation: "lead2",
-    anion: "sulfide",
-    formula: "PbS",
-    name: "\u786B\u5316\u925B(\u2161)",
-    solidColor: "\u9ED2\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-sulfide-_PbS",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "lead2_chloride",
-    cation: "lead2",
-    anion: "chloride",
-    formula: "PbCl2",
-    name: "\u5869\u5316\u925B(\u2161)",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/7758-95-4",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "lead2_bromide",
-    cation: "lead2",
-    anion: "bromide",
-    formula: "PbBr2",
-    name: "\u81ED\u5316\u925B(\u2161)",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-bromide-_PbBr2",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "lead2_iodide",
-    cation: "lead2",
-    anion: "iodide",
-    formula: "PbI2",
-    name: "\u30E8\u30A6\u5316\u925B(\u2161)",
-    solidColor: "\u9EC4\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-iodide",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "lead2_nitrate",
-    cation: "lead2",
-    anion: "nitrate",
-    formula: "Pb(NO3)2",
-    name: "\u785D\u9178\u925B(\u2161)",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-nitrate",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "lead2_sulfate",
-    cation: "lead2",
-    anion: "sulfate",
-    formula: "PbSO4",
-    name: "\u786B\u9178\u925B(\u2161)",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-sulfate",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "lead2_carbonate",
-    cation: "lead2",
-    anion: "carbonate",
-    formula: "PbCO3",
-    name: "\u70AD\u9178\u925B(\u2161)",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-carbonate",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "lead2_chromate",
-    cation: "lead2",
-    anion: "chromate",
-    formula: "PbCrO4",
-    name: "\u30AF\u30ED\u30E0\u9178\u925B(\u2161)",
-    solidColor: "\u9EC4\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/lead_chromate",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "chromium3_sulfide",
-    cation: "chromium3",
-    anion: "sulfide",
-    formula: "Cr2S3",
-    name: "\u786B\u5316\u30AF\u30ED\u30E0(\u2162)",
-    solidColor: null,
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/159397",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "chromium3_sulfate",
-    cation: "chromium3",
-    anion: "sulfate",
-    formula: "Cr2(SO4)3",
-    name: "\u786B\u9178\u30AF\u30ED\u30E0(\u2162)",
-    solidColor: null,
-    solidColorNote: "\u7121\u6C34\u7269\u3068\u6C34\u548C\u7269\u3067\u8272\u304C\u7570\u306A\u308B",
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/24930",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "manganese2_sulfate",
-    cation: "manganese2",
-    anion: "sulfate",
-    formula: "MnSO4",
-    name: "\u786B\u9178\u30DE\u30F3\u30AC\u30F3(\u2161)",
-    solidColor: null,
-    solidColorNote: "\u7121\u6C34\u7269\u3068\u6C34\u548C\u7269\u3067\u8272\u304C\u7570\u306A\u308B",
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Manganese-sulfate",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "manganese2_carbonate",
-    cation: "manganese2",
-    anion: "carbonate",
-    formula: "MnCO3",
-    name: "\u70AD\u9178\u30DE\u30F3\u30AC\u30F3(\u2161)",
-    solidColor: "\u6DE1\u8D64\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/598-62-9",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "tin2_oxide",
-    cation: "tin2",
-    anion: "oxide",
-    formula: "SnO",
-    name: "\u9178\u5316\u30B9\u30BA(\u2161)",
-    solidColor: "\u9ED2\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Tin%28II%29%20oxide",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "tin4_sulfide",
-    cation: "tin4",
-    anion: "sulfide",
-    formula: "SnS2",
-    name: "\u786B\u5316\u30B9\u30BA(\u2163)",
-    solidColor: "\u9EC4\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Tin-sulfide-_SnS2",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "tin2_sulfate",
-    cation: "tin2",
-    anion: "sulfate",
-    formula: "SnSO4",
-    name: "\u786B\u9178\u30B9\u30BA(\u2161)",
-    solidColor: null,
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Stannous-sulfate",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "sodium_permanganate",
-    cation: "sodium",
-    anion: "permanganate",
-    formula: "NaMnO4",
-    name: "\u904E\u30DE\u30F3\u30AC\u30F3\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: "\u7D2B\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Sodium-Permanganate",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "sodium_chromate",
-    cation: "sodium",
-    anion: "chromate",
-    formula: "Na2CrO4",
-    name: "\u30AF\u30ED\u30E0\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: "\u9EC4\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Sodium-chromate-solution",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "sodium_dichromate",
-    cation: "sodium",
-    anion: "dichromate",
-    formula: "Na2Cr2O7",
-    name: "\u4E8C\u30AF\u30ED\u30E0\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-    solidColor: "\u6A59\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/25408",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "barium_chromate",
-    cation: "barium",
-    anion: "chromate",
-    formula: "BaCrO4",
-    name: "\u30AF\u30ED\u30E0\u9178\u30D0\u30EA\u30A6\u30E0",
-    solidColor: "\u9EC4\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/barium%20chromate",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "calcium_hypochlorite",
-    cation: "calcium",
-    anion: "hypochlorite",
-    formula: "Ca(ClO)2",
-    name: "\u6B21\u4E9C\u5869\u7D20\u9178\u30AB\u30EB\u30B7\u30A6\u30E0",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Calcium-hypochlorite",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "silver_cyanide",
-    cation: "silver",
-    anion: "cyanide",
-    formula: "AgCN",
-    name: "\u30B7\u30A2\u30F3\u5316\u9280",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/10475",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "silver_thiocyanate",
-    cation: "silver",
-    anion: "thiocyanate",
-    formula: "AgSCN",
-    name: "\u30C1\u30AA\u30B7\u30A2\u30F3\u9178\u9280",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Silver-thiocyanate",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "lead4_oxide",
-    cation: "lead4",
-    anion: "oxide",
-    formula: "PbO2",
-    name: "\u9178\u5316\u925B(\u2163)",
-    solidColor: "\u8910\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-dioxide",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  },
-  {
-    id: "tin4_oxide",
-    cation: "tin4",
-    anion: "oxide",
-    formula: "SnO2",
-    name: "\u9178\u5316\u30B9\u30BA(\u2163)",
-    solidColor: "\u767D\u8272",
-    solidColorNote: null,
-    difficulty: "hard",
-    referenceUrl: "https://pubchem.ncbi.nlm.nih.gov/compound/tin%28IV%29%20oxide",
-    enabled: true,
-    questionModes: { ionsToFormula: true, ionsToName: true, ionNamesToFormula: true, ionNamesToName: true }
-  }
-];
-
-// src/games/ionic-formula/data/complex-chemistry.json
-var complex_chemistry_default = {
-  schemaVersion: 3,
-  contentVersion: "complex-ions-2026-10-02",
-  migrationVersion: 2,
-  supportIons: [
-    {
-      id: "hydrogen",
-      formula: "H",
-      charge: 1,
-      name: "\u6C34\u7D20\u30A4\u30AA\u30F3",
-      type: "cation",
-      atomicity: "monatomic",
-      requiresOxidationNumeral: false,
-      enabled: true,
-      ionQuestionEnabled: false,
-      chemistryClass: "support",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Counterion support for the two catalogued acids; disabled as an independent ion question."
-      }
-    }
-  ],
-  ions: [
-    {
-      id: "complex_ag_nh3_2",
-      formula: "[Ag(NH3)2]",
-      charge: 1,
-      name: "\u30B8\u30A2\u30F3\u30DF\u30F3\u9280(I)\u30A4\u30AA\u30F3",
-      type: "cation",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: true,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "standard",
-      complex: {
-        centralElement: "Ag",
-        oxidationState: 1,
-        ligands: [
-          {
-            formula: "NH3",
-            charge: 0,
-            count: 2,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 2
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_cu_nh3_4",
-      formula: "[Cu(NH3)4]",
-      charge: 2,
-      name: "\u30C6\u30C8\u30E9\u30A2\u30F3\u30DF\u30F3\u9285(II)\u30A4\u30AA\u30F3",
-      type: "cation",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: true,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "standard",
-      complex: {
-        centralElement: "Cu",
-        oxidationState: 2,
-        ligands: [
-          {
-            formula: "NH3",
-            charge: 0,
-            count: 4,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 4
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_zn_nh3_4",
-      formula: "[Zn(NH3)4]",
-      charge: 2,
-      name: "\u30C6\u30C8\u30E9\u30A2\u30F3\u30DF\u30F3\u4E9C\u925B(II)\u30A4\u30AA\u30F3",
-      type: "cation",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: true,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "standard",
-      complex: {
-        centralElement: "Zn",
-        oxidationState: 2,
-        ligands: [
-          {
-            formula: "NH3",
-            charge: 0,
-            count: 4,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 4
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_al_oh_4",
-      formula: "[Al(OH)4]",
-      charge: -1,
-      name: "\u30C6\u30C8\u30E9\u30D2\u30C9\u30ED\u30AD\u30B7\u30C9\u30A2\u30EB\u30DF\u30F3\u9178\u30A4\u30AA\u30F3",
-      type: "anion",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: false,
-      enabled: true,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "standard",
-      complex: {
-        centralElement: "Al",
-        oxidationState: 3,
-        ligands: [
-          {
-            formula: "OH",
-            charge: -1,
-            count: 4,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 4
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_zn_oh_4",
-      formula: "[Zn(OH)4]",
-      charge: -2,
-      name: "\u30C6\u30C8\u30E9\u30D2\u30C9\u30ED\u30AD\u30B7\u30C9\u4E9C\u925B(II)\u9178\u30A4\u30AA\u30F3",
-      type: "anion",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: true,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "standard",
-      complex: {
-        centralElement: "Zn",
-        oxidationState: 2,
-        ligands: [
-          {
-            formula: "OH",
-            charge: -1,
-            count: 4,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 4
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_fe_cn_6_ii",
-      formula: "[Fe(CN)6]",
-      charge: -4,
-      name: "\u30D8\u30AD\u30B5\u30B7\u30A2\u30CB\u30C9\u9244(II)\u9178\u30A4\u30AA\u30F3",
-      type: "anion",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: true,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "standard",
-      complex: {
-        centralElement: "Fe",
-        oxidationState: 2,
-        ligands: [
-          {
-            formula: "CN",
-            charge: -1,
-            count: 6,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 6
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_fe_cn_6_iii",
-      formula: "[Fe(CN)6]",
-      charge: -3,
-      name: "\u30D8\u30AD\u30B5\u30B7\u30A2\u30CB\u30C9\u9244(III)\u9178\u30A4\u30AA\u30F3",
-      type: "anion",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: true,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "standard",
-      complex: {
-        centralElement: "Fe",
-        oxidationState: 3,
-        ligands: [
-          {
-            formula: "CN",
-            charge: -1,
-            count: 6,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 6
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_cu_cl_4",
-      formula: "[CuCl4]",
-      charge: -2,
-      name: "\u30C6\u30C8\u30E9\u30AF\u30ED\u30EA\u30C9\u9285(II)\u9178\u30A4\u30AA\u30F3",
-      type: "anion",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: true,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "standard",
-      complex: {
-        centralElement: "Cu",
-        oxidationState: 2,
-        ligands: [
-          {
-            formula: "Cl",
-            charge: -1,
-            count: 4,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 4
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_au_cl_4",
-      formula: "[AuCl4]",
-      charge: -1,
-      name: "\u30C6\u30C8\u30E9\u30AF\u30ED\u30EA\u30C9\u91D1(III)\u9178\u30A4\u30AA\u30F3",
-      type: "anion",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: true,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "standard",
-      complex: {
-        centralElement: "Au",
-        oxidationState: 3,
-        ligands: [
-          {
-            formula: "Cl",
-            charge: -1,
-            count: 4,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 4
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_pt_cl_6",
-      formula: "[PtCl6]",
-      charge: -2,
-      name: "\u30D8\u30AD\u30B5\u30AF\u30ED\u30EA\u30C9\u767D\u91D1(IV)\u9178\u30A4\u30AA\u30F3",
-      type: "anion",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: true,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "standard",
-      complex: {
-        centralElement: "Pt",
-        oxidationState: 4,
-        ligands: [
-          {
-            formula: "Cl",
-            charge: -1,
-            count: 6,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 6
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_ag_cn_2",
-      formula: "[Ag(CN)2]",
-      charge: -1,
-      name: "\u30B8\u30B7\u30A2\u30CB\u30C9\u9280(I)\u9178\u30A4\u30AA\u30F3",
-      type: "anion",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: false,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      complex: {
-        centralElement: "Ag",
-        oxidationState: 1,
-        ligands: [
-          {
-            formula: "CN",
-            charge: -1,
-            count: 2,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 2
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_ni_nh3_6",
-      formula: "[Ni(NH3)6]",
-      charge: 2,
-      name: "\u30D8\u30AD\u30B5\u30A2\u30F3\u30DF\u30F3\u30CB\u30C3\u30B1\u30EB(II)\u30A4\u30AA\u30F3",
-      type: "cation",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: false,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      complex: {
-        centralElement: "Ni",
-        oxidationState: 2,
-        ligands: [
-          {
-            formula: "NH3",
-            charge: 0,
-            count: 6,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 6
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_co_nh3_6",
-      formula: "[Co(NH3)6]",
-      charge: 3,
-      name: "\u30D8\u30AD\u30B5\u30A2\u30F3\u30DF\u30F3\u30B3\u30D0\u30EB\u30C8(III)\u30A4\u30AA\u30F3",
-      type: "cation",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: false,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      complex: {
-        centralElement: "Co",
-        oxidationState: 3,
-        ligands: [
-          {
-            formula: "NH3",
-            charge: 0,
-            count: 6,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 6
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_au_cl_2",
-      formula: "[AuCl2]",
-      charge: -1,
-      name: "\u30B8\u30AF\u30ED\u30EA\u30C9\u91D1(I)\u9178\u30A4\u30AA\u30F3",
-      type: "anion",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: false,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      complex: {
-        centralElement: "Au",
-        oxidationState: 1,
-        ligands: [
-          {
-            formula: "Cl",
-            charge: -1,
-            count: 2,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 2
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_pt_cl_4",
-      formula: "[PtCl4]",
-      charge: -2,
-      name: "\u30C6\u30C8\u30E9\u30AF\u30ED\u30EA\u30C9\u767D\u91D1(II)\u9178\u30A4\u30AA\u30F3",
-      type: "anion",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: false,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      complex: {
-        centralElement: "Pt",
-        oxidationState: 2,
-        ligands: [
-          {
-            formula: "Cl",
-            charge: -1,
-            count: 4,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 4
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_sn_oh_3",
-      formula: "[Sn(OH)3]",
-      charge: -1,
-      name: "\u30C8\u30EA\u30D2\u30C9\u30ED\u30AD\u30B7\u30C9\u30B9\u30BA(II)\u9178\u30A4\u30AA\u30F3",
-      type: "anion",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: false,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      complex: {
-        centralElement: "Sn",
-        oxidationState: 2,
-        ligands: [
-          {
-            formula: "OH",
-            charge: -1,
-            count: 3,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 3
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    },
-    {
-      id: "complex_sn_oh_6",
-      formula: "[Sn(OH)6]",
-      charge: -2,
-      name: "\u30D8\u30AD\u30B5\u30D2\u30C9\u30ED\u30AD\u30B7\u30C9\u30B9\u30BA(IV)\u9178\u30A4\u30AA\u30F3",
-      type: "anion",
-      atomicity: "polyatomic",
-      requiresOxidationNumeral: true,
-      enabled: false,
-      ionQuestionEnabled: true,
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      complex: {
-        centralElement: "Sn",
-        oxidationState: 4,
-        ligands: [
-          {
-            formula: "OH",
-            charge: -1,
-            count: 6,
-            denticity: 1
-          }
-        ],
-        coordinationNumber: 6
-      },
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Charge and oxidation state reviewed; isolation and hydration not individually established."
-      }
-    }
-  ],
-  compounds: [
-    {
-      id: "salt_na_al_oh_4",
-      formula: "Na[Al(OH)4]",
-      name: "\u30C6\u30C8\u30E9\u30D2\u30C9\u30ED\u30AD\u30B7\u30C9\u30A2\u30EB\u30DF\u30F3\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-      cation: "sodium",
-      anion: "complex_al_oh_4",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: true,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "standard",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_na2_zn_oh_4",
-      formula: "Na2[Zn(OH)4]",
-      name: "\u30C6\u30C8\u30E9\u30D2\u30C9\u30ED\u30AD\u30B7\u30C9\u4E9C\u925B(II)\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-      cation: "sodium",
-      anion: "complex_zn_oh_4",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: true,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "standard",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_k4_fe_cn_6",
-      formula: "K4[Fe(CN)6]",
-      name: "\u30D8\u30AD\u30B5\u30B7\u30A2\u30CB\u30C9\u9244(II)\u9178\u30AB\u30EA\u30A6\u30E0",
-      cation: "potassium",
-      anion: "complex_fe_cn_6_ii",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: true,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "standard",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_k3_fe_cn_6",
-      formula: "K3[Fe(CN)6]",
-      name: "\u30D8\u30AD\u30B5\u30B7\u30A2\u30CB\u30C9\u9244(III)\u9178\u30AB\u30EA\u30A6\u30E0",
-      cation: "potassium",
-      anion: "complex_fe_cn_6_iii",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: true,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "standard",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_ag_nh3_2_no3",
-      formula: "[Ag(NH3)2]NO3",
-      name: "\u785D\u9178\u30B8\u30A2\u30F3\u30DF\u30F3\u9280(I)",
-      cation: "complex_ag_nh3_2",
-      anion: "nitrate",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_ag_nh3_2_cl",
-      formula: "[Ag(NH3)2]Cl",
-      name: "\u5869\u5316\u30B8\u30A2\u30F3\u30DF\u30F3\u9280(I)",
-      cation: "complex_ag_nh3_2",
-      anion: "chloride",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_cu_nh3_4_so4",
-      formula: "[Cu(NH3)4]SO4",
-      name: "\u786B\u9178\u30C6\u30C8\u30E9\u30A2\u30F3\u30DF\u30F3\u9285(II)",
-      cation: "complex_cu_nh3_4",
-      anion: "sulfate",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_cu_nh3_4_no3",
-      formula: "[Cu(NH3)4](NO3)2",
-      name: "\u785D\u9178\u30C6\u30C8\u30E9\u30A2\u30F3\u30DF\u30F3\u9285(II)",
-      cation: "complex_cu_nh3_4",
-      anion: "nitrate",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_zn_nh3_4_cl",
-      formula: "[Zn(NH3)4]Cl2",
-      name: "\u5869\u5316\u30C6\u30C8\u30E9\u30A2\u30F3\u30DF\u30F3\u4E9C\u925B(II)",
-      cation: "complex_zn_nh3_4",
-      anion: "chloride",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_k2_zn_oh_4",
-      formula: "K2[Zn(OH)4]",
-      name: "\u30C6\u30C8\u30E9\u30D2\u30C9\u30ED\u30AD\u30B7\u30C9\u4E9C\u925B(II)\u9178\u30AB\u30EA\u30A6\u30E0",
-      cation: "potassium",
-      anion: "complex_zn_oh_4",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_na4_fe_cn_6",
-      formula: "Na4[Fe(CN)6]",
-      name: "\u30D8\u30AD\u30B5\u30B7\u30A2\u30CB\u30C9\u9244(II)\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-      cation: "sodium",
-      anion: "complex_fe_cn_6_ii",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_nh4_4_fe_cn_6",
-      formula: "(NH4)4[Fe(CN)6]",
-      name: "\u30D8\u30AD\u30B5\u30B7\u30A2\u30CB\u30C9\u9244(II)\u9178\u30A2\u30F3\u30E2\u30CB\u30A6\u30E0",
-      cation: "ammonium",
-      anion: "complex_fe_cn_6_ii",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_na3_fe_cn_6",
-      formula: "Na3[Fe(CN)6]",
-      name: "\u30D8\u30AD\u30B5\u30B7\u30A2\u30CB\u30C9\u9244(III)\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-      cation: "sodium",
-      anion: "complex_fe_cn_6_iii",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_nh4_3_fe_cn_6",
-      formula: "(NH4)3[Fe(CN)6]",
-      name: "\u30D8\u30AD\u30B5\u30B7\u30A2\u30CB\u30C9\u9244(III)\u9178\u30A2\u30F3\u30E2\u30CB\u30A6\u30E0",
-      cation: "ammonium",
-      anion: "complex_fe_cn_6_iii",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_k_ag_cn_2",
-      formula: "K[Ag(CN)2]",
-      name: "\u30B8\u30B7\u30A2\u30CB\u30C9\u9280(I)\u9178\u30AB\u30EA\u30A6\u30E0",
-      cation: "potassium",
-      anion: "complex_ag_cn_2",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_na_ag_cn_2",
-      formula: "Na[Ag(CN)2]",
-      name: "\u30B8\u30B7\u30A2\u30CB\u30C9\u9280(I)\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-      cation: "sodium",
-      anion: "complex_ag_cn_2",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_ni_nh3_6_cl",
-      formula: "[Ni(NH3)6]Cl2",
-      name: "\u5869\u5316\u30D8\u30AD\u30B5\u30A2\u30F3\u30DF\u30F3\u30CB\u30C3\u30B1\u30EB(II)",
-      cation: "complex_ni_nh3_6",
-      anion: "chloride",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_ni_nh3_6_no3",
-      formula: "[Ni(NH3)6](NO3)2",
-      name: "\u785D\u9178\u30D8\u30AD\u30B5\u30A2\u30F3\u30DF\u30F3\u30CB\u30C3\u30B1\u30EB(II)",
-      cation: "complex_ni_nh3_6",
-      anion: "nitrate",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_co_nh3_6_cl",
-      formula: "[Co(NH3)6]Cl3",
-      name: "\u5869\u5316\u30D8\u30AD\u30B5\u30A2\u30F3\u30DF\u30F3\u30B3\u30D0\u30EB\u30C8(III)",
-      cation: "complex_co_nh3_6",
-      anion: "chloride",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_co_nh3_6_no3",
-      formula: "[Co(NH3)6](NO3)3",
-      name: "\u785D\u9178\u30D8\u30AD\u30B5\u30A2\u30F3\u30DF\u30F3\u30B3\u30D0\u30EB\u30C8(III)",
-      cation: "complex_co_nh3_6",
-      anion: "nitrate",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_co_nh3_6_br",
-      formula: "[Co(NH3)6]Br3",
-      name: "\u81ED\u5316\u30D8\u30AD\u30B5\u30A2\u30F3\u30DF\u30F3\u30B3\u30D0\u30EB\u30C8(III)",
-      cation: "complex_co_nh3_6",
-      anion: "bromide",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_k2_cu_cl_4",
-      formula: "K2[CuCl4]",
-      name: "\u30C6\u30C8\u30E9\u30AF\u30ED\u30EA\u30C9\u9285(II)\u9178\u30AB\u30EA\u30A6\u30E0",
-      cation: "potassium",
-      anion: "complex_cu_cl_4",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_nh4_2_cu_cl_4",
-      formula: "(NH4)2[CuCl4]",
-      name: "\u30C6\u30C8\u30E9\u30AF\u30ED\u30EA\u30C9\u9285(II)\u9178\u30A2\u30F3\u30E2\u30CB\u30A6\u30E0",
-      cation: "ammonium",
-      anion: "complex_cu_cl_4",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_k_au_cl_2",
-      formula: "K[AuCl2]",
-      name: "\u30B8\u30AF\u30ED\u30EA\u30C9\u91D1(I)\u9178\u30AB\u30EA\u30A6\u30E0",
-      cation: "potassium",
-      anion: "complex_au_cl_2",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "unverified",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Included by user request; individual evidence for simple K/Na gold(I) salts was not verified."
-      }
-    },
-    {
-      id: "salt_na_au_cl_2",
-      formula: "Na[AuCl2]",
-      name: "\u30B8\u30AF\u30ED\u30EA\u30C9\u91D1(I)\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-      cation: "sodium",
-      anion: "complex_au_cl_2",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "unverified",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Included by user request; individual evidence for simple K/Na gold(I) salts was not verified."
-      }
-    },
-    {
-      id: "salt_k_au_cl_4",
-      formula: "K[AuCl4]",
-      name: "\u30C6\u30C8\u30E9\u30AF\u30ED\u30EA\u30C9\u91D1(III)\u9178\u30AB\u30EA\u30A6\u30E0",
-      cation: "potassium",
-      anion: "complex_au_cl_4",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_na_au_cl_4",
-      formula: "Na[AuCl4]",
-      name: "\u30C6\u30C8\u30E9\u30AF\u30ED\u30EA\u30C9\u91D1(III)\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-      cation: "sodium",
-      anion: "complex_au_cl_4",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_nh4_au_cl_4",
-      formula: "NH4[AuCl4]",
-      name: "\u30C6\u30C8\u30E9\u30AF\u30ED\u30EA\u30C9\u91D1(III)\u9178\u30A2\u30F3\u30E2\u30CB\u30A6\u30E0",
-      cation: "ammonium",
-      anion: "complex_au_cl_4",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_k2_pt_cl_4",
-      formula: "K2[PtCl4]",
-      name: "\u30C6\u30C8\u30E9\u30AF\u30ED\u30EA\u30C9\u767D\u91D1(II)\u9178\u30AB\u30EA\u30A6\u30E0",
-      cation: "potassium",
-      anion: "complex_pt_cl_4",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_na2_pt_cl_4",
-      formula: "Na2[PtCl4]",
-      name: "\u30C6\u30C8\u30E9\u30AF\u30ED\u30EA\u30C9\u767D\u91D1(II)\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-      cation: "sodium",
-      anion: "complex_pt_cl_4",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_nh4_2_pt_cl_4",
-      formula: "(NH4)2[PtCl4]",
-      name: "\u30C6\u30C8\u30E9\u30AF\u30ED\u30EA\u30C9\u767D\u91D1(II)\u9178\u30A2\u30F3\u30E2\u30CB\u30A6\u30E0",
-      cation: "ammonium",
-      anion: "complex_pt_cl_4",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_k2_pt_cl_6",
-      formula: "K2[PtCl6]",
-      name: "\u30D8\u30AD\u30B5\u30AF\u30ED\u30EA\u30C9\u767D\u91D1(IV)\u9178\u30AB\u30EA\u30A6\u30E0",
-      cation: "potassium",
-      anion: "complex_pt_cl_6",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_na2_pt_cl_6",
-      formula: "Na2[PtCl6]",
-      name: "\u30D8\u30AD\u30B5\u30AF\u30ED\u30EA\u30C9\u767D\u91D1(IV)\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-      cation: "sodium",
-      anion: "complex_pt_cl_6",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_nh4_2_pt_cl_6",
-      formula: "(NH4)2[PtCl6]",
-      name: "\u30D8\u30AD\u30B5\u30AF\u30ED\u30EA\u30C9\u767D\u91D1(IV)\u9178\u30A2\u30F3\u30E2\u30CB\u30A6\u30E0",
-      cation: "ammonium",
-      anion: "complex_pt_cl_6",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_na2_sn_oh_6",
-      formula: "Na2[Sn(OH)6]",
-      name: "\u30D8\u30AD\u30B5\u30D2\u30C9\u30ED\u30AD\u30B7\u30C9\u30B9\u30BA(IV)\u9178\u30CA\u30C8\u30EA\u30A6\u30E0",
-      cation: "sodium",
-      anion: "complex_sn_oh_6",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    },
-    {
-      id: "salt_k2_sn_oh_6",
-      formula: "K2[Sn(OH)6]",
-      name: "\u30D8\u30AD\u30B5\u30D2\u30C9\u30ED\u30AD\u30B7\u30C9\u30B9\u30BA(IV)\u9178\u30AB\u30EA\u30A6\u30E0",
-      cation: "potassium",
-      anion: "complex_sn_oh_6",
-      solidColor: null,
-      solidColorNote: null,
-      enabled: false,
-      questionModes: {
-        nameToFormula: true,
-        formulaToName: true,
-        ionsToFormula: true,
-        ionsToName: true,
-        ionNamesToFormula: true,
-        ionNamesToName: true
-      },
-      chemistryClass: "complex",
-      curriculumLevel: "advanced",
-      evidence: {
-        status: "composition_reviewed",
-        sourceDocument: "docs/COMPLEX_IONS_USER_CATALOG.md",
-        note: "Composition formula for learning; hydration and isolation form not individually established."
-      }
-    }
-  ],
-  retiredCompoundIds: [
-    "acid_h_au_cl_4",
-    "acid_h2_pt_cl_6"
-  ]
-};
-
-// src/games/ionic-formula/shared/complex-policy.ts
-var CHEMISTRY_CONTENT_VERSION = "complex-ions-2026-10-02";
-function isComplexItem(item, ionById2 = /* @__PURE__ */ new Map()) {
-  return item.chemistryClass === "complex" || !!item.formula?.includes("[") || [item.cation, item.anion].some((id) => !!id && ionById2.get(id)?.chemistryClass === "complex");
-}
-function complexItemAllowed(item, enabled, ionById2) {
-  return !isComplexItem(item, ionById2) || enabled === true;
-}
-
-// src/games/ionic-formula/shared/question-profile.ts
-var ions = [...ions_default, ...complex_chemistry_default.supportIons, ...complex_chemistry_default.ions];
-var ionMap = new Map(ions.map((i) => [i.id, i]));
-function defaultDifficulty(i) {
-  return !i.enabled ? "off" : i.difficulty === "normal" || i.difficulty === "hard" ? i.difficulty : "both";
-}
-function gcd(a, b) {
-  return b ? gcd(b, a % b) : Math.abs(a);
-}
-function questionProfileCatalog() {
-  return {
-    ions: ions.filter((i) => !("ionQuestionEnabled" in i) || i.ionQuestionEnabled !== false).map((i) => ({ id: i.id, formula: `${i.formula}${Math.abs(i.charge) === 1 ? "" : Math.abs(i.charge)}${i.charge > 0 ? "+" : "-"}`, name: i.name, complex: isComplexItem(i, ionMap), category: i.requiresOxidationNumeral ? "ionVariableOx" : i.atomicity === "polyatomic" ? "ionPolyatomic" : "ionSimple", defaultDifficulty: defaultDifficulty(i) })),
-    compounds: [...compounds_default, ...complex_chemistry_default.compounds].map((i) => {
-      const c = ionMap.get(i.cation);
-      const a = ionMap.get(i.anion);
-      return { id: i.id, formula: i.formula ?? "", name: i.name, complex: isComplexItem(i, ionMap), category: c.requiresOxidationNumeral || a.requiresOxidationNumeral ? "variableOx" : c.atomicity === "polyatomic" || a.atomicity === "polyatomic" ? "polyatomic" : Math.abs(a.charge) / gcd(c.charge, a.charge) === 1 && c.charge / gcd(c.charge, a.charge) === 1 ? "simple11" : "simpleRatio", defaultDifficulty: defaultDifficulty(i) };
-    })
-  };
-}
-function freeze(x) {
-  if (x && typeof x === "object") {
-    Object.values(x).forEach(freeze);
-    Object.freeze(x);
-  }
-  return x;
-}
-var DEFAULT_QUESTION_PROFILE = freeze({ version: 1, rules: { ion: { normal: { complexPercent: 10, categoryWeights: null }, hard: { complexPercent: 20, categoryWeights: null } }, compound: { normal: { complexPercent: 10, categoryWeights: null }, hard: { complexPercent: 20, categoryWeights: null } } }, ionDifficulties: {}, compoundDifficulties: {} });
-function object(x) {
-  if (!x || typeof x !== "object" || Array.isArray(x)) throw new TypeError("\u51FA\u984C\u8A2D\u5B9A\u304C\u4E0D\u6B63\u3067\u3059");
-  return x;
-}
-function keys(x, allowed, required2 = allowed) {
-  if (Object.keys(x).some((k) => !allowed.includes(k)) || required2.some((k) => !Object.hasOwn(x, k))) throw new TypeError("\u51FA\u984C\u8A2D\u5B9A\u306E\u9805\u76EE\u304C\u4E0D\u6B63\u3067\u3059");
-}
-function validateQuestionProfileShape(raw) {
-  const p = object(raw);
-  keys(p, ["version", "rules", "ionDifficulties", "compoundDifficulties"]);
-  if (p.version !== 1) throw new TypeError("\u51FA\u984C\u8A2D\u5B9A\u306E\u7248\u304C\u4E0D\u6B63\u3067\u3059");
-  const rules = object(p.rules);
-  keys(rules, ["ion", "compound"]);
-  const catalog = questionProfileCatalog();
-  for (const mode of ["ion", "compound"]) {
-    const levels = object(rules[mode]);
-    keys(levels, ["normal", "hard"]);
-    for (const level of ["normal", "hard"]) {
-      const r = object(levels[level]);
-      keys(r, ["complexPercent", "categoryWeights"]);
-      if (!Number.isInteger(r.complexPercent) || Number(r.complexPercent) < (level === "hard" ? 20 : 0) || Number(r.complexPercent) > 100) throw new TypeError("\u932F\u30A4\u30AA\u30F3\u306E\u5272\u5408\u304C\u4E0D\u6B63\u3067\u3059");
-      if (r.categoryWeights !== null) {
-        const w = object(r.categoryWeights);
-        const categories = mode === "ion" ? ["ionSimple", "ionPolyatomic", "ionVariableOx"] : ["simple11", "simpleRatio", "polyatomic", "variableOx"];
-        keys(w, categories, []);
-        if (Object.values(w).some((v) => typeof v !== "number" || !Number.isFinite(v) || v < 0 || v > 1e4) || Object.values(w).reduce((s, v) => s + Number(v), 0) <= 0) throw new TypeError("\u30AB\u30C6\u30B4\u30EA\u306E\u91CD\u307F\u304C\u4E0D\u6B63\u3067\u3059");
-      }
-    }
-    const overrides = object(p[mode === "ion" ? "ionDifficulties" : "compoundDifficulties"]);
-    const ids = new Set((mode === "ion" ? catalog.ions : catalog.compounds).map((i) => i.id));
-    if (Object.entries(overrides).some(([id, v]) => !ids.has(id) || (typeof v !== "string" || !["normal", "hard", "both", "off"].includes(v)))) throw new TypeError("\u6559\u6750\u306E\u96E3\u6613\u5EA6\u304C\u4E0D\u6B63\u3067\u3059");
-  }
-  return structuredClone(p);
-}
-
 // src/persistence/db.ts
 var PersistenceConflictError = class extends Error {
   constructor(code, message, status = 409, retryAfterSeconds) {
@@ -4521,6 +153,77 @@ function isRetryableDatabaseConflict(error) {
   return typeof value.message === "string" && /(?:database.*(?:busy|locked)|D1_ERROR.*conflict)/i.test(value.message);
 }
 
+// src/persistence/participant-drafts.ts
+async function readParticipantDrafts(db, roomId, participantId) {
+  const { results } = await db.prepare("SELECT question_id,field_id,value_json,version,writer_epoch,edited_elapsed_ms FROM participant_drafts WHERE room_id=? AND participant_id=?").bind(roomId, participantId).all();
+  return Object.fromEntries(results.map((row) => [`${row.question_id}:${row.field_id}`, { value: JSON.parse(row.value_json), version: row.version, writerEpoch: row.writer_epoch, editedElapsedMs: row.edited_elapsed_ms }]));
+}
+async function saveParticipantDrafts(db, input) {
+  const state = await db.prepare(`SELECT m.manifest_id,m.state,m.cutoff_at_ms,r.start_at_ms,r.deadline_at_ms,r.expires_at_ms,v.writer_epoch,v.finished_elapsed_ms FROM rooms r JOIN v2_room_manifests m ON m.room_id=r.id JOIN v2_participant_progress v ON v.room_id=r.id AND v.participant_id=? JOIN participants p ON p.room_id=v.room_id AND p.id=v.participant_id WHERE r.id=? AND p.status='ACTIVE'`).bind(input.participantId, input.roomId).first();
+  if (!state) throw new PersistenceConflictError("not_authorized", "\u53C2\u52A0\u8CC7\u683C\u3092\u78BA\u8A8D\u3067\u304D\u307E\u305B\u3093", 403);
+  if (state.manifest_id !== input.manifestId) throw new PersistenceConflictError("stale_manifest", "\u554F\u984C\u304C\u66F4\u65B0\u3055\u308C\u3066\u3044\u307E\u3059");
+  if (state.writer_epoch !== input.writerEpoch) throw new PersistenceConflictError("stale_writer", "\u5225\u306E\u30BF\u30D6\u304C\u89E3\u7B54\u3057\u3066\u3044\u307E\u3059");
+  const cutoff = state.cutoff_at_ms ?? state.deadline_at_ms;
+  if (state.state !== "COUNTDOWN" || state.start_at_ms == null || input.nowMs < state.start_at_ms || cutoff == null || input.nowMs >= cutoff || state.expires_at_ms <= input.nowMs || state.finished_elapsed_ms !== null) throw new PersistenceConflictError("deadline", "\u9014\u4E2D\u89E3\u7B54\u306E\u4FDD\u5B58\u53D7\u4ED8\u306F\u7D42\u4E86\u3057\u3066\u3044\u307E\u3059");
+  if (input.items.length > 15) throw new TypeError("too many drafts");
+  for (const item of input.items) if (!Number.isSafeInteger(item.version) || item.version < 1 || !Number.isSafeInteger(item.editedElapsedMs) || item.editedElapsedMs < 0 || item.editedElapsedMs > input.nowMs - state.start_at_ms + 250 || item.editedElapsedMs >= cutoff - state.start_at_ms) throw new TypeError("invalid draft time or version");
+  await db.batch(input.items.map((item) => db.prepare(`INSERT INTO participant_drafts(room_id,participant_id,question_id,field_id,manifest_id,writer_epoch,version,value_json,edited_elapsed_ms,updated_at_ms)
+ SELECT ?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM rooms r JOIN v2_room_manifests m ON m.room_id=r.id JOIN v2_participant_progress v ON v.room_id=r.id AND v.participant_id=? WHERE r.id=? AND m.manifest_id=? AND m.state='COUNTDOWN' AND v.writer_epoch=? AND v.finished_elapsed_ms IS NULL AND CAST(unixepoch('subsec') * 1000 AS INTEGER)<r.deadline_at_ms)
+ ON CONFLICT(room_id,participant_id,question_id,field_id) DO UPDATE SET manifest_id=excluded.manifest_id,writer_epoch=excluded.writer_epoch,version=excluded.version,value_json=excluded.value_json,edited_elapsed_ms=excluded.edited_elapsed_ms,updated_at_ms=excluded.updated_at_ms
+ WHERE participant_drafts.manifest_id<>excluded.manifest_id OR participant_drafts.writer_epoch<excluded.writer_epoch OR (participant_drafts.writer_epoch=excluded.writer_epoch AND participant_drafts.version<excluded.version)`).bind(input.roomId, input.participantId, item.questionId, item.fieldId, input.manifestId, input.writerEpoch, item.version, json(item.value), item.editedElapsedMs, input.nowMs, input.participantId, input.roomId, input.manifestId, input.writerEpoch)));
+  const saved = await readParticipantDrafts(db, input.roomId, input.participantId);
+  return { versions: Object.fromEntries(Object.entries(saved).map(([key2, row]) => [key2, row.version])) };
+}
+
+// src/games/alkane-puzzle/shared/question-profile.ts
+var easyBase = { typeMin: 1, typeMax: 1, lenMin: 1, lenMax: 6, subMin: 0, subMax: 4, ringSizes: [4, 6], cycloSubstituentCount: 0, alcoholRate: 40, hydroxylLimitOne: true, hydroxylCountsAsSubstituent: true };
+var mediumBase = { typeMin: 1, typeMax: 2, lenMin: 4, lenMax: 8, subMin: 3, subMax: 6, ringSizes: [6, 8], cycloSubstituentCount: 1, alcoholRate: 40, hydroxylLimitOne: false, hydroxylCountsAsSubstituent: true };
+var DEFAULT_QUESTION_PROFILE = Object.freeze({
+  version: 1,
+  rules: {
+    arrange: { easy: { ...easyBase, ringSizes: [4, 6], gridCols: 7, gridRows: 5 }, medium: { ...mediumBase, ringSizes: [6, 8], gridCols: 7, gridRows: 5 } },
+    name: { easy: { ...easyBase, ringSizes: [4, 6], bendMin: 0, bendMax: 1, shuffleWordBankGroups: false }, medium: { ...mediumBase, typeMax: 1, ringSizes: [6, 8], bendMin: 2, bendMax: 3, shuffleWordBankGroups: false } }
+  }
+});
+var isObject = (v) => !!v && typeof v === "object" && !Array.isArray(v);
+var between = (v, min, max) => Number.isInteger(v) && Number(v) >= min && Number(v) <= max;
+function checkKeys(o, allowed, required2 = allowed) {
+  if (Object.keys(o).some((k) => !allowed.includes(k)) || required2.some((k) => !Object.hasOwn(o, k))) throw new TypeError("\u51FA\u984C\u8A2D\u5B9A\u306E\u9805\u76EE\u304C\u4E0D\u6B63\u3067\u3059");
+}
+function validateQuestionProfileShape(raw) {
+  if (!isObject(raw)) throw new TypeError("\u51FA\u984C\u8A2D\u5B9A\u304C\u4E0D\u6B63\u3067\u3059");
+  checkKeys(raw, ["version", "rules"]);
+  if (raw.version !== 1 || !isObject(raw.rules)) throw new TypeError("\u51FA\u984C\u8A2D\u5B9A\u306E\u7248\u304C\u4E0D\u6B63\u3067\u3059");
+  checkKeys(raw.rules, ["arrange", "name"]);
+  for (const mode of ["arrange", "name"]) {
+    const levels = raw.rules[mode];
+    if (!isObject(levels)) throw new TypeError("\u96E3\u6613\u5EA6\u8A2D\u5B9A\u304C\u4E0D\u6B63\u3067\u3059");
+    checkKeys(levels, ["easy", "medium"]);
+    for (const difficulty of ["easy", "medium"]) {
+      const rule = levels[difficulty];
+      if (!isObject(rule)) throw new TypeError("\u8A73\u7D30\u8A2D\u5B9A\u304C\u4E0D\u6B63\u3067\u3059");
+      const common = ["typeMin", "typeMax", "lenMin", "lenMax", "subMin", "subMax", "ringSizes", "cycloSubstituentCount", "alcoholRate", "hydroxylLimitOne", "hydroxylCountsAsSubstituent"];
+      const special = mode === "arrange" ? ["gridCols", "gridRows"] : ["bendMin", "bendMax", "shuffleWordBankGroups"];
+      checkKeys(rule, [...common, ...special], [...common, ...special]);
+      const ranges = [["typeMin", "typeMax", 1, 6], ["lenMin", "lenMax", 1, 10], ["subMin", "subMax", 0, 10]];
+      for (const [low, high, min, max] of ranges) if (!between(rule[low], min, max) || !between(rule[high], min, max) || Number(rule[low]) > Number(rule[high])) throw new RangeError("\u8A2D\u5B9A\u7BC4\u56F2\u304C\u4E0D\u6B63\u3067\u3059");
+      if (!Array.isArray(rule.ringSizes) || rule.ringSizes.length === 0 || new Set(rule.ringSizes).size !== rule.ringSizes.length || rule.ringSizes.some((n) => typeof n !== "number" || ![4, 6, 8, 10].includes(n))) throw new RangeError("\u30B7\u30AF\u30ED\u4E3B\u9396\u304C\u4E0D\u6B63\u3067\u3059");
+      if (typeof rule.cycloSubstituentCount !== "number" || ![0, 1, 2].includes(rule.cycloSubstituentCount)) throw new RangeError("\u30B7\u30AF\u30ED\u7F6E\u63DB\u57FA\u6570\u304C\u4E0D\u6B63\u3067\u3059");
+      if (!between(rule.alcoholRate, 0, 100) || Number(rule.alcoholRate) % 10 !== 0) throw new RangeError("\u30A2\u30EB\u30B3\u30FC\u30EB\u51FA\u984C\u7387\u304C\u4E0D\u6B63\u3067\u3059");
+      if (typeof rule.hydroxylLimitOne !== "boolean" || typeof rule.hydroxylCountsAsSubstituent !== "boolean") throw new TypeError("OH\u8A2D\u5B9A\u304C\u4E0D\u6B63\u3067\u3059");
+      if (mode === "arrange") {
+        if (!between(rule.gridCols, 3, 7) || !between(rule.gridRows, 3, 5)) throw new RangeError("\u67A0\u6570\u304C\u4E0D\u6B63\u3067\u3059");
+      } else {
+        if (!between(rule.bendMin, 0, 10) || !between(rule.bendMax, 0, 10) || Number(rule.bendMin) > Number(rule.bendMax) || typeof rule.shuffleWordBankGroups !== "boolean") throw new RangeError("\u6298\u308C\u66F2\u304C\u308A\u8A2D\u5B9A\u304C\u4E0D\u6B63\u3067\u3059");
+      }
+    }
+  }
+  return structuredClone(raw);
+}
+function questionProfileCatalog() {
+  return { modes: ["arrange", "name"], difficulties: ["easy", "medium"], ringSizes: [4, 6, 8, 10] };
+}
+
 // src/persistence/question-profiles.ts
 async function readQuestionProfile(database) {
   const row = await database.prepare("SELECT profile_json, revision FROM question_profiles WHERE id = 1").first();
@@ -4559,6 +262,9 @@ async function updateQuestionProfile(database, input) {
   throw new PersistenceConflictError("stale_question_profile", "\u8A2D\u5B9A\u304C\u66F4\u65B0\u3055\u308C\u307E\u3057\u305F\u3002\u518D\u8AAD\u307F\u8FBC\u307F\u3057\u3066\u304F\u3060\u3055\u3044");
 }
 
+// src/games/alkane-puzzle/shared/content-version.ts
+var CHEMISTRY_CONTENT_VERSION = "alkane-puzzle-f2e231b-1";
+
 // src/platform/server-only.ts
 if (typeof document !== "undefined") {
   throw new Error("This module is server-only");
@@ -4590,8 +296,8 @@ var PUBLIC_CONFIG = {
     mateMatch: 4
   },
   retentionMs: {
-    classCompetition: 7 * 24 * 60 * 60 * 1e3,
-    mateMatch: 24 * 60 * 60 * 1e3,
+    classCompetition: 14 * 24 * 60 * 60 * 1e3,
+    mateMatch: 14 * 24 * 60 * 60 * 1e3,
     cancelledRoom: 24 * 60 * 60 * 1e3
   },
   waitingRoomLifetimeMs: 2 * 60 * 60 * 1e3,
@@ -4608,327 +314,1738 @@ var PUBLIC_CONFIG = {
   }
 };
 
-// src/games/ionic-formula/data/difficulty.json
-var difficulty_default = {
-  version: 4,
-  categoryWeights: {
-    ion: {
-      normal: { ionSimple: 6, ionPolyatomic: 3, ionVariableOx: 1 },
-      hard: { ionSimple: 2, ionPolyatomic: 6, ionVariableOx: 2 }
-    },
-    compound: {
-      normal: { simple11: 3, simpleRatio: 4, polyatomic: 2, variableOx: 1 },
-      hard: { simple11: 0, simpleRatio: 1, polyatomic: 5, variableOx: 4 }
-    }
-  },
-  variantWeights: {
-    ion: { ionNameToFormula: 1, ionFormulaToName: 1 },
-    ionFormula: { ionsToFormula: 1, ionsToName: 1 },
-    ionName: { ionNamesToFormula: 1, ionNamesToName: 1 },
-    random: { ionsToFormula: 1, ionsToName: 1, ionNamesToFormula: 1, ionNamesToName: 1, mixedIonsToFormula: 1, mixedIonsToName: 1 }
-  },
-  weakQuestionTarget: {
-    ten: 2,
-    endlessPerTen: 2
+// src/games/alkane-puzzle/shared/engine.js
+function createAlkaneEngine(random = Math.random) {
+  const ROWS = 5, COLS = 7;
+  const DIR_ORDER = Object.freeze(["N", "E", "S", "W"]);
+  const DIRECTION_BIT = Object.freeze({ N: 1, E: 2, S: 4, W: 8 });
+  const OPPOSITE = { N: "S", S: "N", E: "W", W: "E" };
+  const DELTA = { N: [-1, 0], S: [1, 0], E: [0, 1], W: [0, -1] };
+  const VEC = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] };
+  const PANEL_ARM_TABLE = { 1: ["E"], 2: ["N", "S"], 3: ["N", "E"], 4: ["N", "W", "E"], 5: ["N", "E", "S", "W"] };
+  const PANEL_LABELS = { 1: "\u672B\u7AEF", 2: "\u76F4\u7DDA", 3: "\u304B\u3069", 4: "\u5206\u5C90", 5: "\u56DB\u7D1A" };
+  const CHAIN_NAMES = [
+    "",
+    "\u30E1\u30BF\u30F3",
+    "\u30A8\u30BF\u30F3",
+    "\u30D7\u30ED\u30D1\u30F3",
+    "\u30D6\u30BF\u30F3",
+    "\u30DA\u30F3\u30BF\u30F3",
+    "\u30D8\u30AD\u30B5\u30F3",
+    "\u30D8\u30D7\u30BF\u30F3",
+    "\u30AA\u30AF\u30BF\u30F3",
+    "\u30CE\u30CA\u30F3",
+    "\u30C7\u30AB\u30F3",
+    "\u30A6\u30F3\u30C7\u30AB\u30F3",
+    "\u30C9\u30C7\u30AB\u30F3",
+    "\u30C8\u30EA\u30C7\u30AB\u30F3",
+    "\u30C6\u30C8\u30E9\u30C7\u30AB\u30F3",
+    "\u30DA\u30F3\u30BF\u30C7\u30AB\u30F3",
+    "\u30D8\u30AD\u30B5\u30C7\u30AB\u30F3",
+    "\u30D8\u30D7\u30BF\u30C7\u30AB\u30F3",
+    "\u30AA\u30AF\u30BF\u30C7\u30AB\u30F3",
+    "\u30CE\u30CA\u30C7\u30AB\u30F3",
+    "\u30A4\u30B3\u30B5\u30F3",
+    "\u30D8\u30F3\u30A4\u30B3\u30B5\u30F3",
+    "\u30C9\u30B3\u30B5\u30F3",
+    "\u30C8\u30EA\u30B3\u30B5\u30F3",
+    "\u30C6\u30C8\u30E9\u30B3\u30B5\u30F3",
+    "\u30DA\u30F3\u30BF\u30B3\u30B5\u30F3",
+    "\u30D8\u30AD\u30B5\u30B3\u30B5\u30F3",
+    "\u30D8\u30D7\u30BF\u30B3\u30B5\u30F3",
+    "\u30AA\u30AF\u30BF\u30B3\u30B5\u30F3",
+    "\u30CE\u30CA\u30B3\u30B5\u30F3",
+    "\u30C8\u30EA\u30A2\u30B3\u30F3\u30BF\u30F3",
+    "\u30D8\u30F3\u30C8\u30EA\u30A2\u30B3\u30F3\u30BF\u30F3",
+    "\u30C9\u30C8\u30EA\u30A2\u30B3\u30F3\u30BF\u30F3",
+    "\u30C8\u30EA\u30C8\u30EA\u30A2\u30B3\u30F3\u30BF\u30F3",
+    "\u30C6\u30C8\u30E9\u30C8\u30EA\u30A2\u30B3\u30F3\u30BF\u30F3",
+    "\u30DA\u30F3\u30BF\u30C8\u30EA\u30A2\u30B3\u30F3\u30BF\u30F3"
+  ];
+  const STRAIGHT_ALKYL_NAMES = [
+    "",
+    "\u30E1\u30C1\u30EB",
+    "\u30A8\u30C1\u30EB",
+    "\u30D7\u30ED\u30D4\u30EB",
+    "\u30D6\u30C1\u30EB",
+    "\u30DA\u30F3\u30C1\u30EB",
+    "\u30D8\u30AD\u30B7\u30EB",
+    "\u30D8\u30D7\u30C1\u30EB",
+    "\u30AA\u30AF\u30C1\u30EB",
+    "\u30CE\u30CB\u30EB",
+    "\u30C7\u30B7\u30EB",
+    "\u30A6\u30F3\u30C7\u30B7\u30EB",
+    "\u30C9\u30C7\u30B7\u30EB",
+    "\u30C8\u30EA\u30C7\u30B7\u30EB",
+    "\u30C6\u30C8\u30E9\u30C7\u30B7\u30EB",
+    "\u30DA\u30F3\u30BF\u30C7\u30B7\u30EB"
+  ];
+  const SUBSTITUENT_NAME_BY_LENGTH = Object.fromEntries(
+    STRAIGHT_ALKYL_NAMES.slice(1).map((name, index) => [index + 1, name])
+  );
+  const SUBSTITUENT_ORDER = {
+    "\u30D6\u30ED\u30E2": 0,
+    "\u30D6\u30C1\u30EB": 1,
+    "sec-\u30D6\u30C1\u30EB": 1.1,
+    "tert-\u30D6\u30C1\u30EB": 1.2,
+    "\u30AF\u30ED\u30ED": 2,
+    "\u30C7\u30B7\u30EB": 3,
+    "\u30C9\u30C7\u30B7\u30EB": 4,
+    "\u30A8\u30C1\u30EB": 5,
+    "\u30D5\u30EB\u30AA\u30ED": 6,
+    "\u30D8\u30D7\u30C1\u30EB": 7,
+    "\u30D8\u30AD\u30B7\u30EB": 8,
+    "\u30E8\u30FC\u30C9": 9,
+    "\u30A4\u30BD\u30D6\u30C1\u30EB": 10,
+    "\u30A4\u30BD\u30D7\u30ED\u30D4\u30EB": 11,
+    "\u30E1\u30C1\u30EB": 12,
+    "\u30CE\u30CB\u30EB": 13,
+    "\u30AA\u30AF\u30C1\u30EB": 14,
+    "\u30DA\u30F3\u30BF\u30C7\u30B7\u30EB": 15,
+    "\u30DA\u30F3\u30C1\u30EB": 16,
+    "\u30D7\u30ED\u30D4\u30EB": 17,
+    "\u30C6\u30C8\u30E9\u30C7\u30B7\u30EB": 18,
+    "\u30C8\u30EA\u30C7\u30B7\u30EB": 19,
+    "\u30A6\u30F3\u30C7\u30B7\u30EB": 20
+  };
+  function substituentOrder(name) {
+    return SUBSTITUENT_ORDER[name] ?? Number.MAX_SAFE_INTEGER;
   }
-};
-
-// src/games/ionic-formula/server/question-generator.ts
-var ions2 = [...ions_default, ...complex_chemistry_default.supportIons, ...complex_chemistry_default.ions];
-var compounds = [...compounds_default, ...complex_chemistry_default.compounds];
-var difficulty = difficulty_default;
-var ionById = new Map(ions2.map((ion) => [ion.id, ion]));
-function deepFreeze(value) {
-  if (typeof value !== "object" || value === null || Object.isFrozen(value)) return value;
-  for (const nested of Object.values(value)) deepFreeze(nested);
-  return Object.freeze(value);
+  const MULTIPLIER_PREFIX = [
+    "",
+    "",
+    "\u30B8",
+    "\u30C8\u30EA",
+    "\u30C6\u30C8\u30E9",
+    "\u30DA\u30F3\u30BF",
+    "\u30D8\u30AD\u30B5",
+    "\u30D8\u30D7\u30BF",
+    "\u30AA\u30AF\u30BF",
+    "\u30CE\u30CA",
+    "\u30C7\u30AB",
+    "\u30A6\u30F3\u30C7\u30AB",
+    "\u30C9\u30C7\u30AB",
+    "\u30C8\u30EA\u30C7\u30AB",
+    "\u30C6\u30C8\u30E9\u30C7\u30AB",
+    "\u30DA\u30F3\u30BF\u30C7\u30AB",
+    "\u30D8\u30AD\u30B5\u30C7\u30AB",
+    "\u30D8\u30D7\u30BF\u30C7\u30AB",
+    "\u30AA\u30AF\u30BF\u30C7\u30AB",
+    "\u30CE\u30CA\u30C7\u30AB",
+    "\u30A4\u30B3\u30B5"
+  ];
+  const HALOGEN_INFO = {
+    F: { name: "\u30D5\u30EB\u30AA\u30ED", stroke: "#B08D1A", fill: "#F7F2A0" },
+    Cl: { name: "\u30AF\u30ED\u30ED", stroke: "#7CB518", fill: "#E8F5D0" },
+    Br: { name: "\u30D6\u30ED\u30E2", stroke: "#A0522D", fill: "#F3E0D6" },
+    I: { name: "\u30E8\u30FC\u30C9", stroke: "#7B4397", fill: "#EBDFF5" }
+  };
+  const HYDROXYL_ELEMENT = "OH";
+  const HYDROXYL_FILL = "#E8564F";
+  const HALOGEN_ELEMENT_BY_NAME = { "\u30D5\u30EB\u30AA\u30ED": "F", "\u30AF\u30ED\u30ED": "Cl", "\u30D6\u30ED\u30E2": "Br", "\u30E8\u30FC\u30C9": "I" };
+  const SUBSTITUENT_SPECIES = ["\u30E1\u30C1\u30EB", "\u30A8\u30C1\u30EB", "\u30D5\u30EB\u30AA\u30ED", "\u30AF\u30ED\u30ED", "\u30D6\u30ED\u30E2", "\u30E8\u30FC\u30C9"];
+  const SUBSTITUENT_LENGTH = { "\u30E1\u30C1\u30EB": 1, "\u30A8\u30C1\u30EB": 2, "\u30D5\u30EB\u30AA\u30ED": 1, "\u30AF\u30ED\u30ED": 1, "\u30D6\u30ED\u30E2": 1, "\u30E8\u30FC\u30C9": 1, [HYDROXYL_ELEMENT]: 1 };
+  const RING_SUBSTITUENT_SPECIES = ["\u30E1\u30C1\u30EB", "\u30D5\u30EB\u30AA\u30ED", "\u30AF\u30ED\u30ED", "\u30D6\u30ED\u30E2", "\u30E8\u30FC\u30C9"];
+  function rotateCW(dir, times) {
+    const steps = (times % 4 + 4) % 4;
+    const bit = DIRECTION_BIT[dir];
+    const rotated = (bit << steps | bit >> 4 - steps) & 15;
+    return DIR_ORDER.find((candidate) => DIRECTION_BIT[candidate] === rotated);
+  }
+  function getActiveDirections(panel) {
+    const base = PANEL_ARM_TABLE[panel.type];
+    const steps = panel.rotation / 90 % 4;
+    return new Set(base.map((d) => rotateCW(d, steps)));
+  }
+  function isHalogenPanel(panel) {
+    return !!panel && !!panel.element && panel.element !== "C";
+  }
+  function incomingCarbonDirections(grid, r, c) {
+    const dirs = [];
+    for (const dir of DIR_ORDER) {
+      const [dr, dc] = DELTA[dir];
+      const nr = r + dr, nc = c + dc;
+      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+      const neighbor = grid[nr][nc];
+      if (!neighbor || isHalogenPanel(neighbor)) continue;
+      if (getActiveDirections(neighbor).has(OPPOSITE[dir])) dirs.push(dir);
+    }
+    return dirs;
+  }
+  function getBondDirections(grid, r, c) {
+    const panel = grid[r][c];
+    if (!panel) return /* @__PURE__ */ new Set();
+    if (isHalogenPanel(panel)) {
+      const incoming = incomingCarbonDirections(grid, r, c);
+      return incoming.length === 1 ? new Set(incoming) : /* @__PURE__ */ new Set();
+    }
+    return getActiveDirections(panel);
+  }
+  function toBaseDir(actualDir, rotationDeg) {
+    const steps = rotationDeg / 90 % 4;
+    return rotateCW(actualDir, (4 - steps) % 4);
+  }
+  function checkMismatches(grid) {
+    const mismatches = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const panel = grid[r][c];
+        if (!panel) continue;
+        const bonds = getBondDirections(grid, r, c);
+        for (const dir of bonds) {
+          const [dr, dc] = DELTA[dir];
+          const nr = r + dr, nc = c + dc;
+          const inBounds = nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS;
+          const neighbor = inBounds ? grid[nr][nc] : null;
+          if (!neighbor) {
+            mismatches.push({ r, c, dir, reason: "DANGLING_BOND" });
+            continue;
+          }
+          const neighborBonds = getBondDirections(grid, nr, nc);
+          if (!neighborBonds.has(OPPOSITE[dir])) {
+            mismatches.push({ r, c, dir, reason: "ONE_SIDED_BOND" });
+          }
+        }
+      }
+    }
+    return mismatches;
+  }
+  function physicalCarbonDirections(panel) {
+    const baseMask = PANEL_ARM_TABLE[panel.type].reduce((mask, dir) => mask | DIRECTION_BIT[dir], 0);
+    const steps = (panel.rotation / 90 % 4 + 4) % 4;
+    const rotatedMask = (baseMask << steps | baseMask >> 4 - steps) & 15;
+    return new Set(DIR_ORDER.filter((dir) => (rotatedMask & DIRECTION_BIT[dir]) !== 0));
+  }
+  function physicalBondDirections(grid, r, c) {
+    const panel = grid[r][c];
+    if (!panel) return /* @__PURE__ */ new Set();
+    if (!isHalogenPanel(panel)) return physicalCarbonDirections(panel);
+    const incoming = [];
+    for (const dir of DIR_ORDER) {
+      const [dr, dc] = DELTA[dir];
+      const nr = r + dr, nc = c + dc;
+      const neighbor = nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS ? grid[nr][nc] : null;
+      if (neighbor && !isHalogenPanel(neighbor) && physicalCarbonDirections(neighbor).has(OPPOSITE[dir])) incoming.push(dir);
+    }
+    return incoming.length === 1 ? new Set(incoming) : /* @__PURE__ */ new Set();
+  }
+  function checkPhysicalPanelDirections(grid) {
+    const mismatches = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (!grid[r][c]) continue;
+        for (const dir of physicalBondDirections(grid, r, c)) {
+          const [dr, dc] = DELTA[dir];
+          const nr = r + dr, nc = c + dc;
+          const neighbor = nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS ? grid[nr][nc] : null;
+          if (!neighbor || !physicalBondDirections(grid, nr, nc).has(OPPOSITE[dir])) {
+            mismatches.push({ r, c, dir });
+          }
+        }
+      }
+    }
+    return mismatches;
+  }
+  function buildGraph(grid) {
+    const adjacency = /* @__PURE__ */ new Map();
+    const nodeIds = [];
+    const elements = /* @__PURE__ */ new Map();
+    const idOf = (r, c) => `${r},${c}`;
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (grid[r][c]) {
+          nodeIds.push(idOf(r, c));
+          adjacency.set(idOf(r, c), /* @__PURE__ */ new Set());
+          elements.set(idOf(r, c), grid[r][c].element || "C");
+        }
+      }
+    }
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const panel = grid[r][c];
+        if (!panel) continue;
+        for (const dir of getBondDirections(grid, r, c)) {
+          const [dr, dc] = DELTA[dir];
+          const nr = r + dr, nc = c + dc;
+          if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || !grid[nr][nc]) continue;
+          adjacency.get(idOf(r, c)).add(idOf(nr, nc));
+          adjacency.get(idOf(nr, nc)).add(idOf(r, c));
+        }
+      }
+    }
+    return { nodeIds, adjacency, elements };
+  }
+  function checkConnectivity(graph) {
+    const { nodeIds, adjacency } = graph;
+    if (nodeIds.length === 0) return { allConnected: true, islands: [] };
+    const visited = /* @__PURE__ */ new Set([nodeIds[0]]);
+    const queue = [nodeIds[0]];
+    while (queue.length) {
+      const cur = queue.shift();
+      for (const next of adjacency.get(cur)) {
+        if (!visited.has(next)) {
+          visited.add(next);
+          queue.push(next);
+        }
+      }
+    }
+    return { allConnected: visited.size === nodeIds.length, islands: nodeIds.filter((id) => !visited.has(id)) };
+  }
+  function countEdges(graph) {
+    let sum = 0;
+    for (const n of graph.adjacency.values()) sum += n.size;
+    return sum / 2;
+  }
+  function classifyStructure(graph) {
+    const V = graph.nodeIds.length, E = countEdges(graph);
+    const cyclomatic = E - V + 1;
+    if (cyclomatic === 0) return "ALKANE";
+    if (cyclomatic === 1) return "CYCLOALKANE";
+    return "UNSUPPORTED_MULTI_RING";
+  }
+  function bfsDistancesAndParents(adjacency, start) {
+    const dist = /* @__PURE__ */ new Map([[start, 0]]);
+    const parent = /* @__PURE__ */ new Map([[start, null]]);
+    const queue = [start];
+    while (queue.length) {
+      const cur = queue.shift();
+      for (const next of adjacency.get(cur)) {
+        if (!dist.has(next)) {
+          dist.set(next, dist.get(cur) + 1);
+          parent.set(next, cur);
+          queue.push(next);
+        }
+      }
+    }
+    return { dist, parent };
+  }
+  function reconstructPath(parent, from, to) {
+    const path = [to];
+    let cur = to;
+    while (cur !== from) {
+      cur = parent.get(cur);
+      path.push(cur);
+    }
+    return path.reverse();
+  }
+  function nameCarbonSubstituent(graph, backboneSet, backboneNode, root) {
+    const nodes = /* @__PURE__ */ new Set();
+    const queue = [{ id: root, parent: backboneNode }];
+    while (queue.length) {
+      const { id: cur, parent } = queue.shift();
+      if (nodes.has(cur)) throw new Error("UNSUPPORTED_SUBSTITUENT");
+      if (graph.elements.get(cur) !== "C") throw new Error("UNSUPPORTED_SUBSTITUENT");
+      nodes.add(cur);
+      for (const next of graph.adjacency.get(cur)) {
+        if (next === parent) continue;
+        if (backboneSet.has(next)) throw new Error("UNSUPPORTED_SUBSTITUENT");
+        if (nodes.has(next)) throw new Error("UNSUPPORTED_SUBSTITUENT");
+        queue.push({ id: next, parent: cur });
+      }
+    }
+    const carbonNeighbors = (id) => [...graph.adjacency.get(id)].filter((next) => nodes.has(next));
+    const length = nodes.size;
+    const rootDegree = carbonNeighbors(root).length;
+    const isStraight = [...nodes].every((id) => carbonNeighbors(id).length <= 2);
+    if (isStraight && rootDegree <= 1) {
+      const name = SUBSTITUENT_NAME_BY_LENGTH[length];
+      if (!name) throw new Error("UNSUPPORTED_SUBSTITUENT");
+      return { backboneNode, length, name };
+    }
+    if (isStraight && length === 3 && rootDegree === 2) {
+      return { backboneNode, length, name: "\u30A4\u30BD\u30D7\u30ED\u30D4\u30EB" };
+    }
+    if (isStraight && length === 4 && rootDegree === 2) {
+      return { backboneNode, length, name: "sec-\u30D6\u30C1\u30EB" };
+    }
+    if (length === 4 && rootDegree === 1) {
+      const junction = carbonNeighbors(root)[0];
+      if (junction && carbonNeighbors(junction).length === 3) {
+        return { backboneNode, length, name: "\u30A4\u30BD\u30D6\u30C1\u30EB" };
+      }
+    }
+    if (length === 4 && rootDegree === 3 && [...nodes].every((id) => id === root || carbonNeighbors(id).length === 1)) {
+      return { backboneNode, length, name: "tert-\u30D6\u30C1\u30EB" };
+    }
+    throw new Error("UNSUPPORTED_SUBSTITUENT");
+  }
+  function extractSubstituents(graph, backboneSet) {
+    const substituents = [];
+    for (const node of backboneSet) {
+      for (const neighbor of graph.adjacency.get(node)) {
+        if (backboneSet.has(neighbor)) continue;
+        const neighborElement = graph.elements.get(neighbor);
+        if (neighborElement !== "C") {
+          if (neighborElement === HYDROXYL_ELEMENT) continue;
+          const further = [...graph.adjacency.get(neighbor)].filter((n) => n !== node);
+          if (further.length > 0) throw new Error("UNSUPPORTED_SUBSTITUENT");
+          substituents.push({ backboneNode: node, length: 1, name: HALOGEN_INFO[neighborElement].name });
+          continue;
+        }
+        substituents.push(nameCarbonSubstituent(graph, backboneSet, node, neighbor));
+      }
+    }
+    return substituents;
+  }
+  function hydroxylLocants(graph, orderedBackbone) {
+    const backboneSet = new Set(orderedBackbone);
+    const locants = [];
+    for (const node of orderedBackbone) {
+      for (const neighbor of graph.adjacency.get(node)) {
+        if (graph.elements.get(neighbor) === HYDROXYL_ELEMENT) {
+          if (graph.adjacency.get(neighbor).size !== 1) throw new Error("INVALID_HYDROXYL");
+          locants.push(orderedBackbone.indexOf(node) + 1);
+        }
+      }
+    }
+    const allHydroxyls = graph.nodeIds.filter((id) => graph.elements.get(id) === HYDROXYL_ELEMENT);
+    if (locants.length !== allHydroxyls.length || new Set(locants).size !== locants.length) {
+      throw new Error("UNSUPPORTED_HYDROXYL_LAYOUT");
+    }
+    return locants.sort((a, b) => a - b);
+  }
+  function validateHydroxyls(graph) {
+    for (const id of graph.nodeIds) {
+      if (graph.elements.get(id) !== HYDROXYL_ELEMENT) continue;
+      const neighbors = [...graph.adjacency.get(id)];
+      if (neighbors.length !== 1 || graph.elements.get(neighbors[0]) !== "C") throw new Error("INVALID_HYDROXYL");
+    }
+    for (const id of graph.nodeIds) {
+      if (graph.elements.get(id) !== "C") continue;
+      const hydroxylCount = [...graph.adjacency.get(id)].filter((n) => graph.elements.get(n) === HYDROXYL_ELEMENT).length;
+      if (hydroxylCount > 1) throw new Error("GEMINAL_DIOL");
+    }
+  }
+  function buildSubstituentPrefix(locantedSubstituents, omitSoleEthaneLocant = false) {
+    if (locantedSubstituents.length === 0) return "";
+    if (omitSoleEthaneLocant && locantedSubstituents.length === 1 && locantedSubstituents[0].locant === 1) {
+      return locantedSubstituents[0].name;
+    }
+    const groups = /* @__PURE__ */ new Map();
+    for (const s of locantedSubstituents) {
+      if (!groups.has(s.name)) groups.set(s.name, []);
+      groups.get(s.name).push(s.locant);
+    }
+    const sortedNames = [...groups.keys()].sort((a, b) => substituentOrder(a) - substituentOrder(b));
+    return sortedNames.map((name) => {
+      const locants = groups.get(name).sort((a, b) => a - b);
+      return `${locants.join(",")}-${MULTIPLIER_PREFIX[locants.length] || ""}${name}`;
+    }).join("-");
+  }
+  function buildMethaneSubstituentPrefix(substituents) {
+    if (substituents.length === 0) return "";
+    const counts = /* @__PURE__ */ new Map();
+    for (const s of substituents) counts.set(s.name, (counts.get(s.name) || 0) + 1);
+    return [...counts.keys()].sort((a, b) => substituentOrder(a) - substituentOrder(b)).map((name) => `${MULTIPLIER_PREFIX[counts.get(name)] || ""}${name}`).join("");
+  }
+  function buildAlcoholName(parentName, hydroxylLocantList, locantedSubstituents, isCyclo) {
+    const prefix = parentName === "\u30E1\u30BF\u30F3" ? buildMethaneSubstituentPrefix(locantedSubstituents) : buildSubstituentPrefix(locantedSubstituents);
+    const count = hydroxylLocantList.length;
+    if (count === 0) return prefix + parentName;
+    const alcoholStem = parentName.endsWith("\u30F3") ? parentName.slice(0, -1) + "\u30CE\u30FC\u30EB" : parentName + "\u30AA\u30FC\u30EB";
+    if (count === 1) {
+      const omitLocant = isCyclo || parentName === "\u30E1\u30BF\u30F3" || parentName === "\u30A8\u30BF\u30F3";
+      const alcoholPart2 = omitLocant ? alcoholStem : `${hydroxylLocantList[0]}-${alcoholStem}`;
+      return prefix ? omitLocant ? prefix + alcoholPart2 : `${prefix}-${alcoholPart2}` : alcoholPart2;
+    }
+    const alcoholPart = `${hydroxylLocantList.join(",")}-${parentName}${MULTIPLIER_PREFIX[count]}\u30AA\u30FC\u30EB`;
+    return prefix ? `${prefix}-${alcoholPart}` : alcoholPart;
+  }
+  function buildName(baseName, locantedSubstituents) {
+    return buildSubstituentPrefix(locantedSubstituents, baseName === "\u30A8\u30BF\u30F3") + baseName;
+  }
+  function compareLocantArrays(a, b) {
+    const len = Math.max(a.length, b.length);
+    for (let i = 0; i < len; i++) {
+      const av = a[i] ?? Infinity, bv = b[i] ?? Infinity;
+      if (av !== bv) return av - bv;
+    }
+    return 0;
+  }
+  function alphabeticalLocants(rawSubstituents, locantOf) {
+    return rawSubstituents.map((s) => ({ order: substituentOrder(s.name), locant: locantOf(s) })).sort((a, b) => a.order - b.order || a.locant - b.locant).map((x) => x.locant);
+  }
+  function compareNumberingCandidates(a, b) {
+    const bySet = compareLocantArrays(a.locants, b.locants);
+    if (bySet !== 0) return bySet;
+    return compareLocantArrays(a.alphaLocants, b.alphaLocants);
+  }
+  function buildMethaneName(substituents) {
+    if (substituents.length === 0) return "\u30E1\u30BF\u30F3";
+    const counts = /* @__PURE__ */ new Map();
+    for (const s of substituents) counts.set(s.name, (counts.get(s.name) || 0) + 1);
+    const sortedNames = [...counts.keys()].sort((a, b) => substituentOrder(a) - substituentOrder(b));
+    const parts = sortedNames.map((name) => {
+      const count = counts.get(name);
+      const multiplier = MULTIPLIER_PREFIX[count] || "";
+      return `${multiplier}${name}`;
+    });
+    return parts.join("") + "\u30E1\u30BF\u30F3";
+  }
+  function nameAlkane(graph) {
+    const { nodeIds, adjacency, elements } = graph;
+    const carbonIds = nodeIds.filter((id) => elements.get(id) === "C");
+    if (carbonIds.length === 1) {
+      const centerId = carbonIds[0];
+      const rawSubstituents = extractSubstituents(graph, /* @__PURE__ */ new Set([centerId]));
+      const hydroxyls = hydroxylLocants(graph, [centerId]);
+      if (hydroxyls.length) return buildAlcoholName("\u30E1\u30BF\u30F3", hydroxyls, rawSubstituents.map((s) => ({ locant: 1, name: s.name })), false);
+      return buildMethaneName(rawSubstituents);
+    }
+    const leaves = carbonIds.filter((id) => {
+      let carbonNeighborCount = 0;
+      for (const n of adjacency.get(id)) if (elements.get(n) === "C") carbonNeighborCount++;
+      return carbonNeighborCount === 1;
+    });
+    const distMaps = /* @__PURE__ */ new Map();
+    for (const leaf of leaves) distMaps.set(leaf, bfsDistancesAndParents(adjacency, leaf));
+    const candidatePairs = [];
+    for (let i = 0; i < leaves.length; i++) {
+      for (let j = i + 1; j < leaves.length; j++) {
+        const d = distMaps.get(leaves[i]).dist.get(leaves[j]);
+        if (Number.isFinite(d)) candidatePairs.push([leaves[i], leaves[j]]);
+      }
+    }
+    const structuralCandidates = candidatePairs.flatMap(([a, b]) => {
+      const path = reconstructPath(distMaps.get(a).parent, a, b);
+      const hydroxylCount = path.reduce((count, node) => count + [...adjacency.get(node)].filter((neighbor) => elements.get(neighbor) === HYDROXYL_ELEMENT).length, 0);
+      return [path, [...path].reverse()].map((orderedPath) => ({ orderedPath, hydroxylCount }));
+    });
+    const maxHydroxylCount = Math.max(...structuralCandidates.map((candidate) => candidate.hydroxylCount));
+    const maxParentLength = Math.max(...structuralCandidates.filter((candidate) => candidate.hydroxylCount === maxHydroxylCount).map((candidate) => candidate.orderedPath.length));
+    let best = null;
+    const candidateErrors = /* @__PURE__ */ new Set();
+    for (const { orderedPath, hydroxylCount } of structuralCandidates) {
+      if (hydroxylCount !== maxHydroxylCount || orderedPath.length !== maxParentLength) continue;
+      if (orderedPath.length > 35) throw new Error("UNSUPPORTED: \u4E3B\u9396\u304C\u30DA\u30F3\u30BF\u30C8\u30EA\u30A2\u30B3\u30F3\u30BF\u30F3\u3092\u8D85\u3048\u3066\u3044\u307E\u3059");
+      const pathSet = new Set(orderedPath);
+      try {
+        const rawSubstituents = extractSubstituents(graph, pathSet);
+        const hydroxyls = hydroxylLocants(graph, orderedPath);
+        const locantOf = (s) => orderedPath.indexOf(s.backboneNode) + 1;
+        const locants = rawSubstituents.map(locantOf).sort((a, b) => a - b);
+        const alphaLocants = alphabeticalLocants(rawSubstituents, locantOf);
+        const branchCount = rawSubstituents.length;
+        const candidate = { orderedPath, rawSubstituents, hydroxyls, locants, alphaLocants, branchCount };
+        if (best === null || compareLocantArrays(candidate.hydroxyls, best.hydroxyls) < 0 || compareLocantArrays(candidate.hydroxyls, best.hydroxyls) === 0 && candidate.branchCount > best.branchCount || compareLocantArrays(candidate.hydroxyls, best.hydroxyls) === 0 && candidate.branchCount === best.branchCount && compareNumberingCandidates(candidate, best) < 0) best = candidate;
+      } catch (e) {
+        candidateErrors.add(e.message);
+      }
+    }
+    if (!best) {
+      if (candidateErrors.has("UNSUPPORTED_SUBSTITUENT")) throw new Error("UNSUPPORTED_SUBSTITUENT");
+      if (candidateErrors.has("UNSUPPORTED_HYDROXYL_LAYOUT")) throw new Error("UNSUPPORTED_HYDROXYL_LAYOUT");
+      throw new Error("UNSUPPORTED_SUBSTITUENT");
+    }
+    const locantedSubstituents = best.rawSubstituents.map((s) => ({ locant: best.orderedPath.indexOf(s.backboneNode) + 1, name: s.name }));
+    if (best.hydroxyls.length) return buildAlcoholName(CHAIN_NAMES[best.orderedPath.length], best.hydroxyls, locantedSubstituents, false);
+    return buildName(CHAIN_NAMES[best.orderedPath.length], locantedSubstituents);
+  }
+  function findRing(graph) {
+    const { nodeIds, adjacency } = graph;
+    const visited = /* @__PURE__ */ new Set();
+    const parent = /* @__PURE__ */ new Map();
+    const stack = [[nodeIds[0], null]];
+    while (stack.length) {
+      const [node, from] = stack.pop();
+      if (visited.has(node)) continue;
+      visited.add(node);
+      parent.set(node, from);
+      for (const next of adjacency.get(node)) {
+        if (next === from) continue;
+        if (visited.has(next)) {
+          const ring = [node];
+          let cur = node;
+          while (cur !== next) {
+            cur = parent.get(cur);
+            ring.push(cur);
+          }
+          return ring;
+        }
+        stack.push([next, node]);
+      }
+    }
+    throw new Error("RING_NOT_FOUND");
+  }
+  function nameCycloalkane(graph) {
+    const ring = findRing(graph);
+    const ringSize = ring.length;
+    if (ringSize % 2 !== 0) throw new Error("UNSUPPORTED: \u5947\u6570\u54E1\u74B0");
+    if (ringSize < 4 || ringSize > 34) throw new Error(`UNSUPPORTED: \u30B7\u30AF\u30ED${ringSize}\u54E1\u74B0\u306F\u5BFE\u8C61\u5916`);
+    const ringSet = new Set(ring);
+    const rawSubstituents = extractSubstituents(graph, ringSet);
+    const hydroxylCount = graph.nodeIds.filter((id) => graph.elements.get(id) === HYDROXYL_ELEMENT).length;
+    const parentName = "\u30B7\u30AF\u30ED" + CHAIN_NAMES[ringSize];
+    if (hydroxylCount > 0) {
+      let bestAlcohol = null;
+      for (let startIdx = 0; startIdx < ringSize; startIdx++) {
+        for (const direction of [1, -1]) {
+          const ordered = [];
+          for (let step = 0; step < ringSize; step++) ordered.push(ring[((startIdx + step * direction) % ringSize + ringSize) % ringSize]);
+          try {
+            const hydroxyls = hydroxylLocants(graph, ordered);
+            const locantOf = (s) => ordered.indexOf(s.backboneNode) + 1;
+            const locants = rawSubstituents.map(locantOf).sort((a, b) => a - b);
+            const candidate = { ordered, hydroxyls, locants, alphaLocants: alphabeticalLocants(rawSubstituents, locantOf) };
+            if (bestAlcohol === null || compareLocantArrays(candidate.hydroxyls, bestAlcohol.hydroxyls) < 0 || compareLocantArrays(candidate.hydroxyls, bestAlcohol.hydroxyls) === 0 && compareNumberingCandidates(candidate, bestAlcohol) < 0) bestAlcohol = candidate;
+          } catch (e) {
+          }
+        }
+      }
+      if (!bestAlcohol) throw new Error("UNSUPPORTED_HYDROXYL_LAYOUT");
+      const locantedSubstituents2 = rawSubstituents.map((s) => ({ locant: bestAlcohol.ordered.indexOf(s.backboneNode) + 1, name: s.name }));
+      return buildAlcoholName(parentName, bestAlcohol.hydroxyls, locantedSubstituents2, true);
+    }
+    if (rawSubstituents.length === 0) return "\u30B7\u30AF\u30ED" + CHAIN_NAMES[ringSize];
+    if (rawSubstituents.length === 1) {
+      return rawSubstituents[0].name + "\u30B7\u30AF\u30ED" + CHAIN_NAMES[ringSize];
+    }
+    let best = null;
+    for (let startIdx = 0; startIdx < ringSize; startIdx++) {
+      for (const direction of [1, -1]) {
+        const ordered = [];
+        for (let step = 0; step < ringSize; step++) {
+          const idx = ((startIdx + step * direction) % ringSize + ringSize) % ringSize;
+          ordered.push(ring[idx]);
+        }
+        const locantOf = (s) => ordered.indexOf(s.backboneNode) + 1;
+        const locants = rawSubstituents.map(locantOf).sort((a, b) => a - b);
+        const alphaLocants = alphabeticalLocants(rawSubstituents, locantOf);
+        const candidate = { ordered, locants, alphaLocants };
+        if (best === null || compareNumberingCandidates(candidate, best) < 0) best = candidate;
+      }
+    }
+    const locantedSubstituents = rawSubstituents.map((s) => ({ locant: best.ordered.indexOf(s.backboneNode) + 1, name: s.name }));
+    return buildName("\u30B7\u30AF\u30ED" + CHAIN_NAMES[ringSize], locantedSubstituents);
+  }
+  function generateName(grid) {
+    const mismatches = checkMismatches(grid);
+    if (mismatches.length > 0) return { ok: false, error: "INCOMPLETE_BONDS", mismatches };
+    const graph = buildGraph(grid);
+    if (graph.nodeIds.length === 0) return { ok: false, error: "EMPTY_GRID" };
+    const connectivity = checkConnectivity(graph);
+    if (!connectivity.allConnected) return { ok: false, error: "DISCONNECTED", islands: connectivity.islands };
+    const structureType = classifyStructure(graph);
+    try {
+      validateHydroxyls(graph);
+      if (structureType === "ALKANE") return { ok: true, name: nameAlkane(graph) };
+      if (structureType === "CYCLOALKANE") return { ok: true, name: nameCycloalkane(graph) };
+      return { ok: false, error: structureType };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  }
+  function randInt(min, max) {
+    return min + Math.floor(random() * (max - min + 1));
+  }
+  function choice(arr) {
+    return arr[randInt(0, arr.length - 1)];
+  }
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = randInt(0, i);
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  function emptyGrid() {
+    return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+  }
+  function pickUpToNDistinct(pool, n) {
+    const count = randInt(1, Math.max(1, Math.min(n, pool.length)));
+    const shuffled2 = shuffle([...pool]);
+    return shuffled2.slice(0, count);
+  }
+  function pickSpeciesForRange(typeRange, slotCount, forceHydroxyl = false) {
+    const [rawMin, rawMax] = Array.isArray(typeRange) ? typeRange : [1, typeRange || 1];
+    const pool = forceHydroxyl ? [...SUBSTITUENT_SPECIES, HYDROXYL_ELEMENT] : SUBSTITUENT_SPECIES;
+    const hi = Math.max(1, Math.min(rawMax, pool.length, Math.max(1, slotCount)));
+    const lo = Math.max(1, Math.min(rawMin, hi));
+    const count = randInt(lo, hi);
+    if (forceHydroxyl) {
+      return [HYDROXYL_ELEMENT, ...shuffle([...SUBSTITUENT_SPECIES]).slice(0, count - 1)];
+    }
+    return shuffle([...pool]).slice(0, count);
+  }
+  function panelFor(type, targetDirs) {
+    const targetSet = new Set(targetDirs);
+    const base = PANEL_ARM_TABLE[type];
+    for (let steps = 0; steps < 4; steps++) {
+      const candidate = new Set(base.map((d) => rotateCW(d, steps)));
+      if (candidate.size === targetSet.size && [...candidate].every((d) => targetSet.has(d))) {
+        return { type, rotation: steps * 90 };
+      }
+    }
+    throw new Error("NO_ROTATION_MATCH");
+  }
+  function spinePanel(hasUp, hasDown, isLeftEnd, isRightEnd) {
+    const chainDirs = isLeftEnd ? ["E"] : isRightEnd ? ["W"] : ["W", "E"];
+    const dirs = chainDirs.concat(hasUp ? ["N"] : [], hasDown ? ["S"] : []);
+    return panelForDirections(dirs);
+  }
+  function branchPanelsForName(side, name) {
+    const back = side === "up" ? "S" : "N";
+    const fwd = side === "up" ? "N" : "S";
+    const length = SUBSTITUENT_LENGTH[name];
+    if (length === 1) {
+      const panel = panelFor(1, [back]);
+      if (name === HYDROXYL_ELEMENT) panel.element = HYDROXYL_ELEMENT;
+      const el = HALOGEN_ELEMENT_BY_NAME[name];
+      if (el) panel.element = el;
+      return [panel];
+    }
+    return [panelFor(2, [back, fwd]), panelFor(1, [back])];
+  }
+  function generateAlkaneGrid(typeRange, opts) {
+    const { lenMin = 2, lenMax = 7, subMin = 0, subMax = 3, forceHydroxyl = false, hydroxylLimitOne = false } = opts || {};
+    const len = randInt(Math.max(2, lenMin), Math.max(2, lenMax));
+    const startCol = Math.floor((COLS - len) / 2);
+    const spineRow = 2;
+    const grid = emptyGrid();
+    const slots = [];
+    for (let i = 0; i < len; i++) {
+      slots.push([i, "up"]);
+      slots.push([i, "down"]);
+    }
+    shuffle(slots);
+    const distinctNames = pickSpeciesForRange(typeRange, slots.length, forceHydroxyl);
+    const count = Math.min(slots.length, randInt(subMin, subMax));
+    const posInfo = {};
+    let hydroxylCount = 0;
+    for (let i = 0; i < count; i++) {
+      const [idx, side] = slots[i];
+      if (!posInfo[idx]) posInfo[idx] = {};
+      const candidates = distinctNames.filter((name2) => name2 !== HYDROXYL_ELEMENT || !Object.values(posInfo[idx]).includes(HYDROXYL_ELEMENT) && (!hydroxylLimitOne || hydroxylCount === 0));
+      if (candidates.length === 0) continue;
+      const name = candidates.length === 1 ? candidates[0] : choice(candidates);
+      posInfo[idx][side] = name;
+      if (name === HYDROXYL_ELEMENT) hydroxylCount++;
+    }
+    for (let i = 0; i < len; i++) {
+      const col = startCol + i;
+      const info = posInfo[i] || {};
+      grid[spineRow][col] = spinePanel(!!info.up, !!info.down, i === 0, i === len - 1);
+      if (info.up) {
+        const bp = branchPanelsForName("up", info.up);
+        grid[spineRow - 1][col] = bp[0];
+        if (bp[1]) grid[spineRow - 2][col] = bp[1];
+      }
+      if (info.down) {
+        const bp = branchPanelsForName("down", info.down);
+        grid[spineRow + 1][col] = bp[0];
+        if (bp[1]) grid[spineRow + 2][col] = bp[1];
+      }
+    }
+    return grid;
+  }
+  function directionBetween([r1, c1], [r2, c2]) {
+    if (r2 === r1 - 1 && c2 === c1) return "N";
+    if (r2 === r1 + 1 && c2 === c1) return "S";
+    if (r2 === r1 && c2 === c1 + 1) return "E";
+    if (r2 === r1 && c2 === c1 - 1) return "W";
+    throw new Error("NOT_ADJACENT");
+  }
+  function computeChainDirs(path, i) {
+    const dirs = [];
+    if (i > 0) dirs.push(directionBetween(path[i], path[i - 1]));
+    if (i < path.length - 1) dirs.push(directionBetween(path[i], path[i + 1]));
+    return dirs;
+  }
+  function countBends(path) {
+    let bends = 0;
+    for (let i = 1; i < path.length - 1; i++) {
+      const [dPrev, dNext] = computeChainDirs(path, i);
+      if (OPPOSITE[dPrev] !== dNext) bends++;
+    }
+    return bends;
+  }
+  function panelForDirections(dirs) {
+    const set = new Set(dirs);
+    const n = set.size;
+    if (n === 1) return panelFor(1, [...set]);
+    if (n === 2) {
+      const [a, b] = [...set];
+      return panelFor(OPPOSITE[a] === b ? 2 : 3, [...set]);
+    }
+    if (n === 3) return panelFor(4, [...set]);
+    if (n === 4) return panelFor(5, [...set]);
+    throw new Error("INVALID_DIRECTION_COUNT");
+  }
+  function tryGenerateBentChain(len, forceTurn) {
+    const occupied = /* @__PURE__ */ new Set();
+    const key2 = (r2, c2) => `${r2},${c2}`;
+    let r = randInt(1, ROWS - 2);
+    let c = randInt(2, COLS - 3);
+    const path = [[r, c]];
+    occupied.add(key2(r, c));
+    let lastDir = null;
+    for (let step = 1; step < len; step++) {
+      let candidates = shuffle(["N", "E", "S", "W"]).filter((d) => !lastDir || d !== OPPOSITE[lastDir]);
+      if (forceTurn && lastDir) {
+        candidates = candidates.filter((d) => d !== lastDir).concat(candidates.filter((d) => d === lastDir));
+      }
+      let moved = false;
+      for (const d of candidates) {
+        const [dr, dc] = DELTA[d];
+        const nr = r + dr, nc = c + dc;
+        if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS || occupied.has(key2(nr, nc))) continue;
+        r = nr;
+        c = nc;
+        path.push([r, c]);
+        occupied.add(key2(r, c));
+        lastDir = d;
+        moved = true;
+        break;
+      }
+      if (!moved) return null;
+    }
+    return { path, occupied };
+  }
+  function planBentSubstituents(path, occupied, typeRange, subMin, subMax, forceHydroxyl, hydroxylLimitOne) {
+    const len = path.length;
+    const distinctNames = pickSpeciesForRange(typeRange, len * 3, forceHydroxyl);
+    const targetCount = randInt(subMin, subMax);
+    const posInfo = {};
+    let placed = 0;
+    let hydroxylCount = 0;
+    const place = (i, dir, name) => {
+      const length = SUBSTITUENT_LENGTH[name];
+      const [dr, dc] = DELTA[dir];
+      const [r0, c0] = path[i];
+      let rr = r0, cc = c0;
+      for (let k = 0; k < length; k++) {
+        rr += dr;
+        cc += dc;
+        occupied.add(`${rr},${cc}`);
+      }
+      if (!posInfo[i]) posInfo[i] = {};
+      posInfo[i][dir] = name;
+      if (name === HYDROXYL_ELEMENT) hydroxylCount++;
+      placed++;
+    };
+    const canPlace = (i, dir, name) => {
+      const length = SUBSTITUENT_LENGTH[name];
+      const [dr, dc] = DELTA[dir];
+      const [r0, c0] = path[i];
+      let rr = r0, cc = c0;
+      for (let k = 0; k < length; k++) {
+        rr += dr;
+        cc += dc;
+        if (rr < 0 || rr >= ROWS || cc < 0 || cc >= COLS || occupied.has(`${rr},${cc}`)) return false;
+      }
+      return true;
+    };
+    const eligibleNamesAt = (i) => {
+      const currentNames = posInfo[i] ? Object.values(posInfo[i]) : [];
+      return distinctNames.filter((name) => name !== HYDROXYL_ELEMENT || !currentNames.includes(HYDROXYL_ELEMENT) && (!hydroxylLimitOne || hydroxylCount === 0));
+    };
+    const choicesAt = (i, names) => {
+      const chainDirs = computeChainDirs(path, i);
+      const usedDirs = new Set(Object.keys(posInfo[i] || {}));
+      const directions = DIR_ORDER.filter((dir) => !chainDirs.includes(dir) && !usedDirs.has(dir));
+      const choices = [];
+      for (const dir of directions) {
+        for (const name of names) if (canPlace(i, dir, name)) choices.push({ dir, name });
+      }
+      return choices;
+    };
+    while (placed < targetCount) {
+      const positions = [];
+      for (let i2 = 0; i2 < len; i2++) {
+        const choices2 = choicesAt(i2, eligibleNamesAt(i2));
+        if (choices2.length) positions.push({ i: i2, choices: choices2 });
+      }
+      if (!positions.length) break;
+      const { i, choices } = choice(positions);
+      const { dir, name } = choice(choices);
+      place(i, dir, name);
+    }
+    return posInfo;
+  }
+  function buildBentGrid(path, posInfo) {
+    const grid = emptyGrid();
+    for (let i = 0; i < path.length; i++) {
+      const [r, c] = path[i];
+      const chainDirs = computeChainDirs(path, i);
+      const info = posInfo[i] || {};
+      const branchDirs = Object.keys(info);
+      grid[r][c] = panelForDirections(chainDirs.concat(branchDirs));
+      for (const dir of branchDirs) {
+        const name = info[dir];
+        const length = SUBSTITUENT_LENGTH[name];
+        const el = HALOGEN_ELEMENT_BY_NAME[name];
+        const [dr, dc] = DELTA[dir];
+        let rr = r, cc = c;
+        for (let k = 0; k < length; k++) {
+          rr += dr;
+          cc += dc;
+          const isLast = k === length - 1;
+          grid[rr][cc] = panelForDirections(isLast ? [OPPOSITE[dir]] : [OPPOSITE[dir], dir]);
+          if (isLast && name === HYDROXYL_ELEMENT) grid[rr][cc].element = HYDROXYL_ELEMENT;
+          if (isLast && el) grid[rr][cc].element = el;
+        }
+      }
+    }
+    return grid;
+  }
+  function generateBentAlkaneGrid(typeRange, opts, forceTurn, bendRange) {
+    const { lenMin = 6, lenMax = 9, subMin = 2, subMax = 4, forceHydroxyl = false, hydroxylLimitOne = false } = opts || {};
+    const [bendMin, bendMax] = bendRange || [0, Infinity];
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const len = randInt(Math.max(2, lenMin), Math.max(2, lenMax));
+      const walk = tryGenerateBentChain(len, forceTurn);
+      if (!walk) continue;
+      const bends = countBends(walk.path);
+      if (bends < bendMin || bends > bendMax) continue;
+      const occupied = new Set(walk.occupied);
+      const posInfo = planBentSubstituents(walk.path, occupied, typeRange, subMin, subMax, forceHydroxyl, hydroxylLimitOne);
+      return buildBentGrid(walk.path, posInfo);
+    }
+    return null;
+  }
+  function makeRingTemplate(width) {
+    const cells = [];
+    for (let c = 0; c < width; c++) cells.push([0, c]);
+    for (let c = width - 1; c >= 0; c--) cells.push([1, c]);
+    return { width, height: 2, cells };
+  }
+  const RING_TEMPLATES = {
+    4: makeRingTemplate(2),
+    // シクロブタン
+    6: makeRingTemplate(3),
+    // シクロヘキサン
+    8: makeRingTemplate(4),
+    // シクロオクタン
+    10: makeRingTemplate(5)
+    // シクロデカン
+  };
+  function computeRingDirs(path, i) {
+    const n = path.length;
+    const prev = path[(i - 1 + n) % n];
+    const next = path[(i + 1) % n];
+    return [directionBetween(path[i], prev), directionBetween(path[i], next)];
+  }
+  function tryGenerateRingWalk(size) {
+    const startR = randInt(0, ROWS - 1);
+    const startC = randInt(0, COLS - 1);
+    const path = [[startR, startC]];
+    const occupied = /* @__PURE__ */ new Set([`${startR},${startC}`]);
+    let budget = 4e3;
+    function backtrack() {
+      if (--budget <= 0) return false;
+      const [r, c] = path[path.length - 1];
+      if (path.length === size) {
+        const [sr, sc] = path[0];
+        return Math.abs(r - sr) + Math.abs(c - sc) === 1;
+      }
+      for (const d of shuffle(["N", "E", "S", "W"])) {
+        const [dr, dc] = DELTA[d];
+        const nr = r + dr, nc = c + dc;
+        if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+        const key2 = `${nr},${nc}`;
+        if (occupied.has(key2)) continue;
+        path.push([nr, nc]);
+        occupied.add(key2);
+        if (backtrack()) return true;
+        path.pop();
+        occupied.delete(key2);
+      }
+      return false;
+    }
+    return backtrack() ? { path, occupied } : null;
+  }
+  function buildRingGridFromPath(path, forceSubstituent, subMin, subMax, typeRange, forceHydroxyl, hydroxylLimitOne) {
+    const size = path.length;
+    const grid = emptyGrid();
+    const occupied = new Set(path.map(([r, c]) => `${r},${c}`));
+    for (let i = 0; i < size; i++) {
+      const [r, c] = path[i];
+      grid[r][c] = panelForDirections(computeRingDirs(path, i));
+    }
+    const slots = [];
+    for (let i = 0; i < size; i++) {
+      const [r, c] = path[i];
+      const ringDirs = computeRingDirs(path, i);
+      for (const d of ["N", "E", "S", "W"]) {
+        if (ringDirs.includes(d)) continue;
+        const [dr, dc] = DELTA[d];
+        const nr = r + dr, nc = c + dc;
+        if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+        if (occupied.has(`${nr},${nc}`)) continue;
+        let safe2 = true;
+        for (const d2 of ["N", "E", "S", "W"]) {
+          const [dr2, dc2] = DELTA[d2];
+          const nnr = nr + dr2, nnc = nc + dc2;
+          if (nnr === r && nnc === c) continue;
+          if (occupied.has(`${nnr},${nnc}`)) {
+            safe2 = false;
+            break;
+          }
+        }
+        if (safe2) slots.push({ r, c, dir: d, nr, nc });
+      }
+    }
+    shuffle(slots);
+    const distinctNames = pickSpeciesForRange(typeRange, slots.length, forceHydroxyl);
+    let want;
+    if (subMin === void 0 || subMax === void 0) {
+      want = forceSubstituent || random() < 0.5 ? 1 : 0;
+    } else {
+      want = randInt(subMin, subMax);
+      if (forceSubstituent && want < 1) want = 1;
+    }
+    let placed = 0;
+    let hydroxylCount = 0;
+    const hydroxylParents = /* @__PURE__ */ new Set();
+    for (const slot of slots) {
+      if (placed >= want) break;
+      if (occupied.has(`${slot.nr},${slot.nc}`)) continue;
+      const parentKey = `${slot.r},${slot.c}`;
+      const candidates = distinctNames.filter((name2) => name2 !== HYDROXYL_ELEMENT || !hydroxylParents.has(parentKey) && (!hydroxylLimitOne || hydroxylCount === 0));
+      if (candidates.length === 0) continue;
+      const name = candidates.length === 1 ? candidates[0] : choice(candidates);
+      const existing = getActiveDirections(grid[slot.r][slot.c]);
+      grid[slot.r][slot.c] = panelForDirections([...existing, slot.dir]);
+      const panel = panelFor(1, [OPPOSITE[slot.dir]]);
+      if (name === HYDROXYL_ELEMENT) panel.element = HYDROXYL_ELEMENT;
+      const el = HALOGEN_ELEMENT_BY_NAME[name];
+      if (el) panel.element = el;
+      grid[slot.nr][slot.nc] = panel;
+      occupied.add(`${slot.nr},${slot.nc}`);
+      if (name === HYDROXYL_ELEMENT) hydroxylParents.add(parentKey);
+      if (name === HYDROXYL_ELEMENT) hydroxylCount++;
+      placed++;
+    }
+    return grid;
+  }
+  function generateCycloalkaneGrid(forceSubstituent, ringSizes, subMin, subMax, typeRange, forceHydroxyl, hydroxylLimitOne) {
+    const ringSize = choice(ringSizes || [4, 6]);
+    const tmpl = RING_TEMPLATES[ringSize];
+    const templatePath = () => {
+      const baseRow = Math.floor((ROWS - tmpl.height) / 2);
+      const baseCol = Math.floor((COLS - tmpl.width) / 2);
+      return tmpl.cells.map(([dr, dc]) => [baseRow + dr, baseCol + dc]);
+    };
+    if (random() < 0.5) {
+      return buildRingGridFromPath(templatePath(), forceSubstituent, subMin, subMax, typeRange, forceHydroxyl, hydroxylLimitOne);
+    }
+    for (let attempt = 0; attempt < 15; attempt++) {
+      const walk = tryGenerateRingWalk(ringSize);
+      if (walk) return buildRingGridFromPath(walk.path, forceSubstituent, subMin, subMax, typeRange, forceHydroxyl, hydroxylLimitOne);
+    }
+    return buildRingGridFromPath(templatePath(), forceSubstituent, subMin, subMax, typeRange, forceHydroxyl, hydroxylLimitOne);
+  }
+  function groupTypesInName(name) {
+    const types = [];
+    if (name.includes("\u30E1\u30C1\u30EB")) types.push("\u30E1\u30C1\u30EB");
+    if (name.includes("\u30A8\u30C1\u30EB")) types.push("\u30A8\u30C1\u30EB");
+    if (name.includes("\u30D5\u30EB\u30AA\u30ED")) types.push("\u30D5\u30EB\u30AA\u30ED");
+    if (name.includes("\u30AF\u30ED\u30ED")) types.push("\u30AF\u30ED\u30ED");
+    if (name.includes("\u30D6\u30ED\u30E2")) types.push("\u30D6\u30ED\u30E2");
+    if (name.includes("\u30E8\u30FC\u30C9")) types.push("\u30E8\u30FC\u30C9");
+    if (name.endsWith("\u30CE\u30FC\u30EB") || name.endsWith("\u30AA\u30FC\u30EB")) types.push("OH");
+    return types;
+  }
+  function groupTypeSignature(name) {
+    const types = groupTypesInName(name);
+    return types.length ? types.join("|") : "\u306A\u3057";
+  }
+  function generateMethaneGrid(forceHydroxyl = false, maxTypeCount = Infinity, subMin = 1, subMax = 4) {
+    const dirsByCount = { 1: ["E"], 2: ["E", "W"], 3: ["E", "W", "N"], 4: ["E", "W", "N", "S"] };
+    const typeByCount = { 1: 1, 2: 2, 3: 4, 4: 5 };
+    const minCount = Math.max(1, Math.min(4, Number(subMin) || 0));
+    const maxCount = Math.max(0, Math.min(4, Number(subMax) || 0));
+    if (minCount > maxCount) return null;
+    if (forceHydroxyl && maxTypeCount <= 1 && minCount > 1) return null;
+    const count = forceHydroxyl && maxTypeCount <= 1 ? 1 : randInt(minCount, maxCount);
+    const dirs = dirsByCount[count];
+    const grid = emptyGrid();
+    const cr = 2, cc = Math.floor(COLS / 2);
+    grid[cr][cc] = panelFor(typeByCount[count], dirs);
+    const opp = { E: "W", W: "E", N: "S", S: "N" };
+    const names = forceHydroxyl ? [...Object.keys(HALOGEN_ELEMENT_BY_NAME), HYDROXYL_ELEMENT] : Object.keys(HALOGEN_ELEMENT_BY_NAME);
+    const forcedHydroxylDir = forceHydroxyl ? choice(dirs) : null;
+    dirs.forEach((d) => {
+      const [dr, dc] = DELTA[d];
+      const panel = panelFor(1, [opp[d]]);
+      const candidates = names.filter((name2) => name2 !== HYDROXYL_ELEMENT || d === forcedHydroxylDir);
+      const name = d === forcedHydroxylDir ? HYDROXYL_ELEMENT : choice(candidates);
+      panel.element = name === HYDROXYL_ELEMENT ? HYDROXYL_ELEMENT : HALOGEN_ELEMENT_BY_NAME[name];
+      grid[cr + dr][cc + dc] = panel;
+    });
+    return grid;
+  }
+  function gridExtent(g) {
+    let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (!g[r][c]) continue;
+        if (r < minR) minR = r;
+        if (r > maxR) maxR = r;
+        if (c < minC) minC = c;
+        if (c > maxC) maxC = c;
+      }
+    }
+    if (maxR < 0) return { w: 0, h: 0 };
+    return { w: maxC - minC + 1, h: maxR - minR + 1 };
+  }
+  function generateStructureWithOptions(opts) {
+    const {
+      typeMin = 1,
+      typeMax = 1,
+      lenMin = 2,
+      lenMax = 7,
+      subMin = 0,
+      subMax = 4,
+      useBent = false,
+      forceTurn = false,
+      forceRingSubstituent = false,
+      ringSizes = [4, 6],
+      bendRange = null,
+      allowMethane = false,
+      categoryWeights = null,
+      alcoholEnabled = false,
+      alcoholRate = 40,
+      hydroxylLimitOne = false,
+      hydroxylCountsAsSubstituent = true,
+      maxWidth = COLS,
+      maxHeight = ROWS
+    } = opts || {};
+    const normalizedAlcoholRate = Math.max(0, Math.min(100, Number(alcoholRate) || 0));
+    const forceHydroxyl = alcoholEnabled && random() * 100 < normalizedAlcoholRate;
+    const hydroxylCounts = !!hydroxylCountsAsSubstituent;
+    const extraHydroxylForGeneration = forceHydroxyl && !hydroxylCounts ? 1 : 0;
+    const generationTypeRange = [typeMin + extraHydroxylForGeneration, typeMax + extraHydroxylForGeneration];
+    const generationSubMin = subMin + extraHydroxylForGeneration;
+    const generationSubMax = subMax + extraHydroxylForGeneration;
+    function hydroxylCountInGrid(g) {
+      return g.flat().filter((panel) => panel && panel.element === HYDROXYL_ELEMENT).length;
+    }
+    function finalize(g, expectedParentLength = null) {
+      const extent = gridExtent(g);
+      if (extent.w > maxWidth || extent.h > maxHeight) return null;
+      if (checkPhysicalPanelDirections(g).length > 0) return null;
+      const result = generateName(g);
+      if (!result.ok) return null;
+      const hydroxylCount = hydroxylCountInGrid(g);
+      if (forceHydroxyl && hydroxylCount === 0) return null;
+      if (hydroxylLimitOne && hydroxylCount > 1) return null;
+      const groupSummary = namedGroupSummary(result.name);
+      if (!groupSummary) return null;
+      const countedTotal = groupSummary.total - (hydroxylCounts ? 0 : groupSummary.hydroxylCount);
+      if (countedTotal < subMin || countedTotal > subMax) return null;
+      if (expectedParentLength !== null && groupSummary.parentCarbonCount !== expectedParentLength) return null;
+      const typeCount = hydroxylCounts ? groupSummary.types.length : groupSummary.types.filter((type) => type !== "OH").length;
+      if (typeCount > typeMax) return null;
+      if (typeCount > 0 && typeCount < typeMin) return null;
+      return { grid: g, name: result.name, parentCarbonCount: groupSummary.parentCarbonCount, fellBack: false };
+    }
+    function tryMethane() {
+      try {
+        const g = generateMethaneGrid(forceHydroxyl, generationTypeRange[1], generationSubMin, generationSubMax);
+        return g ? finalize(g) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    function tryCyclo() {
+      try {
+        return finalize(generateCycloalkaneGrid(forceRingSubstituent, ringSizes, generationSubMin, generationSubMax, generationTypeRange, forceHydroxyl, hydroxylLimitOne));
+      } catch (e) {
+        return null;
+      }
+    }
+    function tryChainLen(len) {
+      try {
+        const lenOpts = { ...opts, lenMin: len, lenMax: len, subMin: generationSubMin, subMax: generationSubMax, forceHydroxyl, hydroxylLimitOne };
+        const g = useBent ? generateBentAlkaneGrid(generationTypeRange, lenOpts, forceTurn, bendRange) : generateAlkaneGrid(generationTypeRange, lenOpts);
+        return g ? finalize(g, len) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+    const methaneMinCount = Math.max(1, Number(generationSubMin) || 0);
+    const methaneMaxCount = Math.min(4, Number(generationSubMax) || 0);
+    const methaneEligible = allowMethane && methaneMinCount <= methaneMaxCount && !(forceHydroxyl && generationTypeRange[1] <= 1 && methaneMinCount > 1);
+    const categories = [];
+    if (methaneEligible) categories.push({ kind: "methane" });
+    for (let l = Math.max(2, lenMin); l <= Math.max(2, lenMax); l++) categories.push({ kind: "chain", len: l });
+    categories.push({ kind: "cyclo" });
+    const chainCategories = categories.filter((cat) => cat.kind === "chain");
+    function tryCategory(cat) {
+      if (cat.kind === "methane") return tryMethane();
+      if (cat.kind === "cyclo") return tryCyclo();
+      return tryChainLen(cat.len);
+    }
+    const familyChoices = [
+      ...methaneEligible ? [{ kind: "methane", weight: categoryWeights?.methane ?? 10 }] : [],
+      ...chainCategories.length ? [{ kind: "chain", weight: categoryWeights?.chain ?? 75 }] : [],
+      { kind: "cyclo", weight: categoryWeights?.cyclo ?? 15 }
+    ].filter((item) => item.weight > 0);
+    const totalWeight = familyChoices.reduce((sum, item) => sum + item.weight, 0);
+    let roll = random() * totalWeight;
+    let family = familyChoices[familyChoices.length - 1].kind;
+    for (const item of familyChoices) {
+      roll -= item.weight;
+      if (roll < 0) {
+        family = item.kind;
+        break;
+      }
+    }
+    const preferred = family === "chain" ? choice(chainCategories) : categories.find((cat) => cat.kind === family);
+    const orderedCategories = [preferred, ...shuffle(categories.filter((cat) => cat !== preferred))];
+    const attemptsPerCategory = 25;
+    for (const cat of orderedCategories) {
+      for (let i = 0; i < attemptsPerCategory; i++) {
+        const r = tryCategory(cat);
+        if (r) return r;
+      }
+    }
+    for (let i = 0; i < 80; i++) {
+      const r = tryCategory(choice(categories));
+      if (r) return r;
+    }
+    return null;
+  }
+  const BASE_NAME_TOKENS = CHAIN_NAMES.slice(1, 11);
+  const BASE_NAME_SET = new Set(BASE_NAME_TOKENS);
+  const CYCLO_TOKEN = "\u30B7\u30AF\u30ED";
+  const ALCOHOL_TOKEN = "\u30AA\u30FC\u30EB";
+  const SUB_NAME_SET = /* @__PURE__ */ new Set(["\u30E1\u30C1\u30EB", "\u30A8\u30C1\u30EB", "\u30D5\u30EB\u30AA\u30ED", "\u30AF\u30ED\u30ED", "\u30D6\u30ED\u30E2", "\u30E8\u30FC\u30C9"]);
+  const MULTIPLIER_TOKENS = MULTIPLIER_PREFIX.slice(2);
+  const MULTIPLIER_SET = new Set(MULTIPLIER_TOKENS);
+  function reconstructNameFromTokens(tokens) {
+    let i = 0;
+    const groups = [];
+    let usedLocants = false;
+    while (i < tokens.length && /^\d+$/.test(tokens[i])) {
+      const start = i;
+      const locants = [];
+      while (i < tokens.length && /^\d+$/.test(tokens[i])) {
+        locants.push(tokens[i]);
+        i++;
+      }
+      let multiplier = "";
+      if (i < tokens.length && MULTIPLIER_SET.has(tokens[i])) {
+        multiplier = tokens[i];
+        i++;
+      }
+      if (i >= tokens.length || !SUB_NAME_SET.has(tokens[i])) {
+        i = start;
+        break;
+      }
+      usedLocants = true;
+      groups.push(`${locants.join(",")}-${multiplier}${tokens[i]}`);
+      i++;
+    }
+    while (i < tokens.length && (SUB_NAME_SET.has(tokens[i]) || MULTIPLIER_SET.has(tokens[i]))) {
+      let multiplier = "";
+      if (MULTIPLIER_SET.has(tokens[i])) {
+        multiplier = tokens[i];
+        i++;
+      }
+      if (i >= tokens.length || !SUB_NAME_SET.has(tokens[i])) return null;
+      groups.push(`${multiplier}${tokens[i]}`);
+      i++;
+    }
+    const alcoholLocants = [];
+    while (i < tokens.length && /^\d+$/.test(tokens[i])) {
+      alcoholLocants.push(tokens[i]);
+      i++;
+    }
+    let cycloPrefix = "";
+    if (i < tokens.length && tokens[i] === CYCLO_TOKEN) {
+      cycloPrefix = CYCLO_TOKEN;
+      i++;
+    }
+    if (i >= tokens.length || !BASE_NAME_SET.has(tokens[i])) return null;
+    const baseToken = tokens[i];
+    const base = cycloPrefix + baseToken;
+    i++;
+    let alcoholMultiplier = "";
+    if (i < tokens.length && MULTIPLIER_SET.has(tokens[i])) {
+      alcoholMultiplier = tokens[i];
+      i++;
+    }
+    const hasAlcohol = i < tokens.length && tokens[i] === ALCOHOL_TOKEN;
+    if (hasAlcohol) i++;
+    if (i !== tokens.length) return null;
+    if (hasAlcohol) {
+      const multiplierCount = alcoholMultiplier ? MULTIPLIER_PREFIX.indexOf(alcoholMultiplier) : 1;
+      if (!multiplierCount) return null;
+      if (alcoholLocants.length > 0) {
+        if (new Set(alcoholLocants).size !== alcoholLocants.length) return null;
+        if (alcoholLocants.length !== multiplierCount) return null;
+      } else if (multiplierCount !== 1) {
+        return null;
+      }
+      const carbonCount = CHAIN_NAMES.indexOf(baseToken);
+      if (alcoholLocants.some((n) => Number(n) < 1 || Number(n) > carbonCount)) return null;
+      const alcoholStem = base.endsWith("\u30F3") ? `${base.slice(0, -1)}\u30CE\u30FC\u30EB` : `${base}\u30CE\u30FC\u30EB`;
+      const suffix = multiplierCount === 1 ? alcoholStem : `${base}${alcoholMultiplier}\u30AA\u30FC\u30EB`;
+      const alcoholPrefix = alcoholLocants.length ? `${alcoholLocants.join(",")}-` : "";
+      const subPrefix = groups.join(usedLocants ? "-" : "");
+      return subPrefix + (subPrefix && alcoholPrefix ? "-" : "") + alcoholPrefix + suffix;
+    }
+    if (alcoholLocants.length || alcoholMultiplier) return null;
+    return groups.join(usedLocants ? "-" : "") + base;
+  }
+  function parseGame2SubstituentDescriptor(descriptor) {
+    const substituentNames = [...SUB_NAME_SET].sort((a, b) => b.length - a.length);
+    for (const name of substituentNames) {
+      if (!descriptor.endsWith(name)) continue;
+      const multiplier = descriptor.slice(0, -name.length);
+      if (multiplier === "") return [name];
+      if (MULTIPLIER_SET.has(multiplier)) return [multiplier, name];
+    }
+    return null;
+  }
+  function parseGame2UnlocantedPrefix(prefix) {
+    const pieces = [];
+    for (const name of SUB_NAME_SET) {
+      pieces.push({ text: name, tokens: [name] });
+      for (const multiplier of MULTIPLIER_TOKENS) {
+        pieces.push({ text: multiplier + name, tokens: [multiplier, name] });
+      }
+    }
+    pieces.sort((a, b) => b.text.length - a.text.length);
+    const parsedAt = Array(prefix.length + 1).fill(null);
+    parsedAt[0] = [];
+    for (let index = 0; index < prefix.length; index++) {
+      if (parsedAt[index] === null) continue;
+      for (const piece of pieces) {
+        if (!prefix.startsWith(piece.text, index)) continue;
+        const nextIndex = index + piece.text.length;
+        if (parsedAt[nextIndex] === null) parsedAt[nextIndex] = parsedAt[index].concat(piece.tokens);
+      }
+    }
+    return parsedAt[prefix.length];
+  }
+  function parseGame2SubstituentPrefix(rawPrefix) {
+    const prefix = rawPrefix.endsWith("-") ? rawPrefix.slice(0, -1) : rawPrefix;
+    if (prefix === "") return [];
+    if (!/^\d/.test(prefix)) return parseGame2UnlocantedPrefix(prefix);
+    const parts = prefix.split("-");
+    if (parts.length % 2 !== 0) return null;
+    const tokens = [];
+    for (let index = 0; index < parts.length; index += 2) {
+      if (!/^\d+(?:,\d+)*$/.test(parts[index])) return null;
+      const descriptorTokens = parseGame2SubstituentDescriptor(parts[index + 1]);
+      if (descriptorTokens === null) return null;
+      tokens.push(...parts[index].split(","), ...descriptorTokens);
+    }
+    return tokens;
+  }
+  function expectedGame2AnswerTokens(name) {
+    const baseNames = [...BASE_NAME_TOKENS].sort((a, b) => b.length - a.length);
+    const tryCandidate = (prefix, alcoholLocants, cyclo, baseName, alcoholMultiplier = "", hasAlcohol = false) => {
+      const prefixTokens = parseGame2SubstituentPrefix(prefix);
+      if (prefixTokens === null) return null;
+      const tokens = [...prefixTokens, ...alcoholLocants];
+      if (cyclo) tokens.push(CYCLO_TOKEN);
+      tokens.push(baseName);
+      if (alcoholMultiplier) tokens.push(alcoholMultiplier);
+      if (hasAlcohol) tokens.push(ALCOHOL_TOKEN);
+      return reconstructNameFromTokens(tokens) === name ? tokens : null;
+    };
+    for (const baseName of baseNames) {
+      for (const cyclo of [false, true]) {
+        const parentName = (cyclo ? CYCLO_TOKEN : "") + baseName;
+        for (const multiplier of MULTIPLIER_TOKENS) {
+          const suffix = parentName + multiplier + ALCOHOL_TOKEN;
+          if (!name.endsWith(suffix)) continue;
+          const beforeSuffix = name.slice(0, -suffix.length);
+          const match = beforeSuffix.match(/^(.*?)(\d+(?:,\d+)*)-$/);
+          if (!match) continue;
+          const candidate = tryCandidate(match[1], match[2].split(","), cyclo, baseName, multiplier, true);
+          if (candidate) return candidate;
+        }
+        const alcoholStem = parentName.endsWith("\u30F3") ? parentName.slice(0, -1) + "\u30CE\u30FC\u30EB" : parentName + "\u30AA\u30FC\u30EB";
+        if (name.endsWith(alcoholStem)) {
+          const beforeStem = name.slice(0, -alcoholStem.length);
+          const locanted = beforeStem.match(/^(.*?)(\d+)-$/);
+          if (locanted) {
+            const candidate2 = tryCandidate(locanted[1], [locanted[2]], cyclo, baseName, "", true);
+            if (candidate2) return candidate2;
+          }
+          const candidate = tryCandidate(beforeStem, [], cyclo, baseName, "", true);
+          if (candidate) return candidate;
+        }
+        if (name.endsWith(parentName)) {
+          const candidate = tryCandidate(name.slice(0, -parentName.length), [], cyclo, baseName);
+          if (candidate) return candidate;
+        }
+      }
+    }
+    return null;
+  }
+  function namedGroupSummary(name) {
+    const tokens = expectedGame2AnswerTokens(name);
+    if (tokens === null) return null;
+    const baseName = tokens.find((token) => BASE_NAME_SET.has(token));
+    const parentCarbonCount = baseName ? BASE_NAME_TOKENS.indexOf(baseName) + 1 : 0;
+    let total = 0;
+    let hydroxylCount = 0;
+    const countForIndex = (index) => {
+      const multiplierIndex = MULTIPLIER_PREFIX.indexOf(tokens[index - 1]);
+      return multiplierIndex >= 2 ? multiplierIndex : 1;
+    };
+    tokens.forEach((token, index) => {
+      const count = countForIndex(index);
+      if (SUB_NAME_SET.has(token)) total += count;
+      if (token === ALCOHOL_TOKEN) {
+        total += count;
+        hydroxylCount += count;
+      }
+    });
+    return { total, hydroxylCount, types: groupTypesInName(name), signature: groupTypeSignature(name), parentCarbonCount };
+  }
+  function questionGridSignature(g) {
+    return g.flat().map((panel) => panel ? `${panel.type}:${panel.rotation}:${panel.element || "C"}` : ".").join("|");
+  }
+  function questionTypeSignature(result) {
+    return namedGroupSummary(result.name)?.signature || groupTypeSignature(result.name);
+  }
+  function questionBackboneSignature(result) {
+    const parentCount = result.parentCarbonCount || namedGroupSummary(result.name)?.parentCarbonCount || 0;
+    const parentKind = result.name.includes("\u30B7\u30AF\u30ED") ? "\u74B0" : "\u9396";
+    let longestAlkyl = 0;
+    let longestAlkylLocants = "";
+    for (const [length, alkylName] of [[1, "\u30E1\u30C1\u30EB"], [2, "\u30A8\u30C1\u30EB"]]) {
+      const matches = [...result.name.matchAll(new RegExp(`(?:^|-)(\\d+(?:,\\d+)*)-(?:\u30B8|\u30C8\u30EA|\u30C6\u30C8\u30E9|\u30DA\u30F3\u30BF|\u30D8\u30AD\u30B5|\u30D8\u30D7\u30BF|\u30AA\u30AF\u30BF|\u30CE\u30CA|\u30C7\u30AB)?${alkylName}`, "g"))];
+      if (!matches.length) continue;
+      if (length > longestAlkyl) {
+        longestAlkyl = length;
+        longestAlkylLocants = matches.flatMap((match) => match[1].split(",")).sort((a, b) => Number(a) - Number(b)).join(",");
+      }
+    }
+    return `${parentKind}${parentCount}|\u5074\u9396${longestAlkyl}@${longestAlkylLocants || "-"}`;
+  }
+  const LOCANT_BALANCE_WINDOW = 36;
+  const LOCANT_BALANCE_EXTRA_CANDIDATES = 4;
+  const recentGame1LocantProfiles = [];
+  function questionChainLocantProfile(result) {
+    const summary = namedGroupSummary(result.name);
+    if (!summary || summary.parentCarbonCount < 2 || result.name.includes("\u30B7\u30AF\u30ED")) return null;
+    const tokens = expectedGame2AnswerTokens(result.name);
+    if (!tokens) return null;
+    const parentCount = summary.parentCarbonCount;
+    const locants = tokens.filter((token) => /^\d+$/.test(token)).map(Number).filter((locant) => locant >= 1 && locant <= parentCount);
+    const alcoholIndex = tokens.lastIndexOf(ALCOHOL_TOKEN);
+    if (parentCount === 2 && alcoholIndex >= 0 && !MULTIPLIER_SET.has(tokens[alcoholIndex - 1])) locants.push(1);
+    return locants.length ? { parentCount, locants } : null;
+  }
+  function rememberGame1LocantProfile(result) {
+    const profile = questionChainLocantProfile(result);
+    if (!profile) return;
+    recentGame1LocantProfiles.push(profile);
+    if (recentGame1LocantProfiles.length > LOCANT_BALANCE_WINDOW) recentGame1LocantProfiles.shift();
+  }
+  function resetGame1LocantProfiles() {
+    recentGame1LocantProfiles.length = 0;
+  }
+  function locantBalancePenalty(result) {
+    const profile = questionChainLocantProfile(result);
+    if (!profile) return null;
+    const relevant = recentGame1LocantProfiles.filter((item) => item.parentCount === profile.parentCount);
+    if (relevant.length < 2) return null;
+    const counts = Array(profile.parentCount + 1).fill(0);
+    for (const item of relevant) for (const locant of item.locants) counts[locant]++;
+    for (const locant of profile.locants) counts[locant]++;
+    const mean = counts.slice(1).reduce((sum, count) => sum + count, 0) / profile.parentCount;
+    return counts.slice(1).reduce((sum, count) => sum + (count - mean) ** 2, 0);
+  }
+  function pickLocantBalancedQuestion(candidates) {
+    const scored = candidates.map((result) => ({ result, penalty: locantBalancePenalty(result) }));
+    const usable = scored.filter((item) => item.penalty !== null);
+    if (!usable.length) return choice(candidates);
+    const bestPenalty = Math.min(...usable.map((item) => item.penalty));
+    return choice(usable.filter((item) => item.penalty === bestPenalty)).result;
+  }
+  function rememberQuestion(history, result) {
+    history.push({
+      name: result.name,
+      signature: questionGridSignature(result.grid),
+      typeSignature: questionTypeSignature(result),
+      backboneSignature: questionBackboneSignature(result)
+    });
+    if (history.length > 8) history.shift();
+  }
+  function generateAvoidingRecentRepeat(opts, history, accept = () => true) {
+    const recentNames = new Set(history.slice(-8).map((item) => item.name));
+    const recentSignatures = new Set(history.slice(-4).map((item) => item.signature));
+    const recentBackbones = new Set(history.slice(-4).map((item) => item.backboneSignature));
+    const previous = history[history.length - 1] || null;
+    const candidates = [];
+    for (let i = 0; i < 12; i++) {
+      const result = generateStructureWithOptions(opts);
+      if (!result || !accept(result)) continue;
+      const signature2 = questionGridSignature(result.grid);
+      const typeSignature = questionTypeSignature(result);
+      const backboneSignature = questionBackboneSignature(result);
+      const nameIsFresh = !recentNames.has(result.name);
+      const gridIsFresh = !recentSignatures.has(signature2);
+      const backboneIsFresh = !recentBackbones.has(backboneSignature);
+      const typeIsFresh = !previous || typeSignature !== previous.typeSignature;
+      candidates.push({ result, signature: signature2, typeSignature, backboneSignature, nameIsFresh, gridIsFresh, backboneIsFresh, typeIsFresh });
+      if (!result.fellBack && nameIsFresh && gridIsFresh && backboneIsFresh && typeIsFresh) {
+        if (!opts.balanceLocants || !questionChainLocantProfile(result)) return result;
+        const parentCount = questionChainLocantProfile(result).parentCount;
+        const alternatives = [result];
+        const alternativeNames = /* @__PURE__ */ new Set([result.name]);
+        const alternativeSignatures = /* @__PURE__ */ new Set([signature2]);
+        const alternativeOpts = {
+          ...opts,
+          lenMin: parentCount,
+          lenMax: parentCount,
+          allowMethane: false,
+          categoryWeights: { chain: 100, cyclo: 0, methane: 0 }
+        };
+        for (let extra = 0; extra < LOCANT_BALANCE_EXTRA_CANDIDATES; extra++) {
+          const alternative = generateStructureWithOptions(alternativeOpts);
+          if (!alternative || !accept(alternative)) continue;
+          const alternativeProfile = questionChainLocantProfile(alternative);
+          if (!alternativeProfile || alternativeProfile.parentCount !== parentCount || alternative.fellBack) continue;
+          const alternativeSignature = questionGridSignature(alternative.grid);
+          const alternativeType = questionTypeSignature(alternative);
+          const alternativeBackbone = questionBackboneSignature(alternative);
+          if (recentNames.has(alternative.name) || recentSignatures.has(alternativeSignature) || recentBackbones.has(alternativeBackbone) || previous && alternativeType === previous.typeSignature || alternativeNames.has(alternative.name) || alternativeSignatures.has(alternativeSignature)) continue;
+          alternatives.push(alternative);
+          alternativeNames.add(alternative.name);
+          alternativeSignatures.add(alternativeSignature);
+        }
+        return pickLocantBalancedQuestion(alternatives);
+      }
+    }
+    const normalCandidates = candidates.filter((item) => !item.result.fellBack);
+    const changedCombination = normalCandidates.find((item) => item.typeIsFresh && item.backboneIsFresh && (!previous || item.result.name !== previous.name) && (!previous || item.signature !== previous.signature));
+    if (changedCombination) return changedCombination.result;
+    const otherwiseFresh = normalCandidates.find((item) => item.nameIsFresh && item.gridIsFresh && item.backboneIsFresh);
+    return (otherwiseFresh || normalCandidates[0] || candidates[0])?.result || null;
+  }
+  return { generateName, generateStructureWithOptions, generateAvoidingRecentRepeat, rememberQuestion, rememberGame1LocantProfile, expectedGame2AnswerTokens, reconstructNameFromTokens, namedGroupSummary, groupTypeSignature, gridExtent, buildGraph, findRing, getActiveDirections, shuffle, CHAIN_NAMES, MULTIPLIER_TOKENS, SUB_NAME_SET };
 }
-function shuffled(values, random) {
-  const result = [...values];
-  for (let index = result.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(random() * (index + 1));
-    [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+
+// src/games/alkane-puzzle/server/question-generator.ts
+var modes = ["arrange", "name"];
+var difficulties = ["easy", "medium"];
+function freeze(value) {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const nested of Object.values(value)) freeze(nested);
+    Object.freeze(value);
+  }
+  return value;
+}
+function shuffled(items, random) {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
   }
   return result;
 }
-function ionCategory(ion) {
-  if (ion.requiresOxidationNumeral) return "ionVariableOx";
-  return ion.atomicity === "polyatomic" ? "ionPolyatomic" : "ionSimple";
+function optionsFor(settings, rule) {
+  const easy = settings.difficulty === "easy";
+  return {
+    typeMin: rule.typeMin,
+    typeMax: rule.typeMax,
+    lenMin: rule.lenMin,
+    lenMax: rule.lenMax,
+    subMin: rule.subMin,
+    subMax: rule.subMax,
+    ringSizes: rule.ringSizes,
+    forceRingSubstituent: rule.cycloSubstituentCount !== 0,
+    alcoholEnabled: settings.alcoholEnabled,
+    alcoholRate: rule.alcoholRate,
+    hydroxylLimitOne: rule.hydroxylLimitOne,
+    hydroxylCountsAsSubstituent: rule.hydroxylCountsAsSubstituent,
+    useBent: true,
+    forceTurn: false,
+    allowMethane: easy,
+    categoryWeights: easy ? { methane: 10, chain: 75, cyclo: 15 } : { chain: 80, cyclo: 20 },
+    ...settings.mode === "arrange" ? { maxWidth: rule.gridCols, maxHeight: rule.gridRows, balanceLocants: true } : { bendRange: [rule.bendMin, rule.bendMax] }
+  };
 }
-function compoundCategory(compound) {
-  const cation = ionById.get(compound.cation);
-  const anion = ionById.get(compound.anion);
-  if (!cation || !anion) return null;
-  if (cation.requiresOxidationNumeral || anion.requiresOxidationNumeral) return "variableOx";
-  if (cation.atomicity === "polyatomic" || anion.atomicity === "polyatomic") return "polyatomic";
-  const divisor = gcd2(cation.charge, anion.charge);
-  return Math.abs(anion.charge) / divisor === 1 && cation.charge / divisor === 1 ? "simple11" : "simpleRatio";
-}
-function gcd2(a, b) {
-  let left = Math.abs(a);
-  let right = Math.abs(b);
-  while (right) [left, right] = [right, left % right];
-  return left;
-}
-function availableAtDifficulty(item, level) {
-  return !item.difficulty || item.difficulty === level;
-}
-function ionVariants(settings) {
-  if (settings.ionAnswer === "formula") return ["ionNameToFormula"];
-  if (settings.ionAnswer === "name") return ["ionFormulaToName"];
-  return ["ionNameToFormula", "ionFormulaToName"];
-}
-function compoundVariants(settings) {
-  const answers = settings.compoundAnswer === "random" ? ["Formula", "Name"] : settings.compoundAnswer === "both" ? ["Both"] : [settings.compoundAnswer === "formula" ? "Formula" : "Name"];
-  const prefixes = [];
-  if (settings.compoundPrompts.formula) prefixes.push("ions");
-  if (settings.compoundPrompts.name) prefixes.push("ionNames");
-  if (settings.compoundPrompts.formula && settings.compoundPrompts.name) prefixes.push("mixedIons");
-  return prefixes.flatMap((prefix) => answers.map((answer) => `${prefix}To${answer}`));
-}
-function compoundSupports(compound, variant) {
-  const modes = compound.questionModes ?? {};
-  const formulaPrompt = variant.startsWith("ions") || variant.startsWith("mixedIons");
-  const namePrompt = variant.startsWith("ionNames") || variant.startsWith("mixedIons");
-  const formulaAnswer = variant.endsWith("ToFormula") || variant.endsWith("ToBoth");
-  const nameAnswer = variant.endsWith("ToName") || variant.endsWith("ToBoth");
-  if (formulaAnswer && !compound.formula) return false;
-  const formulaMode = Boolean(modes.ionsToFormula);
-  const nameMode = Boolean(modes.ionsToName);
-  const namedFormulaMode = Boolean(modes.ionNamesToFormula ?? modes.ionsToFormula);
-  const namedNameMode = Boolean(modes.ionNamesToName ?? modes.ionsToName);
-  return (!formulaPrompt || (!formulaAnswer || formulaMode) && (!nameAnswer || nameMode)) && (!namePrompt || (!formulaAnswer || namedFormulaMode) && (!nameAnswer || namedNameMode));
-}
-function legacyCandidates(settings) {
-  const weights = difficulty.categoryWeights[settings.mode][settings.difficulty];
-  if (settings.mode === "ion") {
-    return ions2.filter((ion) => ion.enabled && ion.ionQuestionEnabled !== false && availableAtDifficulty(ion, settings.difficulty) && complexItemAllowed(ion, settings.complexEnabled, ionById)).map((item) => ({ item, category: ionCategory(item), variants: ionVariants(settings) })).filter((candidate) => weights[candidate.category] > 0);
+function cycloCount(result, engine2) {
+  if (!result.name.includes("\u30B7\u30AF\u30ED")) return null;
+  const graph = engine2.buildGraph(result.grid);
+  const ring = new Set(engine2.findRing(graph));
+  let count = 0;
+  for (const id of ring) {
+    for (const neighbor of graph.adjacency.get(id) ?? []) {
+      if (!ring.has(neighbor) && graph.elements.get(neighbor) !== "OH") count++;
+    }
   }
-  const variants = compoundVariants(settings);
-  return compounds.filter((compound) => compound.enabled && availableAtDifficulty(compound, settings.difficulty) && complexItemAllowed(compound, settings.complexEnabled, ionById)).map((item) => ({ item, category: compoundCategory(item), variants: variants.filter((variant) => compoundSupports(item, variant)) })).filter((candidate) => candidate.category && weights[candidate.category] > 0 && candidate.variants.length);
+  return count;
 }
-function candidates(settings, profile) {
-  if (profile === null) return legacyCandidates(settings);
-  const rule = profile.rules[settings.mode][settings.difficulty];
-  const overrides = settings.mode === "ion" ? profile.ionDifficulties : profile.compoundDifficulties;
-  const source = settings.mode === "ion" ? ions2.filter((i) => i.ionQuestionEnabled !== false) : compounds;
-  return source.filter((item) => {
-    const membership = overrides[item.id] ?? (!item.enabled ? "off" : item.difficulty ?? "both");
-    return (membership === "both" || membership === settings.difficulty) && complexItemAllowed(item, settings.complexEnabled, ionById);
-  }).map((item) => ({ item, category: "charge" in item ? ionCategory(item) : compoundCategory(item), variants: "charge" in item ? ionVariants(settings) : compoundVariants(settings).filter((v) => compoundSupports(item, v)) })).filter((c) => c.category && c.variants.length && (isComplexItem(c.item, ionById) || (rule.categoryWeights !== null ? (rule.categoryWeights[c.category] ?? 0) > 0 : Object.hasOwn(overrides, c.item.id) || difficulty.categoryWeights[settings.mode][settings.difficulty][c.category] > 0)));
+function acceptable(result, rule, engine2) {
+  const count = cycloCount(result, engine2);
+  if (count === null) return true;
+  return rule.cycloSubstituentCount === 2 ? count >= 2 : count === rule.cycloSubstituentCount;
 }
-function allocations(pool, count, weights) {
-  if (pool.length < count) throw new RangeError("\u51FA\u984C\u8A2D\u5B9A\u306E\u6559\u6750\u6570\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059");
-  if (weights === null) return null;
-  const categories = Object.keys(weights).filter((k) => weights[k] > 0);
-  const total = categories.reduce((sum, k) => sum + weights[k], 0);
-  const parts = categories.map((category) => ({ category, exact: count * weights[category] / total, count: Math.floor(count * weights[category] / total) }));
-  let remaining = count - parts.reduce((sum, p) => sum + p.count, 0);
-  for (const p of [...parts].sort((a, b) => b.exact - b.count - (a.exact - a.count) || a.category.localeCompare(b.category))) {
-    if (remaining-- > 0) p.count++;
-  }
-  for (const p of parts) if (pool.filter((c) => c.category === p.category).length < p.count) throw new RangeError(`\u30AB\u30C6\u30B4\u30EA\u300C${{ ionSimple: "\u5358\u539F\u5B50\u30A4\u30AA\u30F3", ionPolyatomic: "\u591A\u539F\u5B50\u30A4\u30AA\u30F3", ionVariableOx: "\u4FA1\u6570\u304C\u5909\u308F\u308B\u30A4\u30AA\u30F3", simple11: "1\u5BFE1\u306E\u5316\u5408\u7269", simpleRatio: "\u7D44\u6210\u6BD4\u304C\u3042\u308B\u5316\u5408\u7269", polyatomic: "\u591A\u539F\u5B50\u30A4\u30AA\u30F3\u3092\u542B\u3080\u5316\u5408\u7269", variableOx: "\u4FA1\u6570\u304C\u5909\u308F\u308B\u5316\u5408\u7269" }[p.category]}\u300D\u306E\u6559\u6750\u6570\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059`);
-  return new Map(parts.map((p) => [p.category, p.count]));
+function wordBank(rule, settings, name, engine2, random) {
+  const bases = /* @__PURE__ */ new Set();
+  for (let n = rule.lenMin; n <= rule.lenMax; n++) bases.add(engine2.CHAIN_NAMES[n]);
+  for (const n of rule.ringSizes) bases.add(engine2.CHAIN_NAMES[n]);
+  const tokens = engine2.expectedGame2AnswerTokens(name) ?? [];
+  for (const token of tokens) if (engine2.CHAIN_NAMES.includes(token)) bases.add(token);
+  const maxNumber = Math.max(rule.lenMax, ...rule.ringSizes);
+  const rows = [
+    Array.from({ length: maxNumber }, (_, i) => String(i + 1)),
+    shuffled(engine2.MULTIPLIER_TOKENS.slice(0, Math.max(rule.subMax, settings.alcoholEnabled ? 2 : 1) - 1), random),
+    shuffled([...engine2.SUB_NAME_SET], random),
+    ["\u30B7\u30AF\u30ED", ...settings.alcoholEnabled ? ["\u30AA\u30FC\u30EB"] : [], ...shuffled([...bases], random)]
+  ];
+  return rule.shuffleWordBankGroups ? shuffled(rows, random) : rows;
 }
-function selectCandidates(settings, profile, random) {
-  const eligible = candidates(settings, profile);
-  if (profile === null) return shuffled(eligible, random).slice(0, settings.questionCount);
-  const quota = settings.complexEnabled ? Math.ceil(settings.questionCount * profile.rules[settings.mode][settings.difficulty].complexPercent / 100) : 0;
-  const complex = eligible.filter((c) => isComplexItem(c.item, ionById));
-  const ordinary = eligible.filter((c) => !isComplexItem(c.item, ionById));
-  if (complex.length < quota) throw new RangeError("\u932F\u30A4\u30AA\u30F3\u306E\u6307\u5B9A\u5272\u5408\u3092\u6E80\u305F\u3059\u6559\u6750\u6570\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059");
-  const count = settings.questionCount - quota;
-  const quotas = allocations(ordinary, count, profile.rules[settings.mode][settings.difficulty].categoryWeights);
-  const selected = quotas ? [...quotas].flatMap(([category, n]) => shuffled(ordinary.filter((c) => c.category === category), random).slice(0, n)) : shuffled(ordinary, random).slice(0, count);
-  return shuffled([...shuffled(complex, random).slice(0, quota), ...selected], random);
-}
-function validateQuestionProfile(profile) {
-  const valid = validateQuestionProfileShape(profile);
-  for (const questionCount of [5, 10, 15]) for (const level of ["normal", "hard"]) for (const complexEnabled of [false, true]) {
-    const base = { questionCount, timeLimitMinutes: 5, mode: "ion", difficulty: level, complexEnabled, ionAnswer: "random", compoundAnswer: "random", compoundPrompts: { formula: true, name: true } };
-    const check = (settings) => {
-      try {
-        validateGameSettings(settings, valid);
-      } catch (error) {
-        throw new RangeError(`${settings.mode === "ion" ? "\u30A4\u30AA\u30F3" : "\u5316\u5408\u7269"}\u30FB${level === "normal" ? "\u3084\u3055\u3057\u3081" : "\u3084\u3084\u3080\u305A"}\u30FB${questionCount}\u554F\u30FB\u932F\u30A4\u30AA\u30F3${complexEnabled ? "\u3042\u308A" : "\u306A\u3057"}\uFF1A${error instanceof Error ? error.message : String(error)}`);
-      }
-    };
-    for (const ionAnswer2 of ["formula", "name", "random"]) check({ ...base, ionAnswer: ionAnswer2 });
-    for (const compoundAnswer of ["formula", "name", "random", "both"]) for (const compoundPrompts of [{ formula: true, name: false }, { formula: false, name: true }, { formula: true, name: true }]) check({ ...base, mode: "compound", compoundAnswer, compoundPrompts });
-  }
+function arrangementPalette(alcoholEnabled) {
+  const carbon = [1, 2, 3, 4, 5].map((type) => ({ type, rotation: type === 2 ? 90 : 0 }));
+  const atoms = (alcoholEnabled ? ["F", "Cl", "Br", "I", "OH"] : ["F", "Cl", "Br", "I"]).map((element) => ({ type: 1, rotation: 0, element }));
+  return [...carbon, ...atoms];
 }
 function validateGameSettings(settings, profile = DEFAULT_QUESTION_PROFILE) {
-  if (settings.complexEnabled !== void 0 && typeof settings.complexEnabled !== "boolean") throw new TypeError("\u932F\u30A4\u30AA\u30F3\u8A2D\u5B9A\u304C\u4E0D\u6B63\u3067\u3059");
-  if (settings.chemistryContentVersion !== void 0 && settings.chemistryContentVersion !== CHEMISTRY_CONTENT_VERSION) throw new TypeError("\u6559\u6750\u306E\u7248\u304C\u4E0D\u6B63\u3067\u3059");
-  if (settings.gradingMode !== void 0 && settings.gradingMode !== "immediate" && settings.gradingMode !== "deferred") throw new TypeError("\u5224\u5B9A\u65B9\u5F0F\u304C\u4E0D\u6B63\u3067\u3059");
-  if (![5, 10, 15].includes(settings.questionCount)) throw new TypeError("\u554F\u984C\u6570\u306F5\u554F\u300110\u554F\u300115\u554F\u304B\u3089\u9078\u3093\u3067\u304F\u3060\u3055\u3044");
-  if (![3, 4, 5, 6, 7, 8, 9, 10].includes(settings.timeLimitMinutes)) throw new TypeError("\u5236\u9650\u6642\u9593\u306F3\u5206\u304B\u308910\u5206\u3067\u3059");
-  if (!["ion", "compound"].includes(settings.mode)) throw new TypeError("\u30E2\u30FC\u30C9\u304C\u4E0D\u6B63\u3067\u3059");
-  if (!["normal", "hard"].includes(settings.difficulty)) throw new TypeError("\u96E3\u6613\u5EA6\u304C\u4E0D\u6B63\u3067\u3059");
-  if (settings.mode === "ion" && !["formula", "name", "random"].includes(settings.ionAnswer)) throw new TypeError("\u30A4\u30AA\u30F3\u306E\u89E3\u7B54\u5F62\u5F0F\u304C\u4E0D\u6B63\u3067\u3059");
-  if (settings.mode === "compound" && !settings.compoundPrompts.formula && !settings.compoundPrompts.name) throw new TypeError("\u5316\u5408\u7269\u306E\u51FA\u984C\u5F62\u5F0F\u30921\u3064\u4EE5\u4E0A\u9078\u3093\u3067\u304F\u3060\u3055\u3044");
-  if (settings.mode === "compound" && !["formula", "name", "random", "both"].includes(settings.compoundAnswer)) throw new TypeError("\u5316\u5408\u7269\u306E\u89E3\u7B54\u5F62\u5F0F\u304C\u4E0D\u6B63\u3067\u3059");
-  const availableCount = candidates(settings, profile).length;
-  selectCandidates(settings, profile, () => 0.5);
-  if (availableCount < settings.questionCount) throw new RangeError(`\u3053\u306E\u8A2D\u5B9A\u3067\u306F${settings.questionCount}\u554F\u3092\u7528\u610F\u3067\u304D\u307E\u305B\u3093`);
-  return { availableCount, maxScore: settings.questionCount * (settings.mode === "compound" && settings.compoundAnswer === "both" ? 2 : 1) };
+  validateQuestionProfileShape(profile ?? DEFAULT_QUESTION_PROFILE);
+  if (!modes.includes(settings.mode) || !difficulties.includes(settings.difficulty)) throw new TypeError("\u30E2\u30FC\u30C9\u30FB\u96E3\u6613\u5EA6\u304C\u4E0D\u6B63\u3067\u3059");
+  if (![5, 10, 15].includes(settings.questionCount) || !Number.isInteger(settings.timeLimitMinutes) || settings.timeLimitMinutes < 3 || settings.timeLimitMinutes > 10) throw new RangeError("\u554F\u984C\u6570\u30FB\u5236\u9650\u6642\u9593\u304C\u4E0D\u6B63\u3067\u3059");
+  if (typeof settings.alcoholEnabled !== "boolean" || settings.gradingMode !== void 0 && !["immediate", "deferred"].includes(settings.gradingMode)) throw new TypeError("\u7AF6\u6280\u8A2D\u5B9A\u304C\u4E0D\u6B63\u3067\u3059");
+  return { availableCount: settings.questionCount, maxScore: settings.questionCount };
 }
-function ionAnswer(ion) {
-  const magnitude = Math.abs(ion.charge);
-  return `${ion.formula}${magnitude === 1 ? "" : magnitude}${ion.charge > 0 ? "+" : "-"}`;
-}
-function answerFor(item, variant) {
-  if ("charge" in item) {
-    return variant === "ionNameToFormula" ? { type: "formula", canonical: ionAnswer(item), accepted: [] } : { type: "name", canonical: item.name, accepted: [] };
+function validateQuestionProfile(profile) {
+  validateQuestionProfileShape(profile);
+  for (const mode of modes) for (const difficulty of difficulties) {
+    const rule = profile.rules[mode][difficulty];
+    let seed = 9173;
+    const random = () => (seed = seed * 1664525 + 1013904223 >>> 0) / 4294967296;
+    const engine2 = createAlkaneEngine(random);
+    for (const alcoholEnabled of [false, true]) {
+      const settings = { mode, difficulty, alcoholEnabled, questionCount: 5, timeLimitMinutes: 5 };
+      const options = optionsFor(settings, rule);
+      let feasible = false;
+      for (let attempt = 0; attempt < 24; attempt++) {
+        const result = engine2.generateStructureWithOptions(options);
+        if (result && acceptable(result, rule, engine2)) {
+          feasible = true;
+          break;
+        }
+      }
+      if (!feasible) throw new RangeError(`${mode}\u30FB${difficulty}\u306E\u8A2D\u5B9A\u306B\u5408\u3046\u554F\u984C\u3092\u751F\u6210\u3067\u304D\u307E\u305B\u3093`);
+    }
   }
-  const formula = {
-    type: "formula",
-    canonical: item.formula,
-    accepted: (item.acceptedFormulaVariants ?? []).map((entry) => typeof entry === "string" ? entry : { ...entry })
-  };
-  const name = { type: "name", canonical: item.name, accepted: [] };
-  if (variant.endsWith("ToBoth")) return { type: "both", formula, name };
-  return variant.endsWith("ToFormula") ? formula : name;
 }
-function promptFor(item, variant, order) {
-  if ("charge" in item) {
-    return variant === "ionNameToFormula" ? { kind: "ionName", values: [{ type: "name", value: item.name }] } : { kind: "ionFormula", values: [{ type: "formula", value: item.formula, charge: item.charge }] };
-  }
-  const cation = ionById.get(item.cation);
-  const anion = ionById.get(item.anion);
-  const promptType = variant.startsWith("ionNames") ? ["name", "name"] : variant.startsWith("ions") ? ["formula", "formula"] : ["formula", "name"];
-  const displayed = [cation, anion].map((ion, index) => {
-    const type = promptType[index];
-    return { type, value: type === "formula" ? ion.formula : ion.name, ...type === "formula" ? { charge: ion.charge } : {} };
-  });
-  return { kind: "compoundIons", values: order === "cationFirst" ? displayed : displayed.reverse(), order };
-}
-function idFromRandom(random) {
+function identifier(random) {
   return Array.from({ length: 4 }, () => Math.floor(random() * 65536).toString(16).padStart(4, "0")).join("");
 }
 function generateQuestionSet(settings, random = Math.random, profile = DEFAULT_QUESTION_PROFILE) {
   validateGameSettings(settings, profile);
-  const selected = selectCandidates(settings, profile, random);
-  const variantCounts = /* @__PURE__ */ new Map();
-  const assignedVariants = /* @__PURE__ */ new Map();
-  const assignmentOrder = shuffled(selected.map((_, index) => index), random).sort((left, right) => selected[left].variants.length - selected[right].variants.length);
-  for (const index of assignmentOrder) {
-    const available = selected[index].variants;
-    const fewest = Math.min(...available.map((variant2) => variantCounts.get(variant2) ?? 0));
-    const choices = available.filter((variant2) => (variantCounts.get(variant2) ?? 0) === fewest);
-    const variant = choices[Math.floor(random() * choices.length)];
-    assignedVariants.set(index, variant);
-    variantCounts.set(variant, fewest + 1);
-  }
-  const cationCount = Math.floor(settings.questionCount / 2) + (settings.questionCount % 2 && random() < 0.5 ? 1 : 0);
-  const orderSlots = shuffled([
-    ...Array(cationCount).fill("cationFirst"),
-    ...Array(settings.questionCount - cationCount).fill("anionFirst")
-  ], random);
+  const engine2 = createAlkaneEngine(random);
+  const rule = (profile ?? DEFAULT_QUESTION_PROFILE).rules[settings.mode][settings.difficulty];
+  const options = optionsFor(settings, rule);
   const result = [];
-  for (let ordinal = 0; ordinal < settings.questionCount; ordinal += 1) {
-    const candidate = selected[ordinal];
-    const variant = assignedVariants.get(ordinal);
-    const answer = answerFor(candidate.item, variant);
-    const fields = answer.type === "both" ? [{ id: "formula", type: "formula" }, { id: "name", type: "name" }] : [{ id: answer.type, type: answer.type }];
+  const history = [];
+  const deadline = Date.now() + 1e4;
+  for (let ordinal = 0; ordinal < settings.questionCount; ordinal++) {
+    const chosen = Date.now() < deadline ? engine2.generateAvoidingRecentRepeat(options, history, (generated) => acceptable(generated, rule, engine2)) : null;
+    if (!chosen) throw new RangeError("\u8A2D\u5B9A\u306B\u5408\u3046\u554F\u984C\u3092\u751F\u6210\u3067\u304D\u307E\u305B\u3093\u3002\u4E3B\u9396\u30FB\u7F6E\u63DB\u57FA\u30FB\u67A0\u6570\u30FB\u6298\u308C\u66F2\u304C\u308A\u306E\u8A2D\u5B9A\u3092\u898B\u76F4\u3057\u3066\u304F\u3060\u3055\u3044");
+    engine2.rememberQuestion(history, chosen);
+    if (settings.mode === "arrange") engine2.rememberGame1LocantProfile(chosen);
+    const field = settings.mode === "arrange" ? "formula" : "name";
+    const tokens = engine2.expectedGame2AnswerTokens(chosen.name);
+    if (!tokens) throw new RangeError("\u6B63\u7B54\u306E\u8A9E\u53E5\u3092\u751F\u6210\u3067\u304D\u307E\u305B\u3093");
+    const prompt = settings.mode === "arrange" ? { kind: "alkane", mode: "arrange", grid: null, name: chosen.name, options: arrangementPalette(settings.alcoholEnabled), bounds: { cols: rule.gridCols, rows: rule.gridRows }, alcoholEnabled: settings.alcoholEnabled, values: [] } : { kind: "alkane", mode: "name", grid: chosen.grid, wordBank: wordBank(rule, settings, chosen.name, engine2, random), alcoholEnabled: settings.alcoholEnabled, values: [] };
     result.push({
-      id: idFromRandom(random),
+      id: identifier(random),
       ordinal,
-      itemId: candidate.item.id,
-      category: candidate.category,
-      variant,
-      prompt: promptFor(candidate.item, variant, orderSlots[ordinal]),
-      fields,
-      maxScore: fields.length,
-      answer,
-      ..."charge" in candidate.item && answer.type === "formula" ? { ionCharge: candidate.item.charge, ionFormula: candidate.item.formula } : {}
+      itemId: "alkane-" + ordinal,
+      category: chosen.name.includes("\u30B7\u30AF\u30ED") ? "cyclo" : "chain",
+      variant: settings.mode,
+      prompt,
+      fields: [{ id: field, type: field }],
+      maxScore: 1,
+      answer: { type: field, canonical: JSON.stringify(settings.mode === "arrange" ? { grid: chosen.grid } : { tokens }), accepted: [] }
     });
   }
-  return deepFreeze(result);
+  return freeze(result);
 }
 function toPublicQuestion(question, progress) {
-  return deepFreeze({
-    id: question.id,
-    ordinal: question.ordinal,
-    prompt: {
-      kind: question.prompt.kind,
-      values: question.prompt.values.map((value) => ({ ...value })),
-      ...question.prompt.order === void 0 ? {} : { order: question.prompt.order }
-    },
-    fields: question.fields.map((field) => ({ ...field })),
-    progress: { resolvedFieldIds: [...progress.resolvedFieldIds] }
-  });
+  return freeze({ id: question.id, ordinal: question.ordinal, prompt: question.prompt, fields: question.fields, progress });
 }
 
-// src/games/ionic-formula/shared/answer-evaluator.ts
-var EVALUATOR_VERSION = "ionic-formula-evaluator-1";
-var SUBSCRIPT_DIGITS = {
-  "\u2080": "0",
-  "\u2081": "1",
-  "\u2082": "2",
-  "\u2083": "3",
-  "\u2084": "4",
-  "\u2085": "5",
-  "\u2086": "6",
-  "\u2087": "7",
-  "\u2088": "8",
-  "\u2089": "9"
-};
-var SUPERSCRIPT_DIGITS = {
-  "\u2070": "0",
-  "\xB9": "1",
-  "\xB2": "2",
-  "\xB3": "3",
-  "\u2074": "4",
-  "\u2075": "5",
-  "\u2076": "6",
-  "\u2077": "7",
-  "\u2078": "8",
-  "\u2079": "9"
-};
-function normalizeFormula(value) {
-  return String(value ?? "").normalize("NFKC").replace(/[₀₁₂₃₄₅₆₇₈₉]/g, (digit) => SUBSCRIPT_DIGITS[digit]).replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, (digit) => SUPERSCRIPT_DIGITS[digit]).replace(/[＋﹢]/g, "+").replace(/[−ー―‐‑‒–—－﹣]/g, "-").replace(/[（）]/g, (character) => character === "\uFF08" ? "(" : ")").replace(/[\s\u3000]/g, "").replace("^", "");
-}
-function normalizeName(value) {
-  return String(value ?? "").normalize("NFKC").replace(/[（）]/g, (character) => character === "\uFF08" ? "(" : ")").replace(/[\s\u3000]/g, "");
-}
-function evaluateAnswer(value, specification) {
-  const normalize2 = specification.type === "formula" ? normalizeFormula : normalizeName;
-  const actual = normalize2(value);
-  if (!actual) return { correct: false, empty: true, matchedAnswerKind: null, note: null };
-  if (actual === normalize2(specification.canonical)) {
-    return { correct: true, empty: false, matchedAnswerKind: "canonical", note: null };
+// src/games/alkane-puzzle/shared/answer-evaluator.ts
+var EVALUATOR_VERSION = "alkane-puzzle-evaluator-1";
+var engine = createAlkaneEngine(() => 0.5);
+var invalid = (empty) => ({ correct: false, empty, matchedAnswerKind: null, note: null });
+function parseInput(value) {
+  if (typeof value !== "string") return value;
+  if (value.length > 1e4) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
   }
-  const alternative = specification.accepted.find((entry) => actual === normalize2(typeof entry === "string" ? entry : entry.formula));
-  return alternative ? {
-    correct: true,
-    empty: false,
-    matchedAnswerKind: "acceptedAlternative",
-    note: typeof alternative === "string" ? null : alternative.note ?? null
-  } : { correct: false, empty: false, matchedAnswerKind: null, note: null };
 }
-function isFormulaEntry(value) {
-  return typeof value === "object" && value !== null && Array.isArray(value.tokens);
+function validGrid(raw) {
+  if (!Array.isArray(raw) || raw.length !== 5) return false;
+  return raw.every((row) => Array.isArray(row) && row.length === 7 && row.every((panel) => {
+    if (panel === null) return true;
+    if (!panel || typeof panel !== "object" || Array.isArray(panel)) return false;
+    const p = panel;
+    return [1, 2, 3, 4, 5].includes(p.type) && [0, 90, 180, 270].includes(p.rotation) && (p.element === void 0 || ["C", "F", "Cl", "Br", "I", "OH"].includes(p.element)) && (p.element === void 0 || p.element === "C" || p.type === 1) && Object.keys(p).every((k) => ["type", "rotation", "element"].includes(k));
+  }));
+}
+var validTokens = /* @__PURE__ */ new Set([
+  ...engine.CHAIN_NAMES.slice(1, 11),
+  ...engine.MULTIPLIER_TOKENS,
+  ...engine.SUB_NAME_SET,
+  "\u30B7\u30AF\u30ED",
+  "\u30AA\u30FC\u30EB",
+  ...Array.from({ length: 10 }, (_, i) => String(i + 1))
+]);
+function validateAlkaneAnswer(value, prompt) {
+  const parsed = parseInput(value);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+  const record = parsed;
+  if (Object.keys(record).length !== 1) return null;
+  if (Object.hasOwn(record, "grid")) {
+    if (!validGrid(record.grid)) return null;
+    const grid = record.grid;
+    const bounds = prompt?.bounds;
+    const startCol = bounds ? Math.floor((7 - bounds.cols) / 2) : 0;
+    const startRow = bounds ? Math.floor((5 - bounds.rows) / 2) : 0;
+    for (let row = 0; row < 5; row++) for (let col = 0; col < 7; col++) {
+      const panel = grid[row][col];
+      if (!panel) continue;
+      if (bounds && (row < startRow || row >= startRow + bounds.rows || col < startCol || col >= startCol + bounds.cols)) return null;
+      if (prompt?.alcoholEnabled === false && panel.element === "OH") return null;
+    }
+    return { grid };
+  }
+  if (Object.hasOwn(record, "tokens") && Array.isArray(record.tokens) && record.tokens.length <= 40 && record.tokens.every((token) => typeof token === "string" && validTokens.has(token)) && (prompt?.alcoholEnabled !== false || !record.tokens.includes("\u30AA\u30FC\u30EB")) && (!prompt?.wordBank || record.tokens.every((token) => prompt.wordBank.some((row) => row.includes(token))))) return { tokens: [...record.tokens] };
+  return null;
 }
 function evaluateField(question, fieldId, value) {
   if (!question.fields.some((field) => field.id === fieldId)) throw new TypeError("\u3053\u306E\u554F\u984C\u306B\u5B58\u5728\u3057\u306A\u3044\u89E3\u7B54\u6B04\u3067\u3059");
-  const specification = question.answer.type === "both" ? question.answer[fieldId] : question.answer;
-  if (question.ionCharge !== void 0 && fieldId === "formula") {
-    if (!isFormulaEntry(value)) return { correct: false, empty: !normalizeFormula(value), matchedAnswerKind: null, note: null };
-    const formula = normalizeFormula(value.tokens.join(""));
-    const charge = value.charge;
-    const expectedMagnitude = Math.abs(question.ionCharge);
-    const expectedSign = question.ionCharge > 0 ? "+" : "-";
-    const empty = !formula && !charge;
-    const correct = charge?.source === "chargeButton" && formula === normalizeFormula(question.ionFormula) && charge.magnitude === expectedMagnitude && charge.sign === expectedSign;
-    return { correct, empty, matchedAnswerKind: correct ? "canonical" : null, note: null };
+  const parsed = validateAlkaneAnswer(value, question.prompt);
+  const empty = value === null || value === void 0 || value === "";
+  if (empty) return invalid(true);
+  let correct = false;
+  if (fieldId === "formula" && question.prompt.mode === "arrange") {
+    const grid = parsed && "grid" in parsed ? parsed.grid : null;
+    if (validGrid(grid)) {
+      const result = engine.generateName(grid);
+      const expectedAnswer = validateAlkaneAnswer(question.answer.canonical);
+      const expected = expectedAnswer && "grid" in expectedAnswer ? engine.generateName(expectedAnswer.grid) : null;
+      correct = result.ok && expected?.ok === true && result.name === expected.name;
+    }
+  } else if (fieldId === "name" && question.prompt.mode === "name") {
+    const tokens = parsed && "tokens" in parsed ? parsed.tokens : null;
+    if (tokens) {
+      const expectedAnswer = validateAlkaneAnswer(question.answer.canonical);
+      const expectedTokens = expectedAnswer && "tokens" in expectedAnswer ? expectedAnswer.tokens : [];
+      const expected = engine.reconstructNameFromTokens(expectedTokens);
+      correct = expected !== null && engine.reconstructNameFromTokens(tokens) === expected;
+    }
   }
-  if (fieldId === "formula" && isFormulaEntry(value)) {
-    const formula = value.tokens.join("");
-    if (value.charge) return { correct: false, empty: false, matchedAnswerKind: null, note: null };
-    return evaluateAnswer(formula, specification);
-  }
-  return evaluateAnswer(value, specification);
+  return { correct, empty: false, matchedAnswerKind: correct ? "canonical" : null, note: null };
 }
 
 // src/competition-core/scoring.ts
@@ -6273,7 +3390,7 @@ async function updateRoomSettingsCommand(database, input) {
       )
   `).bind(
     json(input.settings),
-    input.settings.chemistryContentVersion ?? "4",
+    input.settings.chemistryContentVersion ?? CHEMISTRY_CONTENT_VERSION,
     input.maxScore,
     marker,
     input.roomId,
@@ -6585,17 +3702,30 @@ async function loadV2RoomPhase(db, roomId, nowMs) {
   };
 }
 
+// src/features/play/answer-content.ts
+function answerHasContent(value) {
+  if (typeof value === "string") {
+    try {
+      return answerHasContent(JSON.parse(value));
+    } catch {
+      return value.trim().length > 0;
+    }
+  }
+  if (!value || typeof value !== "object") return false;
+  if ("grid" in value) {
+    const grid = value.grid;
+    return Array.isArray(grid) && grid.some((row) => Array.isArray(row) && row.some((cell) => cell != null));
+  }
+  if ("tokens" in value) {
+    const tokens = value.tokens;
+    return Array.isArray(tokens) && tokens.some((token) => typeof token === "string" && token.trim().length > 0);
+  }
+  return false;
+}
+
 // src/competition-core/v2-operations.ts
 function fieldKey(questionId, fieldId) {
   return `${questionId}:${fieldId}`;
-}
-function nonempty(value) {
-  if (typeof value === "string") return value.trim().length > 0;
-  if (typeof value === "object" && value !== null && "tokens" in value) {
-    const entry = value;
-    return Array.isArray(entry.tokens) && entry.tokens.some((token) => String(token).trim()) || entry.charge != null;
-  }
-  return false;
 }
 function replayV2Operations(questions, gradingMode, operations, startAtMs, cutoffAtMs, interruption = false, gradeDeferred = true) {
   const questionById = new Map(questions.map((question) => [question.id, question]));
@@ -6631,6 +3761,7 @@ function replayV2Operations(questions, gradingMode, operations, startAtMs, cutof
     }
     const question = questionById.get(operation.questionId ?? "");
     if (!question || !operation.fieldId || !question.fields.some((field) => field.id === operation.fieldId)) throw new TypeError("invalid question or field");
+    if ((operation.type === "answer" || operation.type === "draft") && !validateAlkaneAnswer(operation.value, question.prompt)) throw new TypeError("invalid alkane answer");
     const fieldId = operation.fieldId;
     const key2 = fieldKey(question.id, fieldId);
     const previous = fields[key2];
@@ -6658,7 +3789,7 @@ function replayV2Operations(questions, gradingMode, operations, startAtMs, cutof
       if (operation.type !== "draft") throw new TypeError("invalid deferred operation");
       if (!Number.isFinite(operation.editedElapsedMs ?? operation.elapsedMs) || (operation.editedElapsedMs ?? operation.elapsedMs) > operation.elapsedMs || editAtMs >= cutoffAtMs) continue;
       fields[key2] = {
-        state: nonempty(operation.value) ? "incorrect" : "unanswered",
+        state: answerHasContent(operation.value) ? "incorrect" : "unanswered",
         value: operation.value,
         editedElapsedMs: operation.editedElapsedMs ?? operation.elapsedMs
       };
@@ -6673,7 +3804,7 @@ function replayV2Operations(questions, gradingMode, operations, startAtMs, cutof
     }
   }
   const correctCount = Object.values(fields).filter((field) => field.state === "correct").length;
-  const answeredCount = Object.values(fields).filter((field) => nonempty(field.value)).length;
+  const answeredCount = Object.values(fields).filter((field) => answerHasContent(field.value)).length;
   const resolvedQuestionCount = gradingMode === "immediate" ? currentOrdinal : 0;
   return {
     fields,
@@ -7005,8 +4136,14 @@ function decodeDisplayAnswer(stored) {
   if (typeof raw === "string") return { lastAnswer: raw, lastAnswerEntry: null };
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return { lastAnswer: null, lastAnswerEntry: null, answerDisplayUnavailable: true };
   const candidate = raw;
+  if (Array.isArray(candidate.grid) && candidate.grid.length <= 5 && candidate.grid.every((row) => Array.isArray(row) && row.length <= 7)) {
+    return { lastAnswer: null, lastAnswerEntry: null, lastAnswerValue: { grid: candidate.grid } };
+  }
   if (!Array.isArray(candidate.tokens) || !candidate.tokens.every((token) => typeof token === "string")) {
     return { lastAnswer: null, lastAnswerEntry: null, answerDisplayUnavailable: true };
+  }
+  if (Array.isArray(candidate.tokens) && candidate.charge === void 0) {
+    return { lastAnswer: candidate.tokens.join(""), lastAnswerEntry: null, lastAnswerValue: { tokens: candidate.tokens } };
   }
   const charge = candidate.charge;
   if (charge !== null && charge !== void 0 && (!charge || typeof charge !== "object" || Array.isArray(charge) || !["+", "-"].includes(charge.sign) || !Number.isSafeInteger(charge.magnitude) || Number(charge.magnitude) < 1)) return { lastAnswer: null, lastAnswerEntry: null, answerDisplayUnavailable: true };
@@ -7111,7 +4248,6 @@ async function requireTeacher(request, provider, allowedEmails) {
 // src/platform/http.ts
 var MAX_BODY_BYTES = 4096;
 var MAX_OPERATION_BODY_BYTES = 128 * 1024;
-var MAX_ANSWER_LENGTH = 128;
 var LAZY_CLEANUP_LIMIT = 25;
 var JOIN_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 var ApiError = class extends Error {
@@ -7300,31 +4436,6 @@ function stringValue(value, name, maximum = 128) {
   }
   return value;
 }
-var FORMULA_TOKEN = /^(?:[A-Za-z]|[A-Z][a-z]?|\d+|[()[\]])$/u;
-function formulaEntryValue(value) {
-  if (!isRecord(value)) throw new ApiError(400, "invalid_request", "\u56DE\u7B54\u304C\u4E0D\u6B63\u3067\u3059");
-  assertKeys(value, ["tokens", "cursor", "charge"]);
-  if (!Array.isArray(value.tokens) || value.tokens.length < 1 || value.tokens.length > 64 || value.tokens.some((token) => typeof token !== "string" || !FORMULA_TOKEN.test(token)) || value.tokens.join("").length > MAX_ANSWER_LENGTH) {
-    throw new ApiError(400, "invalid_request", "\u56DE\u7B54\u304C\u4E0D\u6B63\u3067\u3059");
-  }
-  if (!Number.isSafeInteger(value.cursor) || value.cursor < 0 || value.cursor > value.tokens.length) {
-    throw new ApiError(400, "invalid_request", "\u56DE\u7B54\u304C\u4E0D\u6B63\u3067\u3059");
-  }
-  let charge = null;
-  if (value.charge !== null) {
-    if (!isRecord(value.charge)) throw new ApiError(400, "invalid_request", "\u56DE\u7B54\u304C\u4E0D\u6B63\u3067\u3059");
-    assertKeys(value.charge, ["magnitude", "sign", "source"]);
-    if (!Number.isSafeInteger(value.charge.magnitude) || value.charge.magnitude < 1 || value.charge.magnitude > 9 || value.charge.sign !== "+" && value.charge.sign !== "-" || value.charge.source !== "chargeButton") {
-      throw new ApiError(400, "invalid_request", "\u56DE\u7B54\u304C\u4E0D\u6B63\u3067\u3059");
-    }
-    charge = {
-      magnitude: value.charge.magnitude,
-      sign: value.charge.sign,
-      source: "chargeButton"
-    };
-  }
-  return { tokens: [...value.tokens], cursor: value.cursor, charge };
-}
 function integerValue(value, name, minimum = 0) {
   if (!Number.isSafeInteger(value) || value < minimum) {
     throw new ApiError(400, "invalid_request", `${name}\u304C\u4E0D\u6B63\u3067\u3059`);
@@ -7338,33 +4449,12 @@ function requestId(value) {
 }
 function parseSettings(value) {
   if (!isRecord(value)) throw new ApiError(400, "invalid_settings", "\u7AF6\u6280\u8A2D\u5B9A\u304C\u4E0D\u6B63\u3067\u3059");
-  assertKeys(value, [
-    "questionCount",
-    "timeLimitMinutes",
-    "mode",
-    "difficulty",
-    "ionAnswer",
-    "compoundPrompts",
-    "compoundAnswer",
-    "gradingMode",
-    "complexEnabled",
-    "chemistryContentVersion"
-  ]);
-  if (!isRecord(value.compoundPrompts)) throw new ApiError(400, "invalid_settings", "\u51FA\u984C\u5F62\u5F0F\u304C\u4E0D\u6B63\u3067\u3059");
-  assertKeys(value.compoundPrompts, ["formula", "name"]);
-  if (typeof value.compoundPrompts.formula !== "boolean" || typeof value.compoundPrompts.name !== "boolean") {
-    throw new ApiError(400, "invalid_settings", "\u51FA\u984C\u5F62\u5F0F\u304C\u4E0D\u6B63\u3067\u3059");
-  }
-  const settings = {
-    ...value,
-    gradingMode: value.gradingMode ?? "immediate",
-    complexEnabled: value.complexEnabled === void 0 ? false : value.complexEnabled,
-    chemistryContentVersion: value.chemistryContentVersion === void 0 ? CHEMISTRY_CONTENT_VERSION : value.chemistryContentVersion
-  };
+  assertKeys(value, ["questionCount", "timeLimitMinutes", "mode", "difficulty", "gradingMode", "alcoholEnabled", "chemistryContentVersion"]);
+  const settings = { ...value, gradingMode: value.gradingMode ?? "immediate", alcoholEnabled: value.alcoholEnabled ?? false, chemistryContentVersion: CHEMISTRY_CONTENT_VERSION };
   try {
     validateGameSettings(settings);
-  } catch {
-    throw new ApiError(400, "invalid_settings", "\u7AF6\u6280\u8A2D\u5B9A\u304C\u4E0D\u6B63\u3067\u3059");
+  } catch (error) {
+    throw new ApiError(400, "invalid_settings", error instanceof Error ? error.message : "\u7AF6\u6280\u8A2D\u5B9A\u304C\u4E0D\u6B63\u3067\u3059");
   }
   return settings;
 }
@@ -7415,7 +4505,19 @@ function stateOf(room, nowMs) {
 async function readTeacherAllowlist(database) {
   return await database.prepare("SELECT emails_json, revision, last_request_id, last_body_hash FROM teacher_allowlist WHERE id = 1").first() ?? { emails_json: "[]", revision: 0, last_request_id: null, last_body_hash: null };
 }
+async function isMasterTeacher(dependencies, identity) {
+  if (dependencies.teacherAuthorization) {
+    const role = await dependencies.teacherAuthorization(identity);
+    return role.allowed && role.master;
+  }
+  return !!dependencies.serverConfig.masterTeacherEmail && identity.email === dependencies.serverConfig.masterTeacherEmail;
+}
 async function requireApplicationTeacher(dependencies, request) {
+  if (dependencies.teacherAuthorization) {
+    const identity2 = await requireVerifiedTeacher(request, dependencies.teacherIdentity);
+    if (!(await dependencies.teacherAuthorization(identity2)).allowed) throw new TeacherIdentityError(403, "teacher_forbidden", "\u6559\u54E1\u3068\u3057\u3066\u8A31\u53EF\u3055\u308C\u3066\u3044\u307E\u305B\u3093");
+    return identity2;
+  }
   const master = dependencies.serverConfig.masterTeacherEmail;
   if (!master) return requireTeacher(request, dependencies.teacherIdentity, dependencies.serverConfig.teacherAllowedEmails);
   const identity = await requireVerifiedTeacher(request, dependencies.teacherIdentity);
@@ -7555,7 +4657,7 @@ function roomView(room, nowMs) {
   };
 }
 function correctAnswer(question, fieldId) {
-  const specification = question.answer.type === "both" ? question.answer[fieldId] : question.answer;
+  const specification = question.answer;
   return specification.canonical;
 }
 async function participantQuestionResults(database, roomId, participantId, protocolVersion = 1, requestId2) {
@@ -7586,8 +4688,9 @@ async function participantQuestionResults(database, roomId, participantId, proto
       id: row.field_id,
       state: row.state,
       correctAnswer: correctAnswer(internal, row.field_id),
-      correctFormulaCore: row.field_id === "formula" && internal.ionCharge != null ? internal.ionFormula ?? null : null,
-      correctFormulaCharge: row.field_id === "formula" ? internal.ionCharge ?? null : null,
+      correctFormulaCore: null,
+      correctFormulaCharge: null,
+      correctAnswerValue: JSON.parse(internal.answer.canonical),
       ...displayAnswer,
       lastAnswerCorrect: row.last_answer_correct === null ? null : row.last_answer_correct === 1,
       attemptCount: row.attempt_count
@@ -7710,7 +4813,7 @@ function createApiHandlers(dependencies) {
       kind: "class",
       ownerTeacherId: teacher.id,
       settings,
-      gameId: "ionic-formula",
+      gameId: "alkane-puzzle",
       gameVersion: requestedV2 ? "2" : "1",
       datasetVersion: CHEMISTRY_CONTENT_VERSION,
       questionProfile,
@@ -7736,7 +4839,7 @@ function createApiHandlers(dependencies) {
     const nickname2 = normalizeNickname(value.nickname);
     const requestedV2 = isRecord(value.settings) && value.settings.gradingMode !== void 0;
     const settings = parseSettings(value.settings);
-    const questionProfile = await readQuestionProfile(dependencies.database);
+    const questionProfile = { profile: structuredClone(DEFAULT_QUESTION_PROFILE), revision: 0 };
     const validated = validateGameSettings(settings, questionProfile.profile);
     const nowMs = dependencies.now();
     await cleanupExpired(dependencies.database, { nowMs, limit: LAZY_CLEANUP_LIMIT });
@@ -7748,7 +4851,7 @@ function createApiHandlers(dependencies) {
       kind: "mate",
       ownerTeacherId: null,
       settings,
-      gameId: "ionic-formula",
+      gameId: "alkane-puzzle",
       gameVersion: requestedV2 ? "2" : "1",
       datasetVersion: CHEMISTRY_CONTENT_VERSION,
       questionProfile,
@@ -7879,7 +4982,11 @@ function createApiHandlers(dependencies) {
     requireUnexpired(room, dependencies.now());
     if (room.game_version !== "2") throw new ApiError(404, "not_found", "\u554F\u984C\u306E\u6E96\u5099\u60C5\u5831\u304C\u3042\u308A\u307E\u305B\u3093");
     const participant = await requireParticipant(dependencies.database, request, room.id);
-    return jsonResponse(await loadV2Manifest(dependencies.database, room.id, participant.participantId));
+    const loaded = await loadV2Manifest(dependencies.database, room.id, participant.participantId);
+    const drafts2 = await readParticipantDrafts(dependencies.database, room.id, participant.participantId);
+    const progress = await dependencies.database.prepare("SELECT writer_epoch,ack_seq FROM v2_participant_progress WHERE room_id=? AND participant_id=?").bind(room.id, participant.participantId).first();
+    const saved = await dependencies.database.prepare("SELECT payload_json FROM v2_operations WHERE room_id=? AND participant_id=? ORDER BY seq").bind(room.id, participant.participantId).all();
+    return jsonResponse({ ...loaded, serverDrafts: drafts2, writerEpoch: progress?.writer_epoch ?? 1, ackSeq: progress?.ack_seq ?? 0, operations: saved.results.map((row) => JSON.parse(row.payload_json)) });
   });
   const ready = (request, parameters) => safe(async () => {
     const room = await loadRoom2(dependencies.database, parameters.id);
@@ -7930,6 +5037,26 @@ function createApiHandlers(dependencies) {
     });
     await maybeFinalizeV2Room(dependencies.database, { roomId: room.id, nowMs: dependencies.now() });
     return jsonResponse(response);
+  });
+  const drafts = (request, parameters) => safe(async () => {
+    const room = await loadRoom2(dependencies.database, parameters.id);
+    const nowMs = dependencies.now();
+    requireUnexpired(room, nowMs);
+    const participant = await requireParticipant(dependencies.database, request, room.id);
+    if (request.method === "GET") return jsonResponse({ drafts: await readParticipantDrafts(dependencies.database, room.id, participant.participantId) });
+    const { value } = await readMutationBody(request, MAX_OPERATION_BODY_BYTES);
+    assertKeys(value, ["manifestId", "writerEpoch", "items"]);
+    if (!Array.isArray(value.items) || value.items.length > 15) throw new ApiError(400, "invalid_drafts", "\u9014\u4E2D\u89E3\u7B54\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044");
+    const questions = await dependencies.database.prepare("SELECT question_id,field_spec_json,public_payload_json FROM room_questions WHERE room_id=?").bind(room.id).all();
+    const items = value.items.map((raw) => {
+      if (!isRecord(raw)) throw new ApiError(400, "invalid_draft", "\u9014\u4E2D\u89E3\u7B54\u304C\u4E0D\u6B63\u3067\u3059");
+      assertKeys(raw, ["questionId", "fieldId", "value", "version", "editedElapsedMs"]);
+      const question = questions.results.find((q) => q.question_id === raw.questionId);
+      if (!question || !JSON.parse(question.field_spec_json).some((f) => f.id === raw.fieldId)) throw new ApiError(400, "invalid_draft", "\u554F\u984C\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044");
+      if (!validateAlkaneAnswer(raw.value, JSON.parse(question.public_payload_json).prompt)) throw new ApiError(400, "invalid_draft", "\u89E3\u7B54\u306E\u5F62\u5F0F\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044");
+      return { questionId: stringValue(raw.questionId, "questionId", 128), fieldId: raw.fieldId, value: raw.value, version: integerValue(raw.version, "version", 1), editedElapsedMs: integerValue(raw.editedElapsedMs, "editedElapsedMs") };
+    });
+    return jsonResponse(await saveParticipantDrafts(dependencies.database, { roomId: room.id, participantId: participant.participantId, manifestId: stringValue(value.manifestId, "manifestId", 128), writerEpoch: integerValue(value.writerEpoch, "writerEpoch", 1), nowMs, items }));
   });
   const writer = (request, parameters) => safe(async () => {
     const room = await loadRoom2(dependencies.database, parameters.id);
@@ -8038,7 +5165,11 @@ function createApiHandlers(dependencies) {
       action = {
         type: "answer",
         fieldId: value.action.fieldId,
-        value: value.action.fieldId === "formula" && isRecord(value.action.value) ? formulaEntryValue(value.action.value) : stringValue(value.action.value, "\u56DE\u7B54", MAX_ANSWER_LENGTH)
+        value: (() => {
+          const answer = validateAlkaneAnswer(value.action.value);
+          if (!answer) throw new ApiError(400, "invalid_answer", "\u89E3\u7B54\u306E\u5F62\u5F0F\u3092\u78BA\u8A8D\u3057\u3066\u304F\u3060\u3055\u3044");
+          return JSON.stringify(answer);
+        })()
       };
     } else {
       throw new ApiError(400, "invalid_action", "\u64CD\u4F5C\u5185\u5BB9\u304C\u4E0D\u6B63\u3067\u3059");
@@ -8207,7 +5338,7 @@ function createApiHandlers(dependencies) {
   }, "result-summary");
   const teacherQuestionProfile = (request) => safe(async () => {
     const teacher = await requireApplicationTeacher(dependencies, request);
-    if (!dependencies.serverConfig.masterTeacherEmail || teacher.email !== dependencies.serverConfig.masterTeacherEmail) {
+    if (!await isMasterTeacher(dependencies, teacher)) {
       throw new ApiError(403, "master_required", "\u7BA1\u7406\u8005\u6559\u54E1\u306E\u307F\u64CD\u4F5C\u3067\u304D\u307E\u3059");
     }
     const catalog = questionProfileCatalog();
@@ -8237,7 +5368,7 @@ function createApiHandlers(dependencies) {
     const nowMs = dependencies.now();
     await cleanupExpired(dependencies.database, { nowMs, limit: LAZY_CLEANUP_LIMIT });
     if (request.method === "GET") return jsonResponse(await readMateEnabled(dependencies.database));
-    if (!dependencies.serverConfig.masterTeacherEmail || teacher.email !== dependencies.serverConfig.masterTeacherEmail) {
+    if (!await isMasterTeacher(dependencies, teacher)) {
       throw new ApiError(403, "master_required", "\u30DE\u30B9\u30BF\u30FC\u6559\u54E1\u306E\u307F\u64CD\u4F5C\u3067\u304D\u307E\u3059");
     }
     const { value, bodyHash: bodyHash2 } = await readMutationBody(request);
@@ -8254,9 +5385,10 @@ function createApiHandlers(dependencies) {
   });
   const teacherSession = (request) => safe(async () => {
     const teacher = await requireApplicationTeacher(dependencies, request);
-    return jsonResponse({ email: teacher.email, role: teacher.email === dependencies.serverConfig.masterTeacherEmail ? "master" : "teacher" });
+    return jsonResponse({ email: teacher.email, role: await isMasterTeacher(dependencies, teacher) ? "master" : "teacher" });
   });
   const teacherAllowlist = (request) => safe(async () => {
+    if (dependencies.teacherAllowlistCommand) return dependencies.teacherAllowlistCommand(request);
     const teacher = await requireVerifiedTeacher(request, dependencies.teacherIdentity);
     const master = dependencies.serverConfig.masterTeacherEmail;
     if (!master || teacher.email !== master) throw new ApiError(403, "master_required", "\u30DE\u30B9\u30BF\u30FC\u6559\u54E1\u306E\u307F\u64CD\u4F5C\u3067\u304D\u307E\u3059");
@@ -8305,6 +5437,7 @@ function createApiHandlers(dependencies) {
     cancelPreparation,
     operations,
     writer,
+    drafts,
     cancelRoom: cancel,
     interruptRoom: interrupt,
     removeParticipant: removeParticipant2,
@@ -8404,6 +5537,7 @@ async function queueRoomEvents(db, publicId, before, now) {
 }
 async function flushRoomEvents(transact2, publicId, send, now = Date.now()) {
   const claimed = await transact2(`broadcast:${publicId}`, async (db) => {
+    await db.prepare("SELECT app_expire_teacher_leases(?)").bind(now).run();
     const room = await readRoom(db, publicId);
     if (!room || room.expires_at_ms <= now) return [];
     const topic = await db.prepare("SELECT epoch,sent_control_ms,sent_progress_ms FROM app_room_topics WHERE room_id=?").bind(room.id).first();
@@ -8412,6 +5546,10 @@ async function flushRoomEvents(transact2, publicId, send, now = Date.now()) {
     const hosts = 1;
     const result = [];
     for (const event of pending) {
+      if (event.kind === "host" && room.kind === "class") {
+        const owner = await db.prepare("SELECT uid FROM app_teacher_bindings WHERE uid=? AND active=true AND lease_until_ms>?").bind(room.owner_teacher_id, now).first();
+        if (!owner) continue;
+      }
       if (now - (event.kind === "host" ? topic.sent_progress_ms : topic.sent_control_ms) < 1e3) continue;
       const cost = reservedEventCost(event.kind === "host" ? hosts : Number(recipients?.count ?? 0) + (room.kind === "mate" ? 0 : 1));
       const budget = await db.prepare("SELECT window_ms,used FROM app_broadcast_budget WHERE id=1 FOR UPDATE").first();
@@ -8421,7 +5559,14 @@ async function flushRoomEvents(transact2, publicId, send, now = Date.now()) {
       await db.prepare("UPDATE app_broadcast_budget SET window_ms=?,used=? WHERE id=1").bind(window, used + cost).run();
       const lease = crypto.randomUUID();
       await db.prepare("UPDATE app_outbox SET lease_id=?,lease_until_ms=? WHERE room_id=? AND kind=?").bind(lease, now + 5e3, room.id, event.kind).run();
-      result.push({ ...event, lease, topic: `room:${publicId}:${event.kind === "host" ? "host" : "control"}:${topic.epoch}`, epoch: topic.epoch });
+      result.push({
+        ...event,
+        lease,
+        topic: `room:${publicId}:${event.kind === "host" ? "host" : "control"}:${topic.epoch}`,
+        epoch: topic.epoch,
+        room_kind: room.kind,
+        owner_uid: room.owner_teacher_id
+      });
     }
     return result;
   });
@@ -8430,8 +5575,13 @@ async function flushRoomEvents(transact2, publicId, send, now = Date.now()) {
       const payload = JSON.parse(event.payload_json);
       if (payload.epoch !== event.epoch) continue;
       await transact2(`room:${publicId}`, async (db) => {
+        await db.prepare("SELECT app_expire_teacher_leases(?)").bind(now).run();
         const current = await db.prepare("SELECT epoch FROM app_room_topics WHERE room_id=? FOR UPDATE").bind(event.room_id).first();
         if (current?.epoch !== event.epoch) return;
+        if (event.kind === "host" && event.room_kind === "class") {
+          const owner = await db.prepare("SELECT uid FROM app_teacher_bindings WHERE uid=? AND active=true AND lease_until_ms>?").bind(event.owner_uid, now).first();
+          if (!owner) return;
+        }
         await send(event.topic, event.kind === "host" ? "host.progress" : "room.changed", payload);
         await db.prepare("DELETE FROM app_outbox WHERE room_id=? AND kind=? AND event_id=? AND lease_id=?").bind(event.room_id, event.kind, event.event_id, event.lease).run();
         await db.prepare(`UPDATE app_room_topics SET ${event.kind === "host" ? "sent_progress_ms" : "sent_control_ms"}=? WHERE room_id=?`).bind(now, event.room_id).run();
@@ -8465,6 +5615,7 @@ var roomRoutes = {
   ready: { method: ["POST"], name: "ready" },
   "cancel-preparation": { method: ["POST"], name: "cancelPreparation" },
   operations: { method: ["POST"], name: "operations" },
+  drafts: { method: ["GET", "POST"], name: "drafts" },
   writer: { method: ["POST"], name: "writer" },
   cancel: { method: ["POST"], name: "cancelRoom" },
   interrupt: { method: ["POST"], name: "interruptRoom" },
@@ -8485,21 +5636,19 @@ function withCors(response, origin) {
   headers.set("access-control-expose-headers", "retry-after,x-request-id");
   return new Response(response.body, { status: response.status, headers });
 }
-async function teacherProvider(db, user, masterEmail) {
+async function teacherProvider(db, user, decision, now) {
   const identity = googleIdentity(user);
   if (!identity) return { getVerifiedIdentity: async () => null };
-  const master = masterEmail.trim().toLowerCase();
-  if (!master) return { getVerifiedIdentity: async () => null };
-  await db.prepare("INSERT OR IGNORE INTO app_auth_config(id,master_email) VALUES(1,?)").bind(master).run();
-  const settings = await db.prepare("SELECT master_email FROM app_auth_config WHERE id=1").first();
-  if (settings?.master_email !== master) throw new Error("Master identity configuration differs");
-  const list = await db.prepare("SELECT emails_json FROM teacher_allowlist WHERE id=1").first();
-  const permitted = identity.email === master || JSON.parse(list?.emails_json ?? "[]").includes(identity.email);
+  if (!decision) return { getVerifiedIdentity: async () => identity };
+  if (!decision.allowed || decision.email !== identity.email) {
+    await db.prepare("UPDATE app_teacher_bindings SET active=false,lease_until_ms=0 WHERE uid=? AND active=true").bind(user.id).run();
+    return { getVerifiedIdentity: async () => identity };
+  }
   const byUid = await db.prepare("SELECT email,active FROM app_teacher_bindings WHERE uid=?").bind(user.id).first();
   const byEmail = await db.prepare("SELECT uid FROM app_teacher_bindings WHERE email=?").bind(identity.email).first();
-  if (!permitted || byUid && byUid.email !== identity.email || byEmail && byEmail.uid !== user.id) return { getVerifiedIdentity: async () => null };
-  if (!byUid) await db.prepare("INSERT INTO app_teacher_bindings(uid,email) VALUES(?,?)").bind(user.id, identity.email).run();
-  else if (!byUid.active) await db.prepare("UPDATE app_teacher_bindings SET active=true WHERE uid=?").bind(user.id).run();
+  if (byUid && byUid.email !== identity.email || byEmail && byEmail.uid !== user.id) throw new Error("Teacher identity binding conflict");
+  if (!byUid) await db.prepare("INSERT INTO app_teacher_bindings(uid,email,active,lease_until_ms) VALUES(?,?,true,?)").bind(user.id, identity.email, now + 6e4).run();
+  else await db.prepare("UPDATE app_teacher_bindings SET active=true,lease_until_ms=? WHERE uid=?").bind(now + 6e4, user.id).run();
   return { getVerifiedIdentity: async () => identity };
 }
 async function associateParticipant(db, user, request, publicId) {
@@ -8520,7 +5669,7 @@ async function topicsFor(db, user, publicId, now) {
   if (!room || room.expires_at_ms <= now) return null;
   const member = await db.prepare(`SELECT m.participant_id FROM app_memberships m JOIN participants p ON p.room_id=m.room_id AND p.id=m.participant_id
     WHERE m.room_id=? AND m.uid=? AND p.status<>'REMOVED'`).bind(room.id, user.id).first();
-  const teacher = await db.prepare("SELECT uid FROM app_teacher_bindings WHERE uid=? AND active=true").bind(user.id).first();
+  const teacher = await db.prepare("SELECT uid FROM app_teacher_bindings WHERE uid=? AND active=true AND lease_until_ms>?").bind(user.id, now).first();
   const owner = teacher?.uid === room.owner_teacher_id;
   if (!member && !owner) return null;
   const row = await db.prepare("SELECT epoch FROM app_room_topics WHERE room_id=?").bind(room.id).first();
@@ -8557,6 +5706,7 @@ function createSupabaseGateway(options) {
       const response = await options.transact(scope, async (db) => {
         const now = (options.now ?? Date.now)();
         if (crypto.getRandomValues(new Uint32Array(1))[0] % 200 === 0) await db.prepare("SELECT app_prune_auxiliary()").run();
+        await db.prepare("SELECT app_expire_teacher_leases(?)").bind(now).run();
         const bucket = `${user.id}:${Math.floor(now / 6e4)}`;
         const limit = await db.prepare(`INSERT INTO app_request_limits(bucket,window_ms,count) VALUES(?,?,1)
           ON CONFLICT(bucket) DO UPDATE SET count=app_request_limits.count+1 RETURNING count`).bind(bucket, now).first();
@@ -8565,8 +5715,22 @@ function createSupabaseGateway(options) {
           limited.headers.set("retry-after", String(Math.ceil((6e4 - now % 6e4) / 1e3)));
           return limited;
         }
-        const provider = await teacherProvider(db, user, options.masterEmail);
-        const handlers = createApiHandlers({ database: db, teacherIdentity: provider, serverConfig: { teacherAllowedEmails: [], masterTeacherEmail: options.masterEmail.trim().toLowerCase() }, now: options.now ?? Date.now, random: () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296, randomUUID: () => crypto.randomUUID() });
+        const identity = googleIdentity(user);
+        const owner = publicId ? await db.prepare("SELECT owner_teacher_id FROM rooms WHERE public_id=?").bind(publicId).first() : null;
+        const needsTeacher = !!identity && (path.startsWith("/api/teacher/") || route?.name === "createClassRoom" || owner?.owner_teacher_id === user.id);
+        const bearer = incoming.headers.get("authorization")?.replace(/^Bearer /, "") ?? "";
+        const decision = needsTeacher && options.sharedTeacher && bearer ? await options.sharedTeacher.authorize(bearer) : null;
+        const provider = await teacherProvider(db, user, decision, now);
+        const handlers = createApiHandlers({
+          database: db,
+          teacherIdentity: provider,
+          teacherAuthorization: async (checked) => ({ allowed: !!decision?.allowed && decision.email === checked.email, master: !!decision?.master }),
+          teacherAllowlistCommand: async (forwarded) => options.sharedTeacher && bearer ? options.sharedTeacher.allowlist(bearer, forwarded) : failure(503, "identity_unavailable", "\u6559\u54E1\u8A8D\u8A3C\u3092\u5229\u7528\u3067\u304D\u307E\u305B\u3093"),
+          serverConfig: { teacherAllowedEmails: [], masterTeacherEmail: options.masterEmail.trim().toLowerCase() },
+          now: options.now ?? Date.now,
+          random: () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296,
+          randomUUID: () => crypto.randomUUID()
+        });
         const before = publicId ? await roomFingerprint(db, publicId) : null;
         const result = await handlers[realtime ? "state" : route.name](request.clone(), { id: publicId });
         if (!result.ok) return result;
@@ -8596,6 +5760,59 @@ function createSupabaseGateway(options) {
   };
 }
 
+// src/platform/shared-teacher-client.ts
+var encoder = new TextEncoder();
+async function signature(secret, body) {
+  const key2 = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return [...new Uint8Array(await crypto.subtle.sign("HMAC", key2, encoder.encode(body)))].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+function createSharedTeacherClient(options) {
+  if (!/^https:\/\//.test(options.url) || !options.appId || options.secret.length < 32) throw new Error("Shared teacher client configuration is incomplete");
+  const send = async (action, bearerToken, mutation) => {
+    const body = JSON.stringify({ appId: options.appId, requestId: (options.randomUUID ?? crypto.randomUUID)(), issuedAtMs: (options.now ?? Date.now)(), action, bearerToken, ...mutation ? { mutation } : {} });
+    try {
+      return await (options.fetch ?? fetch)(options.url, { method: "POST", headers: {
+        "content-type": "application/json",
+        "x-shared-teacher-signature": await signature(options.secret, body)
+      }, body, signal: AbortSignal.timeout(7e3) });
+    } catch {
+      throw new Error("authority_unavailable");
+    }
+  };
+  return {
+    async authorize(bearerToken) {
+      const response = await send("authorize", bearerToken);
+      if (response.status === 403) return { allowed: false, master: false, email: "", revision: -1 };
+      if (!response.ok) throw new Error("authority_unavailable");
+      let value;
+      try {
+        value = await response.json();
+      } catch {
+        throw new Error("authority_unavailable");
+      }
+      if (!value || typeof value !== "object") throw new Error("authority_unavailable");
+      const result = value;
+      if (result.allowed !== true || typeof result.master !== "boolean" || typeof result.email !== "string" || !Number.isSafeInteger(result.revision)) throw new Error("authority_unavailable");
+      return result;
+    },
+    async allowlist(bearerToken, request) {
+      let mutation;
+      if (request.method === "POST") {
+        try {
+          const body = await request.text();
+          if (encoder.encode(body).length > 4096) return new Response(JSON.stringify({ error: { code: "body_too_large" } }), { status: 413, headers: { "content-type": "application/json" } });
+          mutation = JSON.parse(body);
+        } catch {
+          return new Response(JSON.stringify({ error: { code: "invalid_request" } }), { status: 400, headers: { "content-type": "application/json" } });
+        }
+      }
+      const response = await send(request.method === "POST" ? "allowlist.mutate" : "allowlist.get", bearerToken, mutation);
+      if (response.status >= 500) throw new Error("authority_unavailable");
+      return response;
+    }
+  };
+}
+
 // src/platform/edge-entry.ts
 var required = (name) => {
   const value = Deno.env.get(name);
@@ -8605,12 +5822,15 @@ var required = (name) => {
 var url = required("SUPABASE_URL");
 var key = required("SUPABASE_ANON_KEY");
 var serviceKey = required("SUPABASE_SERVICE_ROLE_KEY");
-var databaseUrl = Deno.env.get("COMPETITION_DATABASE_URL") ?? transactionPoolerUrl(
-  required("SUPABASE_DB_URL"),
-  "slktkbpvvsfpflnmpuvr",
-  "aws-0-ap-northeast-2.pooler.supabase.com"
-);
+var databaseUrl = required("COMPETITION_DATABASE_URL");
 var transact = postgresTransactions(databaseUrl);
+var authorityUrl = Deno.env.get("SHARED_TEACHER_AUTHORITY_URL");
+var authoritySecret = Deno.env.get("SHARED_TEACHER_HMAC_SECRET");
+var sharedTeacher = authorityUrl && authoritySecret ? createSharedTeacherClient({
+  url: authorityUrl,
+  appId: "alkane-puzzle-competition",
+  secret: authoritySecret
+}) : void 0;
 async function flush(publicId) {
   await flushRoomEvents(transact, publicId, async (topic, event, payload) => {
     const result = await fetch(`${url}/realtime/v1/api/broadcast`, {
@@ -8627,6 +5847,7 @@ var gateway = createSupabaseGateway({
   verifyUser: (request) => verifySupabaseUser(request, url, key),
   masterEmail: required("MASTER_TEACHER_EMAIL"),
   allowedOrigins: required("ALLOWED_ORIGINS").split(",").map((x) => x.trim()).filter(Boolean),
+  sharedTeacher,
   flush: async (id) => {
     EdgeRuntime.waitUntil(flush(id));
   }

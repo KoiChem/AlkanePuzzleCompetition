@@ -1,4 +1,4 @@
-const KEY = "ionic-formula-competition:last-nickname";
+const KEY = "alkane-puzzle-competition:last-nickname";
 
 export function loadSavedNickname(storage: Storage): string {
   try {
