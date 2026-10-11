@@ -27,3 +27,10 @@
 - `rooms`、`participant_drafts`、`app_teacher_bindings` が存在し、公開キーで直接読むと42501 permission deniedとなることを確認。ライブDBの競技トランザクションは未検証。
 - 管理者作業：専用DBのTransaction pooler URIなどEdge secrets、既存イオン側の共通認可migration・呼び出し元登録・共有HMAC、Cron、OAuth公開URL。
 - GitHub／Edgeの公開はまだ実施していない。手順は OPERATIONS.md と SHARED_TEACHER_SETUP.md。
+
+
+## 2026-10-11 Cloudflare Lite実装
+
+上記のSupabase版とは独立して、`cloudflare-lite/` に専用Worker・SQLite Durable Objects版を実装した。クラス／メイト、本家互換パズル、登録教員のGoogle認証、マスター共通難易度、下書き復元・締切回収を含む。
+
+新規61件と既存431件のテスト、ビルド・Worker dry-run、Playwright主要操作と幅320〜1280px、ローカル模擬50人試験が成功。公開と実Google認証設定は未実施。詳細は [検証記録](../cloudflare-lite/docs/verification.md) と [運用手順](../cloudflare-lite/README.md) を参照。

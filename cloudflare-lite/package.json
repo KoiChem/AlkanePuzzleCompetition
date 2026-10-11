@@ -1,0 +1,33 @@
+{
+  "name": "alkanecompetition",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --configLoader runner",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.worker.json",
+    "build": "pnpm typecheck && vite build --configLoader runner",
+    "dev": "wrangler dev --port 8792 --var APP_ORIGIN:http://localhost:8792",
+    "dev:fixture": "node tests/browser-server.mjs",
+    "deploy": "node deploy.mjs"
+  },
+  "dependencies": {
+    "jose": "6.2.12",
+    "jsqr": "1.4.0",
+    "qrcode.react": "4.2.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "esbuild": "0.25.12",
+    "miniflare": "5.20261006.0-alpha",
+    "typescript": "5.9.3",
+    "vite": "8.0.13",
+    "vitest": "3.2.4",
+    "wrangler": "4.148.0"
+  },
+  "packageManager": "pnpm@11.19.0"
+}

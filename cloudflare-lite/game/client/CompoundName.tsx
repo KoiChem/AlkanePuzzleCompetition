@@ -1,0 +1,2 @@
+const commonNames:Record<string,string>={'1,2-エタンジオール':'エチレングリコール','1,2,3-プロパントリオール':'グリセリン','1,2,3,4-ブタンテトラオール':'エリスリトール','1,2,3,4,5-ペンタンペンタオール':'キシリトール'};
+export function CompoundName({name}:{name:string}){const chars=Array.from(name),at=Math.max(0,chars.length-4);return <>{chars.slice(0,at).join('')}<span style={{whiteSpace:'nowrap'}}>{chars.slice(at).join('')}</span>{commonNames[name]&&<small className="alkane-common-name">（{commonNames[name]}）</small>}</>;}

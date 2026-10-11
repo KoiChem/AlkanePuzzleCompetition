@@ -1,0 +1,15 @@
+import {execFileSync} from 'node:child_process';
+import {readFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+const directory=fileURLToPath(new URL('.',import.meta.url));
+const config=JSON.parse(readFileSync(new URL('wrangler.jsonc',import.meta.url),'utf8'));
+const names=config.durable_objects?.bindings?.map(b=>`${b.name}:${b.class_name}`).sort().join(',');
+if(config.name!=='alkanecompetition'||config.vars?.APP_ORIGIN!=='https://alkanecompetition.koichem.workers.dev'||config.vars?.MASTER_TEACHER_EMAIL!=='taiyaki.taiyaki.taiyaki@gmail.com'||config.d1_databases||names!=='ROOMS:AlkaneRoom,TEACHERS:AlkaneTeachers'||config.migrations?.[0]?.new_sqlite_classes?.sort().join(',')!=='AlkaneRoom,AlkaneTeachers')throw new Error('アルカン専用Worker・DO設定を確認してください');
+const dryRun=process.argv.includes('--dry-run');
+if(process.argv.slice(2).some(value=>value!=='--dry-run'))throw new Error('--dry-run以外の引数は指定できません');
+if(!dryRun&&!config.vars.GOOGLE_CLIENT_ID)throw new Error('公開前にGoogle OAuth Client IDとWorker Secretを設定してください');
+const sha=execFileSync('git',['rev-parse','HEAD'],{cwd:directory,encoding:'utf8'}).trim();
+if(!/^[a-f0-9]{40}$/.test(sha))throw new Error('公開にはGit commitが必要です');
+if(!dryRun&&execFileSync('git',['status','--porcelain','--','cloudflare-lite','src','app'],{cwd:fileURLToPath(new URL('..',import.meta.url)),encoding:'utf8'}).trim())throw new Error('Lite版の変更をcommitしてから公開してください');
+execFileSync('pnpm',['build'],{cwd:directory,stdio:'inherit',env:{...process.env,VITE_ALKANE_RELEASE:sha}});
+execFileSync('pnpm',['exec','wrangler','deploy','--config','wrangler.jsonc','--var',`RELEASE_SHA:${sha}`,...(dryRun?['--dry-run','--outdir','/private/tmp/alkane-worker-dry-run']:[])],{cwd:directory,stdio:'inherit'});
