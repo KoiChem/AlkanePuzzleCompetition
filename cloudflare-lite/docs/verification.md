@@ -1,6 +1,6 @@
 # アルカンコンペ Cloudflare Lite 検証記録
 
-2026-10-11。実装・ローカル検証完了。公開は未実施。
+2026-10-11。実装・ローカル検証およびCloudflare公開完了。
 
 ## 実装範囲
 
@@ -42,4 +42,18 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 3. READMEの手順で専用Workerを公開する。独立したSQLite Durable Objectsを使用し、D1・Supabaseは使用しない。
 4. 公開後、実Googleログイン、マスター・登録教員の操作、匿名参加、公開ページの主要競技操作を確認する。
 
-実Googleの資格情報による認証、Cloudflare上での保存・アラーム・50人運用、iPad/iPhone等の実機タッチ操作は未検証。ブラウザ試験の教員ログインはローカル専用フィクスチャであり、本番入口には含めていない。
+公開前の時点では、実Googleの資格情報による認証、Cloudflare上での保存・アラーム・50人運用、iPad/iPhone等の実機タッチ操作は未検証だった。現在の本番確認結果は以下に記す。ブラウザ試験の教員ログインはローカル専用フィクスチャであり、本番入口には含めていない。
+
+
+## 2026-10-11 本番公開記録
+
+- 公開URL: https://alkanecompetition.koichem.workers.dev/
+- source release: `a8afda23647e635b9798716bfa183f4098e8605f`。HTMLのalkane-releaseと/api/healthのreleaseが一致。
+- 初回Worker version: `520afd50-e485-4045-92f2-dc132a46d3a5`。Secret登録後の公開version: `c6a7193a-48e0-4742-8513-18dc273e0754`（100%）。
+- Google Cloud既存クライアントにアルカン専用callbackを追加。既存URIは維持。Client IDは公開設定、Client SecretはWorker Secretで保存し、Git・出力へ含めていない。
+- Googleにログイン済みの実ブラウザで指定マスターのOAuthログイン、マスター表示、クラス作成、教員レース、参加者の解答・復習を確認。共通難易度を初期値のまま保存でき、成功表示を確認。
+- 公開クラスで匿名生徒の参加・開始、盤面入力・同期・再読み込み復元、チェック・パス・提出、教員と生徒の結果を確認。
+- 公開メイトで作成者と別参加者の名付ける／まとめて判定、オフライン編集・再同期、語句と問題位置の再読み込み復元、両者提出、作成者自身の結果を確認。320/390/768/1280pxの横方向はみ出しなし、pageerrorなし。
+- 匿名POST /api/rooms（class）は401。公開/api/auth/sessionはready:true、匿名identity:null。healthはgame:alkane、d1:false、class50/mate4。
+- 学校回線の50実端末、実iPhone/iPad、7日経過による本番清掃、別の実Googleアカウントでの登録／未登録教員ログインは未検証。対応する権限・期限処理はローカル回帰試験で確認。
+- GitHubへのpushは公開ソース転送の追加承認待ち。自動承認レビューがCloudflare公開の許可と公開GitHubへのソース公開を区別して拒否した。ローカルコミットは保存済み。

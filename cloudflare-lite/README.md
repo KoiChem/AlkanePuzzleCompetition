@@ -6,7 +6,7 @@
 - マスター: `taiyaki.taiyaki.taiyaki@gmail.com`。教員許可リストはこのアプリ専用です。
 - マスターが4組の詳細難易度を共通保存。新しく作るクラス・メイトに適用し、既存ルームの版は保持します。
 - 5/10/15問、3〜10分。開始5秒前カウントダウン、開始から7日保持。待機は2時間。
-- Worker `alkanecompetition`。公開予定URL: **https://alkanecompetition.koichem.workers.dev**。
+- Worker `alkanecompetition`。公開URL: **https://alkanecompetition.koichem.workers.dev**。
 
 本家の教材処理と既存競技UIを再利用します。サーバーは専用WorkerとSQLite Durable Objects（AlkaneRoom / AlkaneTeachers）のみ。既存Supabase版・本家・イオン版の公開設定とデータは変更しません。
 
@@ -26,7 +26,7 @@ pnpm dev:fixture
 
 通常開発は `pnpm dev`。Google認証を試す場合は `.dev.vars` に `GOOGLE_CLIENT_SECRET` を置き、ローカル用Client IDと承認済みリダイレクトURIも設定します。
 
-## 公開時の設定（まだ公開していません）
+## 公開設定・再公開手順
 
 1. CloudflareアカウントのWorkersサブドメインが `koichem` であることを確認します。
 2. Google OAuthのWebクライアントを用意し、`wrangler.jsonc` の `GOOGLE_CLIENT_ID` を設定します。

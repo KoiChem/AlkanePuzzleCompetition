@@ -34,3 +34,7 @@
 上記のSupabase版とは独立して、`cloudflare-lite/` に専用Worker・SQLite Durable Objects版を実装した。クラス／メイト、本家互換パズル、登録教員のGoogle認証、マスター共通難易度、下書き復元・締切回収を含む。
 
 新規61件と既存431件のテスト、ビルド・Worker dry-run、Playwright主要操作と幅320〜1280px、ローカル模擬50人試験が成功。公開と実Google認証設定は未実施。詳細は [検証記録](../cloudflare-lite/docs/verification.md) と [運用手順](../cloudflare-lite/README.md) を参照。
+
+### 2026-10-11 公開
+
+https://alkanecompetition.koichem.workers.dev/ に公開。実Googleマスターログイン、クラス作成・匿名参加・教員復習、メイト2人の入力復元・提出を確認。source release a8afda23647e635b9798716bfa183f4098e8605f、Secret設定後Worker version c6a7193a-48e0-4742-8513-18dc273e0754。GitHub pushは公開ソース転送の追加承認待ち。
