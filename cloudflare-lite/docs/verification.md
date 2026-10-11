@@ -64,4 +64,7 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - 68 tests / 9 files 成功、型チェック・Vite build成功。混合5/10/15問の均等配分と奇数の多数側のランダム化、モード別設定・採点、即時／一括のルーム経路を検証。
 - Playwrightローカル: 320x568の名前パネル追加・挿入・D&D・並べ替え・枠外削除・undo・オフライン再同期／再読み込み、タッチ長押し移動と選択なし、パネルD&D、ナビ3個1行、10問5問ずつ、全解答確認・提出・結果表示成功。配置2マスの解答は確認／結果とも2マスを表示。pageerrorなし。
 - クラス即時とメイト一括の既存主要フローも成功。320/390/768/1280pxで横はみ出しなし。追加の読み取りコードレビューでCritical／Important指摘なし。
-- 実iPhone/iPadのSafari操作は今回未検証。公開先の検証は更新後に記録する。
+- 実iPhone/iPadのSafari操作は今回未検証。公開先の検証は以下に記録する。
+
+- 更新公開 source release: `d90e26e36e0605de49f979b51857b4eea2820fb8`。Worker version: `f7bf344b-e5e0-4b41-8a77-40452e00f4c6`。HTMLと/api/healthのrelease一致。GitHub codex/alkane-competitionへpush成功。
+- 公開先の実メイトルームに作成者と別参加者が参加し、320x568の両方10問(各5問)、名前D&D全操作・offline/reload復元、タッチ長押し移動・選択なし、FパネルD&D、3ナビ1行、レビューcrop、両者提出、結果cropまで成功。pageerrorなし。Google再ログインと実機Safariは今回再検証していない。
