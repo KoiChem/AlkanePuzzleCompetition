@@ -17,7 +17,7 @@ async (page) => {
   const modes=[];let named=false,arranged=false;
   for(let index=0;index<10;index++){
    const mode=await g.locator('.alkane-question').getAttribute('data-mode');modes.push(mode);
-   const body=await g.locator('body').innerText();check(!/この名前の構造|空きマスや|この構造に名前|語句を選んで|書き込み/.test(body),'guide text remains');
+   const body=await g.locator('body').innerText();check(!/この名前の構造|空きマスや|この構造に名前|語句を選んで|書き込み/.test(body),'guide text remains');check(await g.locator('.alkane-markup-tools,canvas.alkane-markup-canvas').count()===0,'unnecessary markup UI remains');
    const navigation=await g.locator('.question-navigation button').evaluateAll(buttons=>buttons.map(b=>{const r=b.getBoundingClientRect();return {top:r.top,right:r.right,left:r.left};}));check(navigation.length===3&&navigation.every(b=>Math.abs(b.top-navigation[0].top)<1&&b.left>=0&&b.right<=320),'navigation wraps');
    if(mode==='name'&&!named){
     named=true;const emptyAnswerHeight=(await g.locator('.alkane-answer-tokens').boundingBox()).height;await g.locator('.alkane-word-row button').nth(0).click();await g.locator('.alkane-word-row button').nth(1).click();check((await tokens()).join(',')==='1,2','tap append');
