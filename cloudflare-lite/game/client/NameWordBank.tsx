@@ -16,7 +16,7 @@ const subnames=new Set(['メチル','エチル','フルオロ','クロロ','ブ�
 function category(token:string){return /^\d+$/u.test(token)?'number':multiplier.has(token)?'multiplier':subnames.has(token)?'subname':'basename';}
 function tokenClass(token:string){return `cat-${category(token)}${token==='シクロ'||token==='オール'?' special-affix':''}`;}
 type Drag={token:string;from:number|null;id:number;startX:number;startY:number;source:DOMRect;dragging:boolean;target:number;trash:boolean;cleanup():void};
-export function NameWordBank({groups,tokens,onChange,disabled,storageKey,expiresAtMs,actions}:{groups:readonly (readonly string[])[];tokens:readonly string[];onChange(tokens:string[]):void;disabled?:boolean;storageKey?:string;expiresAtMs?:number;actions?:ReactNode}){
+export function NameWordBank({groups,tokens,onChange,disabled,storageKey,expiresAtMs,actions,tools}:{groups:readonly (readonly string[])[];tokens:readonly string[];onChange(tokens:string[]):void;disabled?:boolean;storageKey?:string;expiresAtMs?:number;actions?:ReactNode;tools?:ReactNode}){
  const [cursor,setCursorValue]=useState<number|null>(()=>storageKey?readEditorPosition(storageKey):null);
  const [ghost,setGhost]=useState<{token:string;x:number;y:number}|null>(null),[marker,setMarker]=useState<number|null>(null),[trash,setTrash]=useState(false),[dragFrom,setDragFrom]=useState<number|null>(null),[undoCount,setUndoCount]=useState(0),[guarded,setGuarded]=useState(false);
  const preview=useRef<HTMLDivElement>(null),scroll=useRef<HTMLDivElement>(null),drag=useRef<Drag|null>(null),history=useRef<{tokens:string[];cursor:number|null}[]>([]),guardTimer=useRef<ReturnType<typeof setTimeout>|null>(null),height=useRef<number|null>(null);
@@ -55,13 +55,13 @@ export function NameWordBank({groups,tokens,onChange,disabled,storageKey,expires
  }
  const insert=ghost?marker:cursor===null||cursor<0?null:Math.min(cursor,tokens.length);
  const markerElement=<span className="alkane-insert-marker" aria-hidden="true"/>;
- return <div className="alkane-wordbank" onContextMenu={e=>e.preventDefault()} onDragStart={e=>e.preventDefault()}>
+ return <><div className="alkane-wordbank" onContextMenu={e=>e.preventDefault()} onDragStart={e=>e.preventDefault()}>
+  <div className="alkane-token-controls"><button type="button" aria-label="解答を1つ戻す" disabled={disabled||!undoCount} onClick={undo}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 7-5 4 5 4"/><path d="M5 11h8a6 6 0 0 1 6 6"/></svg></button><button type="button" disabled={disabled||!tokens.length} onClick={()=>edit({type:'clear'})}>クリア</button>{tools}</div>
   <div ref={preview} className={`alkane-answer-tokens${trash?' delete-armed':''}`} aria-label="名前の解答" onPointerDown={e=>{if(e.target===e.currentTarget&&!disabled)setCursor(null);}}>
    {tokens.map((token,index)=><span className="alkane-chip-slot" key={`${index}-${token}`}>{insert===index&&markerElement}<button type="button" className={`alkane-token ${tokenClass(token)}${dragFrom===index&&ghost?' drag-origin':''}`} data-token-index={index} disabled={disabled} onPointerDown={e=>begin(e,token,index)} onClick={e=>{if(e.detail===0)setCursor(index);}} onKeyDown={e=>{if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();edit({type:'remove',index});}else if(e.altKey&&e.key==='ArrowLeft'){e.preventDefault();edit({type:'move',from:index,to:Math.max(0,index-1)});}else if(e.altKey&&e.key==='ArrowRight'){e.preventDefault();edit({type:'move',from:index,to:Math.min(tokens.length,index+2)});}}} aria-label={`${token}（解答の${index+1}番目）`}>{token}</button></span>)}
    {insert===tokens.length&&markerElement}{trash&&<span className="alkane-answer-trash">削除</span>}
   </div>
-  <div className={`alkane-token-controls${actions ? " with-answer-actions" : ""}`} inert={guarded||undefined}><button type="button" disabled={disabled||!undoCount} onClick={undo}>１つ前</button><button type="button" disabled={disabled||!tokens.length} onClick={()=>edit({type:'clear'})}>クリア</button>{actions}</div>
   <div ref={scroll} className="alkane-token-scroll">{groups.map((group,index)=><div className={`alkane-word-row cat-${category(group[0]??'')}`} key={index}>{group.map((token,i)=><button type="button" key={`${token}-${i}`} className={tokenClass(token)} disabled={disabled||tokens.length>=40} onPointerDown={e=>begin(e,token,null)} onClick={e=>{if(e.detail===0)edit({type:'insert',token,index:latest.current.cursor??latest.current.tokens.length});}}>{token}</button>)}</div>)}</div>
   {ghost&&createPortal(<span className={`alkane-token alkane-token-ghost ${tokenClass(ghost.token)}`} style={{left:ghost.x,top:ghost.y}}>{ghost.token}</span>,document.body)}
- </div>;
+ </div>{actions&&<div className="immediate-actions name-immediate-actions" inert={guarded||undefined}>{actions}</div>}</>;
 }

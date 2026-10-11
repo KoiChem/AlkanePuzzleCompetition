@@ -4,7 +4,7 @@ import type { PublicQuestion } from "../types";
 import { AlkaneBoard, PaletteIcon, applyBoardEdit, type BoardGrid, type Panel } from "./AlkaneBoard";
 import {createPortal} from "react-dom";
 import {CompoundName} from './CompoundName';
-import { NameWordBank } from "./NameWordBank";
+import { NameQuestion } from "./NameQuestion";
 
 function parseAnswer<T>(value: string | undefined, key: string, fallback: T): T {
   if (!value) return fallback;
@@ -12,7 +12,7 @@ function parseAnswer<T>(value: string | undefined, key: string, fallback: T): T 
 }
 const defaultPalette:Panel[] = [1,2,3,4,5].map(type => ({type,rotation:type===2 ? 90 : 0}));
 const carbonLabels=['','1級炭素','2級炭素（直線）','2級炭素（折れ曲がり）','3級炭素','4級炭素'];
-export function QuestionView({question,fieldId,value,onChange,disabled,storageKey,expiresAtMs,actions,arrangeActions}:{question:PublicQuestion;fieldId?:"formula"|"name";value?:string;onChange?:(value:string)=>void;disabled?:boolean;storageKey?:string;expiresAtMs?:number;actions?:ReactNode;arrangeActions?:{pass:ReactNode;review:ReactNode}}){
+export function QuestionView({question,fieldId,value,onChange,disabled,storageKey,expiresAtMs,actions,arrangeActions,arrangeNavigation}:{question:PublicQuestion;fieldId?:"formula"|"name";value?:string;onChange?:(value:string)=>void;disabled?:boolean;storageKey?:string;expiresAtMs?:number;actions?:ReactNode;arrangeActions?:{pass:ReactNode;review:ReactNode};arrangeNavigation?:{previous:ReactNode;next:ReactNode;review:ReactNode}}){
  const [selected,setSelected]=useState<Panel|null>(null),[ghost,setGhost]=useState<{panel:Panel;x:number;y:number}|null>(null);
  const drag=useRef<{id:number;x:number;y:number;panel:Panel;moved:boolean}|null>(null);
  useEffect(()=>{setSelected(null);setGhost(null);drag.current=null;},[question.id,disabled]);
@@ -28,7 +28,7 @@ export function QuestionView({question,fieldId,value,onChange,disabled,storageKe
   const clear=<button type="button" className="alkane-reset" disabled={disabled||!onChange||grid.every(row=>row.every(panel=>!panel))} onClick={()=>onChange?.(JSON.stringify({grid:blank}))}>クリア</button>;
   return <section className="question-card alkane-question" data-mode="arrange" aria-label="問題">
    <div className="alkane-arrange-objective"><span className="alkane-objective-text"><CompoundName name={prompt.name??''}/></span>
-    {!arrangeActions&&<div className="alkane-objective-actions">{actions}{clear}</div>}
+    {!arrangeActions&&!arrangeNavigation&&<div className="alkane-objective-actions">{actions}{clear}</div>}
    </div>
    <AlkaneBoard grid={grid} interactionKey={question.id} bounds={prompt.bounds} label="解答の構造" selected={selected} disabled={disabled||!onChange||fieldId==="name"} onChange={onChange?next=>onChange(JSON.stringify({grid:next})):undefined}/>
    <div className="alkane-palette" aria-label="原子パレット" onContextMenu={e=>e.preventDefault()} onDragStart={e=>e.preventDefault()}>{[options.filter(p=>!p.element||p.element==='C'),options.filter(p=>p.element&&p.element!=='C')].map((panels,row)=><div className="alkane-palette-row" key={row}>{panels.map((panel,index)=><button type="button" key={index} className="alkane-palette-card" aria-label={panel.element??carbonLabels[panel.type]} title={panel.element??carbonLabels[panel.type]} aria-pressed={selected?.type===panel.type&&selected.element===panel.element} disabled={disabled||!onChange} onClick={e=>{if(e.detail===0)toggle(panel);}}
@@ -37,12 +37,10 @@ export function QuestionView({question,fieldId,value,onChange,disabled,storageKe
     onPointerUp={e=>{const item=drag.current;if(!item||item.id!==e.pointerId)return;drag.current=null;setGhost(null);if(!item.moved){toggle(panel);return;}const target=document.elementFromPoint(e.clientX,e.clientY)?.closest<HTMLElement>('[data-alkane-cell]');if(target?.dataset.active==='true')onChange?.(JSON.stringify({grid:applyBoardEdit(grid,{type:'place',row:Number(target.dataset.row),col:Number(target.dataset.col),panel})}));}}
     onPointerCancel={()=>{drag.current=null;setGhost(null);}}><span className="alkane-palette-icon"><PaletteIcon panel={panel}/></span></button>)}</div>)}</div>
    {arrangeActions&&<div className="immediate-actions arrange-immediate-actions">{arrangeActions.pass}{actions}{clear}{arrangeActions.review}</div>}
+   {arrangeNavigation&&<div className="immediate-actions arrange-navigation">{arrangeNavigation.previous}{arrangeNavigation.next}{clear}{arrangeNavigation.review}</div>}
    {ghost&&createPortal(<div className="alkane-panel-ghost" style={{left:ghost.x,top:ghost.y}}><PaletteIcon panel={ghost.panel}/></div>,document.body)}
   </section>;
  }
  const tokens=parseAnswer<string[]>(value,'tokens',[]);
- return <section className="question-card alkane-question" data-mode="name" aria-label="問題">
-  {prompt.grid&&<AlkaneBoard grid={prompt.grid} promptCompact label="問題の構造"/>}
-  <NameWordBank storageKey={storageKey} expiresAtMs={expiresAtMs} groups={prompt.wordBank??[]} tokens={Array.isArray(tokens)?tokens:[]} onChange={next=>onChange?.(JSON.stringify({tokens:next}))} disabled={disabled||!onChange||fieldId==='formula'} actions={actions}/>
- </section>;
+ return <NameQuestion question={question} tokens={Array.isArray(tokens)?tokens:[]} onChange={next=>onChange?.(JSON.stringify({tokens:next}))} disabled={disabled||!onChange||fieldId==='formula'} storageKey={storageKey} expiresAtMs={expiresAtMs} actions={actions}/>;
 }
