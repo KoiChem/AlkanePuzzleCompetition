@@ -96,3 +96,7 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - Playwright WebKitの既存タブレットフロー(320/1366/1024px、10問混合・まあまあ・アルコールON、全30盤面寸法)成功。実iPadOS17.7 Chromeの操作・音の聴感、実Google再ログインは今回未検証。
 - 独立読取レビューでImportant/Criticalなし。パネル音は本家の出力.88を再現し、既存音量medium/highで変わらない点をminorとして確認。学生用の音量UI追加は行っていない。
 - 修正後の名前即時ボタンをWebKitでも320/390/768pxで検査し、1:1:2:1・高さ44px・上端一致・undo成功。pageerrorなし。
+
+- 公開 source release: `caeef8e196d6e415be9be54a8ad241727d477372`。Worker version: `6293d4df-7ee2-426b-a92f-1a44b8ad5919`。公開HTML metaと/api/healthのrelease一致、専用Workerへ更新成功。GitHub codex/alkane-competitionへpush成功、GitHub MCPでcommit status取得成功(CI statusなし)。
+- 公開実メイトChromium: 長押しのsource非表示・56px/opacity .9・同位置・blur・pointercancel・移動・枠外削除・再読み込み保存、実AudioContextの音程出力・両者提出・結果まで成功。名前即時ボタン320/390/768pxで幅比1:1:2:1、高さ44px・上端一致・undo・両者提出／結果成功。
+- 公開実メイトWebKit: 名前即時ボタン同3幅の検査・undo・両者提出／結果まで成功。pageerrorなし。公開先のconsole error/warningなし、healthと競技作成POST成功。ホストの復習欄はローカル疑似教員のクラスで確認したもの。公開Google認証と実iPadOS17.7 Chrome、実機の聴感は未検証。
