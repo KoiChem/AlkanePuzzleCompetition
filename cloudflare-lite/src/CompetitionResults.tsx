@@ -6,7 +6,7 @@ import { teacherTopRank, topRankingRows } from "../../src/features/results/ranki
 import type { QuestionPrompt } from "../game/types";
 import { AlkaneAnswerView, AlkanePromptSummary, parsedAnswer } from "./Review";
 import type { AlkaneGameSettings } from "../game/types";
-import { settingsSummary } from "../../src/features/setup/CompetitionSettingsForm";
+import { settingsSummary } from "./Settings";
 import { PodiumPlace } from "../../src/features/results/PodiumPlace";
 
 type Ranking = { rank: number; nickname: string; correctCount: number; elapsedCs: number; finishReason: string; finalSyncUnconfirmed?: boolean };
@@ -27,8 +27,8 @@ function SubmittedAnswer({ field }: { field: ReviewField }) {
   return parsedAnswer(raw) ? <AlkaneAnswerView raw={raw} fieldId={field.id} label="あなたの解答"/> : <span>{field.lastAnswer ?? "未解答"}</span>;
 }
 function DeferredFieldResult({ field }: { field: ReviewField }) {
-  if (field.answerDisplayUnavailable) return <div className="review-field"><p><Answer field={field}/> <Verdict field={field}/></p><p>解答の表示を取得できませんでした</p></div>;
-  if (field.state === "unanswered") return <div className="review-field"><p><Answer field={field}/> <strong className="verdict incorrect">未解答</strong></p></div>;
+  if (field.answerDisplayUnavailable) return <div className="review-field"><div><Answer field={field}/> <Verdict field={field}/></div><p>解答の表示を取得できませんでした</p></div>;
+  if (field.state === "unanswered") return <div className="review-field"><div><Answer field={field}/> <strong className="verdict incorrect">未解答</strong></div></div>;
   return <div className="review-field"><div className="alkane-result-answer"><Answer field={field}/><Verdict field={field}/></div>
     {field.lastAnswer && <div className="submitted-answer">あなたの解答：<SubmittedAnswer field={field}/></div>}
   </div>;

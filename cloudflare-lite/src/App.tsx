@@ -1,17 +1,16 @@
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {JoinCodeForm} from '../../src/features/setup/JoinCodeForm';
-import {DEFAULT_SETTINGS,settingsSummary} from '../../src/features/setup/CompetitionSettingsForm';
+import {DEFAULT_SETTINGS,settingsSummary} from './Settings';
 import {ReturnHomeButton} from '../../src/features/setup/ReturnHomeButton';
 import {HostRace} from '../../src/features/lobby/HostRace';
-import {Lobby} from '../../src/features/lobby/Lobby';
+import {Lobby} from './Lobby';
 import {EndRoomButton} from '../../src/features/lobby/EndRoomButton';
 import {InterruptRoomButton} from '../../src/features/lobby/InterruptRoomButton';
 import {RemovedParticipantNotice} from '../../src/features/lobby/RemovedParticipantNotice';
 import {racePace} from '../../src/features/lobby/host-race-model';
 import {useHostCountdownSound} from '../../src/features/lobby/host-countdown-sound';
 import {ImmediateVerdict} from '../../src/features/play/ImmediateVerdict';
-import {fieldLabel} from '../../src/features/play/AnswerFieldTabs';
 import {playAnswerSound,savedSoundLevel} from '../../src/features/play/audio-feedback';
 import {ParticipantSyncStatus} from '../../src/features/play/ParticipantSyncStatus';
 import {loadSavedNickname} from '../../src/features/setup/saved-nickname';
@@ -93,7 +92,7 @@ function Room({credential,joiningForm,onJoinError,onJoinReentry}:{credential:Cre
   if(!state)return joiningForm??<main className="page-shell"><section className="panel"><h1>{credential.role==='teacher'?'管理画面へ接続中':'ルームへ接続中'}</h1><p role="status">{status==='接続中'?'読み込み中…':status}</p></section></main>;
   const room=state.room;
   if(room.state==='CANCELLED')return <main className="page-shell"><section className="panel"><h1>ルームは終了しました</h1><p>主催者がルームを終了しました。</p><a className="primary-link" href="#/">ホームへ戻る</a></section></main>;
-  const perfect=<ImmediateVerdict verdict={verdict?.correct&&state.own?.correctCount===room.maxScore?{attemptId:String(state.own.lastSeq),correct:true,questionNumber:verdict.questionNumber??room.settings.questionCount,fieldLabel:fieldLabel(verdict.fieldId,room.settings.mode),fullScore:true}:null}/>;
+  const perfect=<ImmediateVerdict verdict={verdict?.correct&&state.own?.correctCount===room.maxScore?{attemptId:String(state.own.lastSeq),correct:true,questionNumber:verdict.questionNumber??room.settings.questionCount,fieldLabel:verdict.fieldId==='formula'?'構造':'名称',fullScore:true}:null}/>;
   if(state.results)return <>{credential.role==='participant'&&<ParticipantSyncStatus text={state.results.own?.finalSyncUnconfirmed?'最終同期を確認できません。受領済みの解答で結果を確定しました':'サーバーで結果を確定しました'}/>}{perfect}<Results state={state}/></>;
   if(credential.role!=='teacher'){
     if(room.state==='WAITING'&&credential.role==='participant')return <main className="page-shell"><section className="panel"><h1>開始を待っています</h1><NicknameEditor nickname={state.own!.nickname} disabled={!enabled} onSave={nickname=>send({type:'nickname',nickname})}/><p>{settingsSummary(room.settings)}</p></section></main>;

@@ -7,10 +7,59 @@
 .lite-teacher-list li span{overflow-wrap:anywhere;min-width:0}
 .lite-teacher-list button{flex-shrink:0}
 .teacher-login-panel .primary-link{display:inline-flex;margin-top:.5rem}
-/* Alkane competition inherits the original palette and keeps the puzzle full width. */
-.play-active{display:flex;flex-direction:column;overflow:auto;padding-bottom:1rem}.play-active .alkane-question{display:flex;flex-direction:column;flex:none;width:100%;min-width:0}.play-active .alkane-board{width:min(100%,630px);margin-inline:auto;flex:none}.play-active .answer-area{flex:none}.alkane-cell{touch-action:none}.scorebar{flex-wrap:wrap;gap:.4rem}.mate-host-tools{max-width:720px;margin:0 auto;padding:1rem}.teacher-review-select{margin:1rem auto;max-width:720px}.teacher-review-select select{max-width:100%}.profile-backdrop{position:fixed;inset:0;background:#0006;z-index:100;display:grid;place-items:center;padding:12px}.profile-dialog{max-height:calc(100dvh - 24px);overflow:auto;width:min(100%,760px)}.profile-dialog header{display:flex;justify-content:space-between;align-items:center}.profile-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:1rem}.profile-number{display:flex;flex-direction:column;gap:5px}.profile-number input{width:100%;min-width:0}.profile-toggle,.profile-rings,.profile-fields>p{grid-column:1/-1}.profile-rings label{display:inline-flex;gap:8px;margin:8px}.profile-dialog footer{display:flex;flex-wrap:wrap;gap:8px;margin-top:1rem}.alkane-answer-tokens{min-height:120px;max-height:120px;overflow:auto}.alkane-name-preview{min-height:3.4em;font-weight:700;overflow-wrap:anywhere;padding:8px}.profile-toggle{display:flex;align-items:center;gap:8px}.profile-toggle input,.profile-rings input{width:auto}.review-list>li{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between;margin:.5rem 0}.alkane-token-controls{flex-wrap:wrap}.alkane-token-controls select{max-width:100%}@media(max-width:390px){.profile-fields{grid-template-columns:1fr}.scorebar{font-size:12px}.alkane-palette-card{min-width:0}}
-/* Reserve naming geometry so added tokens cannot move word buttons under a finger. */
-.alkane-name-preview{height:3.4em;max-height:3.4em;overflow:auto;flex:none}
-.alkane-token-controls select{width:8em}
-.alkane-token-controls label{display:flex;align-items:center;gap:6px}
+/* Teacher configuration stays independent of the puzzle's compact layout. */
+.mate-host-tools{max-width:720px;margin:0 auto;padding:1rem}.teacher-review-select{margin:1rem auto;max-width:720px}.teacher-review-select select{max-width:100%}
+.profile-backdrop{position:fixed;inset:0;background:#0006;z-index:100;display:grid;place-items:center;padding:12px}.profile-dialog{max-height:calc(100dvh - 24px);overflow:auto;width:min(100%,760px)}.profile-dialog header{display:flex;justify-content:space-between;align-items:center}.profile-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:1rem}.profile-number{display:flex;flex-direction:column;gap:5px}.profile-number input{width:100%;min-width:0}.profile-toggle,.profile-rings,.profile-fields>p{grid-column:1/-1}.profile-rings label{display:inline-flex;gap:8px;margin:8px}.profile-dialog footer{display:flex;flex-wrap:wrap;gap:8px;margin-top:1rem}.profile-toggle{display:flex;align-items:center;gap:8px}.profile-toggle input,.profile-rings input{width:auto}
+/* Match AlkanePuzzle's notebook, two palette rows, chips and pointer gestures. */
+.play-active{display:flex;flex-direction:column;gap:5px;max-width:520px;min-height:100dvh;height:auto;overflow:visible;padding:6px 12px 12px}
+.play-active .alkane-question{display:flex;flex-direction:column;flex:none;width:100%;min-width:0;padding:0;border:0;box-shadow:none;background:transparent;gap:0}
+.play-answering .alkane-question,.alkane-board,.alkane-panel-ghost,.alkane-token-ghost{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.alkane-board,.alkane-board *,.alkane-palette-card,.alkane-word-row button,.alkane-token{touch-action:none!important;-webkit-user-drag:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.play-active .alkane-board{width:min(100%,490px);margin:0 auto 10px;flex:none}
+.alkane-cell{position:relative}.alkane-cell svg{pointer-events:none}
+.alkane-panel-ghost{position:fixed;width:56px;height:56px;z-index:1000;pointer-events:none;transform:translate(-50%,-50%);opacity:.9;filter:drop-shadow(2px 3px 2px #3c372428)}
+.alkane-arrange-objective{border:2.5px solid var(--ink);border-radius:18px 16px 19px 15px;background:var(--paper);padding:6px 10px 9px;margin-bottom:10px;box-shadow:2px 3px 0 #3c372424}
+.alkane-markup-wrap{width:min(100%,490px);margin:0 auto 6px;position:relative}
+.alkane-markup-text{font-size:20px;line-height:1.5;overflow-wrap:anywhere;padding:3px 5px;min-height:0}
+.alkane-markup-tools{margin:2px 0 0;gap:3px;align-items:center}.alkane-markup-tools>button:first-child{width:30px;height:30px;min-height:30px;padding:4px;border-radius:50%;display:grid;place-items:center}.alkane-markup-tools button{min-height:30px}
+.alkane-objective-actions{display:flex;justify-content:center;align-items:center;gap:8px}
+.alkane-objective-actions button{min-height:40px;min-width:82px;padding:6px 14px;border-radius:14px 12px 15px 11px;font-size:14px;font-weight:800}
+.alkane-objective-actions .check-action{background:var(--primary);color:white;border:2px solid var(--primary-dark)}
+.alkane-objective-actions .alkane-reset{display:inline-flex;justify-content:center;margin:0;background:var(--paper);color:var(--muted);border:2px solid var(--line)}
+.alkane-palette{display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 10px;margin-bottom:6px}
+.alkane-palette-row{display:flex;justify-content:center;gap:6px;max-width:100%}
+.alkane-palette-card{display:block;width:58px;min-width:0;min-height:0;padding:3px 2px;border:0;background:transparent;box-shadow:none;cursor:grab}
+.alkane-palette-icon{display:block;width:52px;height:52px;max-width:100%;margin:auto;pointer-events:none}
+.alkane-palette-card:active{transform:scale(.9) rotate(-3deg);background:var(--accent-soft,#d7f0ec)}
+.play-active .answer-area{flex:none;padding:0;margin:0}.play-active .immediate-actions{display:flex;gap:5px;margin:0}.play-active .immediate-actions>button{flex:1;min-width:0;min-height:44px;padding:7px 5px;margin:0;font-size:13px;white-space:nowrap}
+.play-active .question-navigation{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.play-active .scorebar{display:grid;grid-template-columns:auto auto 1fr;min-height:38px;padding:6px 8px;gap:4px;font-size:12px;white-space:nowrap}
+.play-active .participant-sync-status{min-height:16px;height:auto;font-size:10px;line-height:1.35;white-space:normal;overflow-wrap:anywhere}
+.alkane-wordbank{padding:14px;margin-top:4px}
+.alkane-answer-tokens{position:relative;display:flex;align-content:center;align-items:center;flex-wrap:wrap;gap:3px;min-height:44px;height:auto;max-height:112px;overflow:auto;padding:6px 10px;margin-bottom:8px;text-align:left;background:var(--background)}
+.alkane-chip-slot{display:inline-flex;align-items:center;gap:3px;max-width:100%}
+.alkane-wordbank .alkane-token{display:inline-flex;align-items:center;min-height:0;font-size:14px;font-weight:700;padding:3px 7px;cursor:grab}
+.alkane-wordbank .alkane-token.cat-multiplier,.alkane-wordbank .alkane-token.cat-subname,.alkane-wordbank .alkane-token.cat-basename{padding-inline:3px}
+.alkane-insert-marker{width:3px;height:31px;flex:none;background:var(--primary);border-radius:3px;box-shadow:0 0 0 1px var(--primary-dark)}
+.alkane-answer-trash{position:absolute;right:7px;top:7px;padding:2px 6px;border:1.5px solid #d36b63;border-radius:8px;background:#f8d9d7;color:#a83d36;font-size:14px}
+.alkane-token.drag-origin{opacity:.3;filter:saturate(.2) grayscale(.4);box-shadow:none;border-style:dashed}
+.alkane-token-ghost{position:fixed;z-index:1000;pointer-events:none;opacity:.92;transform:translate(-50%,-50%) rotate(-3deg) scale(1.08)}
+.alkane-token-controls{display:flex;flex-wrap:nowrap;justify-content:center;gap:5px;margin:0 0 12px}
+.alkane-token-controls button{flex:0 1 auto;min-width:0;min-height:44px;padding:7px 10px;font-size:14px;white-space:nowrap}
+.alkane-token-controls .check-action{background:var(--primary-dark);color:white;border-color:var(--primary-dark)}
+.alkane-token-scroll{max-height:240px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;touch-action:pan-y}
+.alkane-word-row{gap:5px;flex-wrap:wrap;justify-content:center;margin:0 0 6px}
+.alkane-word-row button{min-height:38px;font-weight:700}
+.alkane-word-row.cat-multiplier button,.alkane-word-row.cat-subname button,.alkane-word-row.cat-basename button{padding-inline:4px}
+.alkane-word-row.cat-multiplier,.alkane-word-row.cat-subname,.alkane-word-row.cat-basename{gap:4px}
+.alkane-wordbank .special-affix,.alkane-token-ghost.special-affix{background:#f5e6e8!important;border-color:#d7a7ad!important}
 .alkane-common-name{display:block;font-size:.75em;font-weight:400}
+/* Review/result crops retain blank gaps inside the occupied bounding rectangle. */
+.alkane-review-board{max-width:100%;width:100%;display:flex;justify-content:center;flex-direction:column;align-items:center}
+.alkane-review-board .alkane-board-cropped{width:min(100%,var(--alkane-crop-width));margin:6px auto;max-width:var(--alkane-crop-width)}
+.review-list>li{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:.5rem 0}
+.review-list .review-field{width:100%;min-width:0}.alkane-result-answer,.submitted-answer{display:flex;flex-direction:column;align-items:center;gap:5px}.review-list .alkane-review-name{text-align:center}.review-card button{align-self:center}
+@media(max-width:360px){.play-active{padding-inline:8px}.alkane-palette{padding-inline:7px}.alkane-palette-row{gap:3px}.alkane-palette-card{width:52px;padding:3px 1px}.alkane-palette-icon{width:46px;height:46px}.alkane-wordbank{padding:10px}.alkane-token-controls{gap:4px}.alkane-token-controls button{padding-inline:6px;font-size:13px}.profile-fields{grid-template-columns:1fr}}
+@media(max-width:480px) and (max-height:699px){.play-active .alkane-question[data-mode="name"]>.alkane-markup-wrap{width:min(74vw,310px)}.alkane-wordbank{padding:10px;margin-top:1px}.alkane-token-scroll{max-height:190px}.alkane-markup-wrap{margin-bottom:3px}.alkane-word-row{margin-bottom:4px}}
+
+.alkane-board-prompt{margin:0 auto 7px;max-width:100%}

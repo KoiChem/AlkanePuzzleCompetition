@@ -57,3 +57,11 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - 匿名POST /api/rooms（class）は401。公開/api/auth/sessionはready:true、匿名identity:null。healthはgame:alkane、d1:false、class50/mate4。
 - 学校回線の50実端末、実iPhone/iPad、7日経過による本番清掃、別の実Googleアカウントでの登録／未登録教員ログインは未検証。対応する権限・期限処理はローカル回帰試験で確認。
 - ユーザーの追加許可を受け、実装と公開検証記録を公開GitHubリポジトリ KoiChem/AlkanePuzzleCompetition の codex/alkane-competition ブランチへpushした。
+
+## 2026-10-11 本家UIUX・両方モード修正
+
+- 本家のソースと公開画面を確認し、2段のパネル、名前のチップ入力・挿入位置・D&D・枠外削除・undo、チェック／クリアの配置を合わせた。不要ガイドと書き込み開始の文字を削除。小さい画面の名付ける構造は本家と同じ周囲縮小と幅／高さ制限を使用。
+- 68 tests / 9 files 成功、型チェック・Vite build成功。混合5/10/15問の均等配分と奇数の多数側のランダム化、モード別設定・採点、即時／一括のルーム経路を検証。
+- Playwrightローカル: 320x568の名前パネル追加・挿入・D&D・並べ替え・枠外削除・undo・オフライン再同期／再読み込み、タッチ長押し移動と選択なし、パネルD&D、ナビ3個1行、10問5問ずつ、全解答確認・提出・結果表示成功。配置2マスの解答は確認／結果とも2マスを表示。pageerrorなし。
+- クラス即時とメイト一括の既存主要フローも成功。320/390/768/1280pxで横はみ出しなし。追加の読み取りコードレビューでCritical／Important指摘なし。
+- 実iPhone/iPadのSafari操作は今回未検証。公開先の検証は更新後に記録する。

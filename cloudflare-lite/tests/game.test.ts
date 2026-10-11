@@ -41,3 +41,15 @@ test('mode-specific payloads cannot fake progress and corrupt local payloads are
 test('impossible profile never falls back to an out-of-profile rescue question',()=>{
  const profile=structuredClone(DEFAULT_PROFILE);Object.assign(profile.rules.arrange.easy,{lenMin:10,lenMax:10,subMin:10,subMax:10,typeMin:6,typeMax:6,ringSizes:[10],forceRingSubstituent:true,gridCols:3,gridRows:3});expect(()=>generateQuestionSet({mode:'arrange',difficulty:'easy',alcoholEnabled:false,questionCount:5,timeLimitMinutes:3},random(),profile)).toThrow();
 });
+for(const questionCount of [5,10,15])test(`mixed ${questionCount} questions are balanced, shuffled and use each mode profile`,()=>{
+ const profile=structuredClone(DEFAULT_PROFILE);
+ const sequences=new Set<string>(),majorities=new Set<string>();
+ for(let seed=1;seed<=24;seed++){
+  let state=(seed*998244353)>>>0;const rng=()=>((state=(state*1664525+1013904223)>>>0)/0x100000000);
+  const qs=generateQuestionSet({mode:'both' as any,difficulty:'medium',alcoholEnabled:false,questionCount,timeLimitMinutes:3},rng,profile);
+  const counts={arrange:0,name:0};
+  for(const q of qs){counts[q.prompt.mode]++;expect(q.prompt.mode).not.toBe('both');expect(evaluateField(q,q.fields[0].id,q.answer.canonical).correct).toBe(true);if(q.prompt.mode==='arrange')expect(q.prompt.bounds).toEqual({cols:profile.rules.arrange.medium.gridCols,rows:profile.rules.arrange.medium.gridRows});else {expect(q.prompt.bounds).toBeUndefined();expect(q.prompt.wordBank).toBeDefined();}expect(q.fields[0].id).toBe(q.prompt.mode==='arrange'?'formula':'name');}
+  expect(Math.abs(counts.arrange-counts.name)).toBeLessThanOrEqual(1);sequences.add(qs.map(q=>q.prompt.mode).join(','));if(counts.arrange!==counts.name)majorities.add(counts.arrange>counts.name?'arrange':'name');
+ }
+ expect(sequences.size).toBeGreaterThan(1);if(questionCount%2)expect(majorities.size).toBe(2);
+});

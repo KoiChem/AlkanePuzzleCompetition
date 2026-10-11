@@ -56,7 +56,7 @@ function arrangementPalette(alcoholEnabled:boolean):Panel[] {
 }
 export function validateGameSettings(settings:AlkaneGameSettings,profile:QuestionProfile|null=DEFAULT_PROFILE) {
   validateProfile(profile??DEFAULT_PROFILE);
-  if(!modes.includes(settings.mode)||!difficulties.includes(settings.difficulty)) throw new TypeError('モード・難易度が不正です');
+  if(!['arrange','name','both'].includes(settings.mode)||!difficulties.includes(settings.difficulty)) throw new TypeError('モード・難易度が不正です');
   if(![5,10,15].includes(settings.questionCount)||!Number.isInteger(settings.timeLimitMinutes)||settings.timeLimitMinutes<3||settings.timeLimitMinutes>10) throw new RangeError('問題数・制限時間が不正です');
   if(typeof settings.alcoholEnabled!=='boolean'||(settings.gradingMode!==undefined&&!['immediate','deferred'].includes(settings.gradingMode))) throw new TypeError('競技設定が不正です');
   return {availableCount:settings.questionCount,maxScore:settings.questionCount};
@@ -87,27 +87,33 @@ export function generateQuestionSet(settings:AlkaneGameSettings,random:()=>numbe
   validateGameSettings(settings,profile);
   const deadline=Date.now()+2000;random=boundedRandom(random,150000,deadline);
   const engine=createAlkaneEngine(random);
-  const rule=(profile??DEFAULT_PROFILE).rules[settings.mode][settings.difficulty];
-  const options=optionsFor(settings,rule);
+  const arrangeCount=Math.floor(settings.questionCount/2)+(settings.questionCount%2&&random()<0.5?1:0);
+  const plannedModes:('arrange'|'name')[]=settings.mode==='both'
+    ? shuffled(Array.from({length:settings.questionCount},(_,index)=>index<arrangeCount?'arrange' as const:'name' as const),random)
+    : Array(settings.questionCount).fill(settings.mode);
   const result:InternalQuestion[]=[];
-  const history:unknown[]=[];
+  const histories:{arrange:unknown[];name:unknown[]}={arrange:[],name:[]};
   for(let ordinal=0;ordinal<settings.questionCount;ordinal++) {
+    const mode=plannedModes[ordinal];
+    const questionSettings={...settings,mode};
+    const rule=(profile??DEFAULT_PROFILE).rules[mode][settings.difficulty];
+    const options=optionsFor(questionSettings,rule),history=histories[mode];
     const chosen=Date.now()<deadline
       ? engine.generateAvoidingRecentRepeat(options,history)
       : null;
     if(!chosen) throw new RangeError('設定に合う問題を生成できません。主鎖・置換基・枠数・折れ曲がりの設定を見直してください');
     engine.rememberQuestion(history,chosen);
-    if(settings.mode==='arrange') engine.rememberGame1LocantProfile(chosen);
-    const field=settings.mode==='arrange'?'formula':'name';
+    if(mode==='arrange') engine.rememberGame1LocantProfile(chosen);
+    const field=mode==='arrange'?'formula':'name';
     const tokens=engine.expectedGame2AnswerTokens(chosen.name);
     if(!tokens) throw new RangeError('正答の語句を生成できません');
-    const prompt=settings.mode==='arrange'
+    const prompt=mode==='arrange'
       ? {kind:'alkane' as const,mode:'arrange' as const,grid:null,name:chosen.name,options:arrangementPalette(settings.alcoholEnabled),bounds:{cols:rule.gridCols!,rows:rule.gridRows!},alcoholEnabled:settings.alcoholEnabled,values:[] as const}
-      : {kind:'alkane' as const,mode:'name' as const,grid:chosen.grid,wordBank:wordBank(rule,settings,chosen.name,engine,random),alcoholEnabled:settings.alcoholEnabled,values:[] as const};
+      : {kind:'alkane' as const,mode:'name' as const,grid:chosen.grid,wordBank:wordBank(rule,questionSettings,chosen.name,engine,random),alcoholEnabled:settings.alcoholEnabled,values:[] as const};
     result.push({
-      id:identifier(random),ordinal,itemId:'alkane-'+ordinal,category:chosen.name.includes('シクロ')?'cyclo':'chain',variant:settings.mode,
+      id:identifier(random),ordinal,itemId:'alkane-'+ordinal,category:chosen.name.includes('シクロ')?'cyclo':'chain',variant:mode,
       prompt,fields:[{id:field,type:field}],maxScore:1,
-      answer:{type:field,canonical:JSON.stringify(settings.mode==='arrange'?{grid:chosen.grid}:{tokens}),accepted:[]},
+      answer:{type:field,canonical:JSON.stringify(mode==='arrange'?{grid:chosen.grid}:{tokens}),accepted:[]},
     });
   }
   for(const question of result)if(!evaluateField(question,question.fields[0].id,question.answer.canonical).correct)throw new RangeError('問題の正答を検証できません。設定を見直してください');

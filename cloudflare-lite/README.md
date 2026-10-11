@@ -22,7 +22,7 @@ pnpm run deploy --dry-run
 pnpm dev:fixture
 ```
 
-`dev:fixture` はlocalhost:8792限定の疑似認証環境です。テスト用Google署名・cookie・SQL操作を本番に配信しません。Playwright MCPの `browser_run_code_unsafe` に `tests/browser-flow.js` と `tests/browser-additional.js` を読み込むと主要操作を検証できます。50同時接続・15問のローカル計測は `node tests/load.mjs`。本番サーバーに負荷をかけません。
+`dev:fixture` はlocalhost:8792限定の疑似認証環境です。テスト用Google署名・cookie・SQL操作を本番に配信しません。Playwright MCPの `browser_run_code_unsafe` に `tests/browser-flow.js`、`tests/browser-additional.js`、`tests/browser-uiux.js` を読み込むと主要操作を検証できます。50同時接続・15問のローカル計測は `node tests/load.mjs`。本番サーバーに負荷をかけません。
 
 通常開発は `pnpm dev`。Google認証を試す場合は `.dev.vars` に `GOOGLE_CLIENT_SECRET` を置き、ローカル用Client IDと承認済みリダイレクトURIも設定します。
 
@@ -48,3 +48,9 @@ Client ID／Secretが未設定ならクラス作成は閉じ、匿名メイト�
 Roomの期限後はAPIで拒否しalarmでRoom・参加者・解答を削除します。教員一覧・共通難易度は保持。端末データは起動・復帰時に期限清掃します。閉じたブラウザのローカルデータやCloudflare側のログ／バックアップをサーバーから即時削除する機能ではありません。
 
 参照仕様: [設計書](../docs/superpowers/specs/2026-10-11-alkane-competition-cloudflare-lite-design.md)。検証記録: [実装・検証](docs/verification.md)。
+
+## 本家UIUXと混合出題
+
+パネルの2段配置、名前の語群・挿入位置・ドラッグ移動／枠外削除・1つ戻すを本家に合わせています。長押し中の選択を防ぎ、不要なガイドと書き込み開始の文字表示を削除しました。まとめて判定のナビは320px幅でも1行で、確認・結果は配置された範囲を表示します。
+
+「両方」は並べる／名付けるを均等にランダム出題します。5問・15問は差1問で、多い側もランダムです。各問の難易度設定は対応するモードから取得します。

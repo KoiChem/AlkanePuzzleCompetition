@@ -6,7 +6,7 @@ export type GradingMode = 'immediate' | 'deferred';
 export type Panel = { readonly type: 1 | 2 | 3 | 4 | 5; readonly rotation: number; readonly element?: string };
 export type Grid = readonly (readonly (Panel | null)[])[];
 export type AlkaneGameSettings = CompetitionSettings & {
-  readonly mode: GameMode;
+  readonly mode: GameMode | 'both';
   readonly difficulty: Difficulty;
   readonly alcoholEnabled: boolean;
   readonly chemistryContentVersion?: string;
