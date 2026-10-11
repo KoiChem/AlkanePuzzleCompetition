@@ -12,6 +12,6 @@ export function AlkaneAnswerView({raw,fieldId,label}:{raw:unknown;fieldId:'formu
  const parsed=parsedAnswer(raw);
  if(!parsed)return <span aria-label={label}>未解答</span>;
  if(fieldId==='formula'&&'grid' in parsed)return <div className="alkane-review-board"><AlkaneBoard grid={parsed.grid} label={label} compact/></div>;
- if(fieldId==='name'&&'tokens' in parsed&&parsed.tokens.length)return <span className="alkane-review-tokens" aria-label={label}><CompoundName name={engine.reconstructNameFromTokens(parsed.tokens)??parsed.tokens.join('')}/></span>;
+ if(fieldId==='name'&&'tokens' in parsed&&parsed.tokens.length)return <span className="alkane-review-tokens" aria-label={label}>{engine.reconstructNameFromTokens(parsed.tokens)??parsed.tokens.join('')}</span>;
  return <span aria-label={label}>未解答</span>;
 }

@@ -53,3 +53,8 @@ for(const questionCount of [5,10,15])test(`mixed ${questionCount} questions are 
  }
  expect(sequences.size).toBeGreaterThan(1);if(questionCount%2)expect(majorities.size).toBe(2);
 });
+test('medium naming groups avoid fixed and preceding order even with a saved shuffle OFF',()=>{
+ const group=(row:string[])=>row.some(s=>/^\d+$/.test(s))?0:row.includes('ジ')?1:row.includes('メチル')?2:3;
+ for(const mode of ['name','both'] as const){const qs=generateQuestionSet({mode,difficulty:'medium',alcoholEnabled:true,questionCount:15,timeLimitMinutes:3},random(),DEFAULT_PROFILE);let previous='';for(const q of qs.filter(q=>q.prompt.mode==='name')){const order=q.prompt.wordBank!.map(group).join(',');expect(order).not.toBe('0,1,2,3');expect(order).not.toBe(previous);expect([...q.prompt.wordBank!.map(group)].sort()).toEqual([0,1,2,3]);previous=order;}}
+ const easy=generateQuestionSet({mode:'name',difficulty:'easy',alcoholEnabled:false,questionCount:5,timeLimitMinutes:3},random());for(const q of easy)expect(q.prompt.wordBank!.map(group)).toEqual([0,1,2,3]);
+});

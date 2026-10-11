@@ -63,3 +63,15 @@
 .alkane-board-prompt{margin:0 auto 7px;max-width:100%}
 
 .host-sound-toolbar{display:flex;justify-content:flex-end;gap:.5rem;margin-bottom:.5rem;}
+
+/* Definite row sizing prevents SVG percentage height from stretching WebKit grids. */
+.alkane-cell{aspect-ratio:auto;min-height:0;box-sizing:border-box}
+.alkane-cell::before{content:"";display:block;padding-top:100%}
+.alkane-cell svg{position:absolute;inset:0;width:100%;height:100%}
+.alcohol-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:24px;border:1px solid var(--line);background:var(--paper);color:var(--primary-dark);white-space:nowrap}
+.alcohol-toggle-state{min-width:36px;padding:4px 6px;border-radius:12px;background:#e5e9e4;color:var(--muted)}
+.alcohol-toggle[aria-pressed="true"] .alcohol-toggle-state{background:var(--primary-dark);color:white}
+.submission-confirm-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:8px}
+.submission-confirm-actions>button{min-width:0;min-height:44px;margin:0;padding:8px 6px;white-space:nowrap}
+.alkane-review-tokens{display:inline;overflow-wrap:anywhere}
+.alkane-review-tokens>span{padding:0;border:0;border-radius:0;background:none}

@@ -34,7 +34,7 @@ function optionsFor(settings:AlkaneGameSettings,rule:Rule):EngineOptions {
     ...(settings.mode==='arrange'?{maxWidth:rule.gridCols,maxHeight:rule.gridRows,balanceLocants:true}:{bendRange:[rule.bendMin!,rule.bendMax!] as [number,number]})
   };
 }
-function wordBank(rule:Rule,settings:AlkaneGameSettings,name:string,engine:ReturnType<typeof createAlkaneEngine>,random:()=>number):string[][] {
+function wordBank(rule:Rule,settings:AlkaneGameSettings,name:string,engine:ReturnType<typeof createAlkaneEngine>,random:()=>number,groupHistory:{order:string}):string[][] {
   const bases=new Set<string>();
   for(let n=rule.lenMin;n<=rule.lenMax;n++) bases.add(engine.CHAIN_NAMES[n]);
   for(const n of rule.ringSizes) bases.add(engine.CHAIN_NAMES[n]);
@@ -47,7 +47,10 @@ function wordBank(rule:Rule,settings:AlkaneGameSettings,name:string,engine:Retur
     shuffled([...engine.SUB_NAME_SET],random),
     ['シクロ',...(settings.alcoholEnabled?['オール']:[]),...shuffled([...bases],random)],
   ];
-  return rule.shuffleWordBankGroups?shuffled(rows,random):rows;
+  if(settings.difficulty!=='medium'&&!rule.shuffleWordBankGroups)return rows;
+  const permutations:number[][]=[];
+  function visit(order:number[]){if(order.length===4){const key=order.join(',');if(key!=='0,1,2,3'&&key!==groupHistory.order)permutations.push(order);return;}for(let i=0;i<4;i++)if(!order.includes(i))visit([...order,i]);}
+  visit([]);const order=permutations[Math.floor(random()*permutations.length)];groupHistory.order=order.join(',');return order.map(i=>rows[i]);
 }
 function arrangementPalette(alcoholEnabled:boolean):Panel[] {
   const carbon:Panel[]=[1,2,3,4,5].map(type=>({type:type as Panel['type'],rotation:type===2?90:0}));
@@ -92,6 +95,7 @@ export function generateQuestionSet(settings:AlkaneGameSettings,random:()=>numbe
     ? shuffled(Array.from({length:settings.questionCount},(_,index)=>index<arrangeCount?'arrange' as const:'name' as const),random)
     : Array(settings.questionCount).fill(settings.mode);
   const result:InternalQuestion[]=[];
+  const groupHistory={order:''};
   const histories:{arrange:unknown[];name:unknown[]}={arrange:[],name:[]};
   for(let ordinal=0;ordinal<settings.questionCount;ordinal++) {
     const mode=plannedModes[ordinal];
@@ -109,7 +113,7 @@ export function generateQuestionSet(settings:AlkaneGameSettings,random:()=>numbe
     if(!tokens) throw new RangeError('正答の語句を生成できません');
     const prompt=mode==='arrange'
       ? {kind:'alkane' as const,mode:'arrange' as const,grid:null,name:chosen.name,options:arrangementPalette(settings.alcoholEnabled),bounds:{cols:rule.gridCols!,rows:rule.gridRows!},alcoholEnabled:settings.alcoholEnabled,values:[] as const}
-      : {kind:'alkane' as const,mode:'name' as const,grid:chosen.grid,wordBank:wordBank(rule,questionSettings,chosen.name,engine,random),alcoholEnabled:settings.alcoholEnabled,values:[] as const};
+      : {kind:'alkane' as const,mode:'name' as const,grid:chosen.grid,wordBank:wordBank(rule,questionSettings,chosen.name,engine,random,groupHistory),alcoholEnabled:settings.alcoholEnabled,values:[] as const};
     result.push({
       id:identifier(random),ordinal,itemId:'alkane-'+ordinal,category:chosen.name.includes('シクロ')?'cyclo':'chain',variant:mode,
       prompt,fields:[{id:field,type:field}],maxScore:1,

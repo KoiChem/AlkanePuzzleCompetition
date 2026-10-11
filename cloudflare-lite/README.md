@@ -22,7 +22,7 @@ pnpm run deploy --dry-run
 pnpm dev:fixture
 ```
 
-`dev:fixture` はlocalhost:8792限定の疑似認証環境です。テスト用Google署名・cookie・SQL操作を本番に配信しません。Playwright MCPの `browser_run_code_unsafe` に `tests/browser-flow.js`、`tests/browser-additional.js`、`tests/browser-uiux.js` を読み込むと主要操作を検証できます。50同時接続・15問のローカル計測は `node tests/load.mjs`。本番サーバーに負荷をかけません。
+`dev:fixture` はlocalhost:8792限定の疑似認証環境です。テスト用Google署名・cookie・SQL操作を本番に配信しません。Playwright MCPの `browser_run_code_unsafe` に `tests/browser-flow.js`、`tests/browser-additional.js`、`tests/browser-uiux.js`、`tests/browser-tablet.js` を読み込むと主要操作を検証できます。50同時接続・15問のローカル計測は `node tests/load.mjs`。本番サーバーに負荷をかけません。
 
 通常開発は `pnpm dev`。Google認証を試す場合は `.dev.vars` に `GOOGLE_CLIENT_SECRET` を置き、ローカル用Client IDと承認済みリダイレクトURIも設定します。
 
@@ -64,3 +64,11 @@ Roomの期限後はAPIで拒否しalarmでRoom・参加者・解答を削除し�
 - Lite 71 tests、共通アプリ431 pass / 5 skip、型チェック・ビルド成功。
 - ローカル音声APIで開始前5 ticks + 開始音、終了前10 ticks + 終了音、ミュート保存を確認。実機スピーカーは未確認。
 - 公開Playwrightで2人のメイト作成・参加・開始、ホスト音切替、解答前の開始後中断・結果を確認。320/390/768/1280pxで横 overflow なし。
+
+## iPad表示と語群順
+
+盤面は表示幅からマス高・行高・全体高を明示し、SVGはセル内に絶対配置する。問題切替・回転・確認画面の切り出しでも同じ寸法処理を使う。名前の解答確認／結果は囲みのない文字、提出確認のボタンは横並び1:2。アルコールはイオンコンペと同じON/OFFピル型トグル。
+
+まあまあ・名付けるは保存済みの旧shuffle設定がOFFでも4語群の順を入れ替え、固定順と直前の名付ける問題の順を避ける。両方モードでも適用。順は問題データとして保存され、再読み込みでは変わらない。すいすいは従来のマスター設定を維持する。
+
+WebKit確認の任意ランナーは `tests/browser-webkit.cjs`。別途利用可能なPlaywright／WebKitを指定できる（`PLAYWRIGHT_MODULE`、`PLAYWRIGHT_BROWSERS_PATH`）。`TEST_ORIGIN`で検証先を指定できる。iPadOS 17.7実機と同一エンジン版ではないため、実機合格の代用にはしない。

@@ -4,7 +4,7 @@ async (page) => {
  await page.goto(origin+'/?uiux='+Date.now()+'#/mate/new');
  await page.getByLabel('ニックネーム（1〜16文字）').fill('UIUX主催');
  await page.getByRole('button',{name:'10問',exact:true}).click();await page.getByRole('button',{name:'両方',exact:true}).click();await page.getByRole('button',{name:'まとめて判定',exact:true}).click();
- await page.getByRole('button',{name:'出題に含める OFF',exact:true}).click();
+ await page.getByRole('button',{name:/アルコール.*OFF/}).click();
  await page.getByRole('button',{name:'メイトルームを作る',exact:true}).click();await page.getByRole('button',{name:'問題を準備して開始',exact:true}).waitFor();
  const code=new URL(page.url()).hash.match(/rooms\/([A-Z2-9]{6})/)[1];
  const context=await page.context().browser().newContext({viewport:{width:320,height:568},isMobile:true,hasTouch:true}),g=await context.newPage();g.on('pageerror',e=>errors.push(e.message));
