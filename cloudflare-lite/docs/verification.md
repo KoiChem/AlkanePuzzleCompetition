@@ -82,3 +82,6 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - 同じフローをPlaywright WebKit26.5でも成功。WebKitの長押しはマウスによるPointer Events検証で、実機タッチではない。pageerrorなし。
 - クラス即時(教員はローカル専用疑似認証)・メイト一括の既存フローも成功。320/390/768/1280px横はみ出しなし。新規コードの独立読取レビューはImportant/Critical指摘なし。
 - iPadOS17.7の実機Chrome、実Google再ログインは今回未検証。公開後の結果は以下へ追記する。
+
+- 公開 source release: `ed11db8735f66ce90e774806d1e7723445cbee4f`。Worker version: `fc31e6c0-4421-4a4d-846a-0345b5d4dcec`。HTML metaと/api/healthのrelease一致。GitHubへpush成功、MCPでcommit status取得成功(CIチェックなし)。
+- 公開実メイトでChromium／WebKitそれぞれ10問・3サイズ(30寸法検査)成功。全検査で正方形・盤面内・語群との重なりなし。D&D・offline/reload復元・混合5問ずつ・語群順回避・名前装飾なし・横並び1:2・両者提出・結果まで成功。pageerrorなし。実iPadOS17.7のChromeは未検証。
