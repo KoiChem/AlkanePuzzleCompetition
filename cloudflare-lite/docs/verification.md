@@ -118,3 +118,5 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - 全81テスト・型チェック・build成功。Chromiumの320/390/768pxでボタン配置、Undo、黄・赤描画、消去、問題移動・reload保持、両者提出／結果を確認。WebKitでも名前操作の同3幅・描画・提出を確認。
 - WebKit混合10問で320/1366/1024pxの30盤面寸法、D&D・Undo・offline/reload復元、配置済みパネル長押し、レビュー切り出し、提出・結果が成功。pageerrorなし。ブラウザ検証であり実iPadOS17.7 Chromeの検証ではない。
 - 独立コードレビューで起動時の旧マーキング全削除処理を指摘、期限切れのみ削除に変更し、reload保持をブラウザで確認した。
+- 公開source release `bb6f9ec84f5a0fd883b44f7da09adbadfe7373b7`、Cloudflare version `732a1aff-ee3d-4794-901b-0a40336c6b78`。GitHub pushとMCP取得成功(CI statusなし)。公開HTML metaと/api/healthが同release。
+- 公開実メイトChromiumで名前の3幅・Undo・黄/赤・全消去・CDPタッチ描画/キャンセル・両者提出と結果、並べる一括の3幅と3:3:2:3・クリア・提出、名前の問題移動/reload保持が成功。pageerrorなし。
