@@ -37,4 +37,4 @@
 
 ### 2026-10-11 公開
 
-https://alkanecompetition.koichem.workers.dev/ に公開。実Googleマスターログイン、クラス作成・匿名参加・教員復習、メイト2人の入力復元・提出を確認。source release a8afda23647e635b9798716bfa183f4098e8605f、Secret設定後Worker version c6a7193a-48e0-4742-8513-18dc273e0754。GitHub pushは公開ソース転送の追加承認待ち。
+https://alkanecompetition.koichem.workers.dev/ に公開。実Googleマスターログイン、クラス作成・匿名参加・教員復習、メイト2人の入力復元・提出を確認。source release a8afda23647e635b9798716bfa183f4098e8605f、Secret設定後Worker version c6a7193a-48e0-4742-8513-18dc273e0754。追加許可を受け、GitHubの codex/alkane-competition ブランチへpush済み。

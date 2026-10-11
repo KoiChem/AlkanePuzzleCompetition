@@ -56,4 +56,4 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - 公開メイトで作成者と別参加者の名付ける／まとめて判定、オフライン編集・再同期、語句と問題位置の再読み込み復元、両者提出、作成者自身の結果を確認。320/390/768/1280pxの横方向はみ出しなし、pageerrorなし。
 - 匿名POST /api/rooms（class）は401。公開/api/auth/sessionはready:true、匿名identity:null。healthはgame:alkane、d1:false、class50/mate4。
 - 学校回線の50実端末、実iPhone/iPad、7日経過による本番清掃、別の実Googleアカウントでの登録／未登録教員ログインは未検証。対応する権限・期限処理はローカル回帰試験で確認。
-- GitHubへのpushは公開ソース転送の追加承認待ち。自動承認レビューがCloudflare公開の許可と公開GitHubへのソース公開を区別して拒否した。ローカルコミットは保存済み。
+- ユーザーの追加許可を受け、実装と公開検証記録を公開GitHubリポジトリ KoiChem/AlkanePuzzleCompetition の codex/alkane-competition ブランチへpushした。
