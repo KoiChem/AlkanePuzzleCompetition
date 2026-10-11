@@ -107,3 +107,6 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - 候補選択中の配置済みC／F／OHを400msで持ち上げ、選択維持、同位置／cancel／blur復元・移動／盤面外削除を確認。直前のタップ回転予約が長押し中に動く競合を独立レビューで発見し、選択時にも保留して修正。SSR等79テストと型チェック／build成功。変更前の選択時長押しは回帰ブラウザ検査で失敗し、修正後成功。
 - Playwright MCP Chromium:320pxの選択時長押し・C/F/OH移動削除、保存reload、音程、両者提出／結果成功。即時4ボタン320/390/768pxで均等幅・高さ／上端一致、clearと両者提出成功。WebKitでも同3幅とclear／提出成功。pageerrorなし。
 - 本家はindex.htmlとパネル回帰テストだけを編集。既存のtransient.html未コミット削除は保持しcommit対象外。本家全86テスト成功、回転予約の修正後パネル操作43テスト(親込み)再実行成功。本家GitHub最新版参照済み。
+- 公開: 本家 commit `845e952c4d2105d877a78426b09d4031ce12a042`、Pages run `38142865169`のdeploy成功をGitHub MCPで確認。コンペ release `cf3d0bc6e13bef03502184f72e8ece4a09c74bc3`、Cloudflare version `e34c7695-929b-46f7-9a81-04d34bc7931a`、HTML metaとhealthのrelease一致。
+- 本家公開の320px Chromium CDPタッチ入力で、候補選択中のC／F／OHのsource非表示・元パネルの移動・候補維持・touchCancel復元・枠外削除を確認成功。OHは既存の「ON設定は次問へ適用」のため初回検査で候補不在となった。次問へ切替後、全3種類が成功。pageerrorなし。実端末での操作感は未検証。
+- コンペ公開の実メイトで、候補選択中のC/F/OH長押し・直前タップ回転予約の保留・元位置／blur／pointercancel復元・移動削除・保存reload・音程・提出／結果成功。即時4ボタン320/390/768pxで均等幅、高さ44px、上端一致・クリア・提出／結果成功。pageerrorなし。
