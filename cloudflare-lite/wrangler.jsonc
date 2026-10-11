@@ -17,7 +17,7 @@
     "RELEASE_SHA": "development",
     "APP_ORIGIN": "https://alkanecompetition.koichem.workers.dev",
     "MASTER_TEACHER_EMAIL": "taiyaki.taiyaki.taiyaki@gmail.com",
-    "GOOGLE_CLIENT_ID": ""
+    "GOOGLE_CLIENT_ID": "740039848388-qsqsv4c9jg8bolg4dh93lfo6jqkl18fg.apps.googleusercontent.com"
   },
   "durable_objects": {
     "bindings": [
