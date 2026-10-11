@@ -85,3 +85,14 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 
 - 公開 source release: `ed11db8735f66ce90e774806d1e7723445cbee4f`。Worker version: `fc31e6c0-4421-4a4d-846a-0345b5d4dcec`。HTML metaと/api/healthのrelease一致。GitHubへpush成功、MCPでcommit status取得成功(CIチェックなし)。
 - 公開実メイトでChromium／WebKitそれぞれ10問・3サイズ(30寸法検査)成功。全検査で正方形・盤面内・語群との重なりなし。D&D・offline/reload復元・混合5問ずつ・語群順回避・名前装飾なし・横並び1:2・両者提出・結果まで成功。pageerrorなし。実iPadOS17.7のChromeは未検証。
+
+## 2026-10-11 結果の復習欄・正解表示・長押し・名前操作ボタン
+
+- ホストの参加者選択と選択した解答を、クラス集計・結果ナビゲーションの後の最下部へ移動。既存の紙色・緑色・カードに馴染む選択UIにした。ゲストの正解は「正解◯」と実際の解答だけを表示し、正解時の模範解答と表示上の「あなたの解答：」を省略。即時／一括、教員レビューとの区別をSSRテストで確認。
+- 本家GitHub最新版のindex.htmlと公開ページを確認。400ms長押しで元のマスを空表示、56px・opacity .9・同じ影のゴーストと回転、盤面全体の枠色変更なし。表示だけを持ち上げ、保存する解答は移動／削除成立まで保持する。同位置・pointercancel・blurでは元に戻る。拾う／移動／削除の音程・波形・ノイズフィルター・時間差・本家マスター出力を移植し、音声失敗は編集を妨げない。
+- 名前操作は「１つ前／クリア／解答／パス」、Gridで1:1:2:1、全て44px高。既存pass-actionのmargin-topが9pxずらすことを新しいブラウザ検査で再現し、限定CSSで修正。一括モードには必要なundo／clearのみ。
+- 全79テスト／12ファイル成功、型チェック／Vite build成功、diff check成功。最初の全体テストはoauth教員登録のローカルMiniflare接続切断1件(UND_ERR_SOCKET)で失敗。同じ全体テストの単独再実行は全件成功し、再現しなかった。
+- Playwright MCP Chromium: クラス即時(ローカル疑似教員)・メイト一括・320px混合・名前D&D・offline/reload・長押し・提出／結果成功。復習欄が最後のDOM要素にあることを検査しスクリーンショット確認。名前即時ボタン320/390/768pxで高さ・上端・幅比検査成功。長押しの同位置／blur／pointercancel復元・移動・盤面外削除・削除後reloadと実AudioContextの480/660/330/250Hz出力を検査成功。pageerrorなし。
+- Playwright WebKitの既存タブレットフロー(320/1366/1024px、10問混合・まあまあ・アルコールON、全30盤面寸法)成功。実iPadOS17.7 Chromeの操作・音の聴感、実Google再ログインは今回未検証。
+- 独立読取レビューでImportant/Criticalなし。パネル音は本家の出力.88を再現し、既存音量medium/highで変わらない点をminorとして確認。学生用の音量UI追加は行っていない。
+- 修正後の名前即時ボタンをWebKitでも320/390/768pxで検査し、1:1:2:1・高さ44px・上端一致・undo成功。pageerrorなし。
