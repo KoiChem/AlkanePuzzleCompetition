@@ -85,3 +85,7 @@
 .teacher-review-picker select:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
 .teacher-review-chevron{position:absolute;right:18px;top:18px;width:8px;height:8px;border-right:2px solid var(--primary-dark);border-bottom:2px solid var(--primary-dark);transform:rotate(45deg);pointer-events:none}
 .correct-participant-answer{display:flex;flex-direction:column;align-items:center;gap:8px}
+
+.play-active .arrange-immediate-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;margin-top:7px;gap:4px}
+.play-active .arrange-immediate-actions>button{width:100%;height:44px;min-width:0;margin:0;padding:6px 2px;font-size:12px;white-space:nowrap}
+.play-active .arrange-immediate-actions>.check-action{background:var(--primary-dark);color:white;border-color:var(--primary-dark)}

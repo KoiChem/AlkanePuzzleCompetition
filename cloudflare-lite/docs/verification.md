@@ -100,3 +100,10 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - 公開 source release: `caeef8e196d6e415be9be54a8ad241727d477372`。Worker version: `6293d4df-7ee2-426b-a92f-1a44b8ad5919`。公開HTML metaと/api/healthのrelease一致、専用Workerへ更新成功。GitHub codex/alkane-competitionへpush成功、GitHub MCPでcommit status取得成功(CI statusなし)。
 - 公開実メイトChromium: 長押しのsource非表示・56px/opacity .9・同位置・blur・pointercancel・移動・枠外削除・再読み込み保存、実AudioContextの音程出力・両者提出・結果まで成功。名前即時ボタン320/390/768pxで幅比1:1:2:1、高さ44px・上端一致・undo・両者提出／結果成功。
 - 公開実メイトWebKit: 名前即時ボタン同3幅の検査・undo・両者提出／結果まで成功。pageerrorなし。公開先のconsole error/warningなし、healthと競技作成POST成功。ホストの復習欄はローカル疑似教員のクラスで確認したもの。公開Google認証と実iPadOS17.7 Chrome、実機の聴感は未検証。
+
+## 2026-10-11 候補選択中の長押しと並べる即時操作
+
+- 並べるの問題毎判定は、候補の下へ「パス／チェック／クリア／全解答確認」を1行に移動し均等幅・高さ44pxに統一。命名／一括判定の既存配置を維持。
+- 候補選択中の配置済みC／F／OHを400msで持ち上げ、選択維持、同位置／cancel／blur復元・移動／盤面外削除を確認。直前のタップ回転予約が長押し中に動く競合を独立レビューで発見し、選択時にも保留して修正。SSR等79テストと型チェック／build成功。変更前の選択時長押しは回帰ブラウザ検査で失敗し、修正後成功。
+- Playwright MCP Chromium:320pxの選択時長押し・C/F/OH移動削除、保存reload、音程、両者提出／結果成功。即時4ボタン320/390/768pxで均等幅・高さ／上端一致、clearと両者提出成功。WebKitでも同3幅とclear／提出成功。pageerrorなし。
+- 本家はindex.htmlとパネル回帰テストだけを編集。既存のtransient.html未コミット削除は保持しcommit対象外。本家全86テスト成功、回転予約の修正後パネル操作43テスト(親込み)再実行成功。本家GitHub最新版参照済み。

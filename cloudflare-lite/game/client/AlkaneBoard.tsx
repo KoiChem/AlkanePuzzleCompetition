@@ -144,9 +144,9 @@ export function AlkaneBoard({ grid, label, onChange, selected, disabled, bounds,
     event.preventDefault();primePanelAudio();
     event.currentTarget.setPointerCapture(event.pointerId);
     const panel=latest.current.grid[row][col];
-    if (!selected && panel) taps.current?.hold(row,col);
+    if (panel) taps.current?.hold(row,col);
     const item = { id:event.pointerId,row, col, x:event.clientX, y:event.clientY,lastX:event.clientX,lastY:event.clientY, timer:null as ReturnType<typeof setTimeout> | null, moved:false, long:false,snapshot:null as BoardGrid|null,trace:null as TraceState|null };
-    if (!selected && panel && isCarbon(panel)) item.timer = setTimeout(() => {if(pointer.current!==item)return;item.long=true;taps.current?.cancelAll();setGhost({panel,row,col,x:item.lastX,y:item.lastY});playPanelSound("pickup");},400);
+    if (panel && (selected || isCarbon(panel))) item.timer = setTimeout(() => {if(pointer.current!==item)return;item.long=true;taps.current?.cancelAll();setGhost({panel,row,col,x:item.lastX,y:item.lastY});playPanelSound("pickup");},400);
     if (!selected && !panel) {item.snapshot=cloneGrid(latest.current.grid);item.trace={path:[{row,col}],closed:false};taps.current?.cancelAll();}
     pointer.current = item;
   }
