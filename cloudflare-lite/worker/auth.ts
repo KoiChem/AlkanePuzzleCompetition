@@ -33,8 +33,11 @@ export class AlkaneTeachers extends DurableObject<AlkaneTeacherEnv> {
       CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, sub TEXT NOT NULL, email TEXT NOT NULL, expires_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS oauth (state_hash TEXT PRIMARY KEY, browser_hash TEXT NOT NULL, nonce_hash TEXT NOT NULL, verifier TEXT NOT NULL, expires_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS creation_limits (key TEXT PRIMARY KEY,count INTEGER NOT NULL,expires_at INTEGER NOT NULL);
-      CREATE TABLE IF NOT EXISTS profile (id INTEGER PRIMARY KEY,revision INTEGER NOT NULL,value TEXT NOT NULL);`);
+      CREATE TABLE IF NOT EXISTS profile (id INTEGER PRIMARY KEY,revision INTEGER NOT NULL,value TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS mate_setting (id INTEGER PRIMARY KEY,enabled INTEGER NOT NULL);
+      INSERT OR IGNORE INTO mate_setting VALUES(1,1);`);
   }
+  private mateEnabled(){return this.sql.exec<{enabled:number}>('SELECT enabled FROM mate_setting WHERE id=1').toArray()[0].enabled===1;}
   private profile(){return this.sql.exec<{revision:number;value:string}>('SELECT revision,value FROM profile WHERE id=1').toArray()[0]??{revision:1,value:JSON.stringify(DEFAULT_PROFILE)};}
   private master() { return normalize(this.env.MASTER_TEACHER_EMAIL ?? ''); }
   private ready() {
@@ -69,10 +72,13 @@ export class AlkaneTeachers extends DurableObject<AlkaneTeacherEnv> {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url), path = url.pathname;
     if (url.origin !== this.env.APP_ORIGIN) return json({error: '許可されたアプリから操作してください'}, 403);
+    if(path==='/api/public-config')return request.method==='GET'?json({mateEnabled:this.mateEnabled()}):json({error:'操作方法を確認してください'},405);
     if(['/internal/create-limit','/internal/probe-limit'].includes(path)&&request.method==='POST'){
-      const {key,maximum}=await request.json() as {key:string;maximum:number};if(!/^[a-f0-9]{64}$/.test(key)||!(path.endsWith('probe-limit')?maximum===180:[20,60].includes(maximum)))return json({error:'操作を確認してください'},400);this.clean();
+      const {key,maximum,kind}=await request.json() as {key:string;maximum:number;kind?:string};if(!/^[a-f0-9]{64}$/.test(key)||!(path.endsWith('probe-limit')?maximum===180:[20,60].includes(maximum)))return json({error:'操作を確認してください'},400);
+      if(path==='/internal/create-limit'&&kind==='mate'&&!this.mateEnabled())return json({error:'メイトマッチの新規作成は停止中です'},403);
+      this.clean();
       const row=this.sql.exec<{count:number}>('SELECT count FROM creation_limits WHERE key=?',key).toArray()[0];if(row&&row.count>=maximum)return json({error:path.endsWith('probe-limit')?'アクセスが多すぎます。1分ほど待ってください':'ルームの作成が多すぎます。10分ほど待ってください'},429);
-      this.sql.exec('INSERT INTO creation_limits VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1',key,Date.now()+(path.endsWith('probe-limit')?60000:600000));await this.schedule();return json({ok:true});
+      this.sql.exec('INSERT INTO creation_limits VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1',key,Date.now()+(path.endsWith('probe-limit')?60000:600000));await this.schedule();return json({ok:true,mateEnabled:kind==='mate'&&this.mateEnabled()});
     }
     if(path==='/api/question-profile') {const current=this.profile();return request.method==='GET'?json({revision:current.revision,profile:JSON.parse(current.value)}):json({error:'操作方法を確認してください'},405);}
     if (path === '/api/auth/session') return request.method === 'GET' ? json(await this.session(request)) : json({error: '操作方法を確認してください'}, 405);
@@ -84,6 +90,15 @@ export class AlkaneTeachers extends DurableObject<AlkaneTeacherEnv> {
     const session = await this.session(request);
     if (!session.identity) return json({error: '教員ログインが必要です'}, 401);
     if (request.method !== 'GET' && (request.headers.get('origin') !== this.env.APP_ORIGIN || request.headers.get('x-competition-csrf') !== session.csrfToken)) return json({error: '操作資格を再確認してください'}, 403);
+    if(path==='/api/teacher/mate-setting'){
+      if(!session.isMaster)return json({error:'マスター教員だけが変更できます'},403);
+      if(request.method==='PUT'){
+        let input:{enabled?:unknown}|null;
+        try{const text=await request.text();if(text.length>128)throw new Error();input=JSON.parse(text);if(typeof input?.enabled!=='boolean')throw new Error();}catch{return json({error:'設定を確認してください'},400);}
+        this.sql.exec('UPDATE mate_setting SET enabled=? WHERE id=1',input!.enabled?1:0);
+      }else if(request.method!=='GET')return json({error:'操作方法を確認してください'},405);
+      return json({mateEnabled:this.mateEnabled()});
+    }
     if(path==='/api/teacher/question-profile') {
       if(!session.isMaster)return json({error:'マスター教員だけが難易度を調整できます'},403);
       if(request.method==='PUT'){

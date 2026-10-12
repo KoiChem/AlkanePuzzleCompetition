@@ -41,6 +41,7 @@ export class AlkaneRoom extends DurableObject<AlkaneEnv> {
     if (new URL(request.url).pathname==='/create' && request.method==='POST') {
       try {
         const raw=await request.json() as {settings?:AlkaneGameSettings;profile?:unknown;kind?:'class'|'mate';nickname?:string;profileRevision?:number};
+        if(raw.kind==='mate'&&request.headers.get('x-mate-create-enabled')!=='true')return json({error:'メイトマッチの新規作成は停止中です'},403);
         const settings={...raw.settings,...parseCompetitionSettings(raw.settings),gradingMode:raw.settings?.gradingMode??'immediate'} as AlkaneGameSettings;
         const profile=validateQuestionProfileShape(raw.profile??initialProfile);
         validateGameSettings(settings,profile); const questions:InternalQuestion[]=[]; const kind=raw.kind==='mate'?'mate':'class';const hostId=kind==='mate'?crypto.randomUUID():null;if(kind==='mate')this.validateNickname(raw.nickname?.trim()??''); const hostToken=token(); const hostHash=await hash(hostToken);

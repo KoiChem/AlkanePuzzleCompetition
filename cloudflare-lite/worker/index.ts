@@ -8,7 +8,7 @@ export default {
     let response: Response;
     try {
       if (url.pathname === '/api/health') response = json({ backend: 'lite', d1: false, game:'alkane', maxParticipants: 50, mateCapacity:4, release: env.RELEASE_SHA });
-      else if (url.pathname.startsWith('/api/auth/') || url.pathname.startsWith('/api/teacher/') || url.pathname === '/api/question-profile') {
+      else if (url.pathname.startsWith('/api/auth/') || url.pathname.startsWith('/api/teacher/') || ['/api/question-profile','/api/public-config'].includes(url.pathname)) {
         response = await env.TEACHERS.get(env.TEACHERS.idFromName('teachers')).fetch(new Request(request, {redirect: 'manual'}));
       } else if (url.pathname === '/api/rooms' && request.method === 'POST') {
         if (request.headers.get('origin') !== url.origin) return json({error:'別のサイトからの操作は受け付けません'},403);
@@ -24,14 +24,15 @@ export default {
           creatorKey=session.identity.id;
           if(request.headers.get('x-competition-csrf')!==session.csrfToken)return json({error:'操作資格を再確認してください'},403);
         }
-        const limit=await env.TEACHERS.get(env.TEACHERS.idFromName('teachers')).fetch(new Request(env.APP_ORIGIN+'/internal/create-limit',{method:'POST',body:JSON.stringify({key:await hash(input.kind+':'+creatorKey),maximum:input.kind==='class'?20:60})}));if(!limit.ok)return limit;
+        const limit=await env.TEACHERS.get(env.TEACHERS.idFromName('teachers')).fetch(new Request(env.APP_ORIGIN+'/internal/create-limit',{method:'POST',body:JSON.stringify({key:await hash(input.kind+':'+creatorKey),maximum:input.kind==='class'?20:60,kind:input.kind})}));if(!limit.ok)return limit;
+        const {mateEnabled}=await limit.json() as {mateEnabled:boolean};
         const common=await env.TEACHERS.get(env.TEACHERS.idFromName('teachers')).fetch(new Request(env.APP_ORIGIN+'/api/question-profile'));
         if(!common.ok)return json({error:'出題設定を取得できません'},503);
         const profile=await common.json() as {profile:unknown;revision:number};
         const roomBody=JSON.stringify({...input,profile:profile.profile,profileRevision:profile.revision});
         const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         const code = Array.from(crypto.getRandomValues(new Uint8Array(6)),n=>alphabet[n&31]).join('');
-        response = await env.ROOMS.get(env.ROOMS.idFromName(code)).fetch(new Request(url.origin+'/create', {method:'POST',body:roomBody,headers:{'x-room-code':code}}));
+        response = await env.ROOMS.get(env.ROOMS.idFromName(code)).fetch(new Request(url.origin+'/create', {method:'POST',body:roomBody,headers:{'x-room-code':code,'x-mate-create-enabled':String(mateEnabled)}}));
       } else {
         const match = /^\/api\/rooms\/([A-Z2-9]{6})\/(socket|info|state)$/.exec(url.pathname);
         if (match) {
