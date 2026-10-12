@@ -121,3 +121,7 @@
 .profile-footer .primary-action{width:auto;flex:none;min-width:155px}.profile-secondary-actions button{white-space:nowrap;background:transparent;color:var(--muted);box-shadow:none}
 @media(max-width:599px){.profile-footer .primary-action{width:100%}}
 .profile-dialog .profile-stepper :focus-visible{outline-offset:-3px;position:relative;z-index:1}
+/* Keep the checking announcement inside the existing header-to-form gap. */
+.home-participation-status{display:flex;align-items:center;height:2.7em;margin-top:4px;font-size:.75rem;line-height:1.35;color:var(--muted)}
+.home-participation-status p{margin:0;width:100%;font-size:inherit;line-height:inherit}
+.home-card .join-form{margin-top:4px}

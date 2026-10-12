@@ -154,3 +154,8 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - 型チェック・build・全88テスト成功。初回のOAuth1件はローカルMiniflareのUND_ERR_SOCKETで失敗し、同じ全テスト再実行で88件通過した。実Google認証と実iPadOS17.7 Chromeは今回再検証していない。
 - 公開source release `d2f5413955bfeba2d4f6acb6d82e90268a57a2d6`、Cloudflare version `65983a0b-69c6-4627-8911-5751898040d4`。GitHub pushとMCPのcommit取得成功(statusなし)、公開HTML metaとhealthのrelease一致。
 - 公開Chromiumの実メイトで即時4ボタンの320/390/768px幅比・clear・提出／結果、一括両モードの初期／最終／全問入力／clear／reload／提出を確認成功。公開設定UIは分離API fixtureでChromium/WebKitの16配置・変更保護・保存競合時の保持を確認成功。本番Google認証・本番共通設定への書込みは行っていない。pageerrorなし。
+
+## 2026-10-12 ホームの参加状況表示による配置ずれ
+
+- 参加状況のp要素が出入りしてヘッダーとカードの高さが変わり、中央配置によって入力欄・リンクが移動していた。既存のヘッダー〜入力欄の余白内に常設の表示枠を設け、文章の有無で高さが変わらないよう修正。aria role=statusと参加確認処理は維持。
+- 修正前の320pxブラウザ検査でカード高さ40px、入力欄top28.5pxの変化を再現。修正後Chromium/WebKitの320/390/1024/1366pxでカード・入力欄・ナビゲーションのtop/height/left/widthが切替前後で一致、状態文章の収まりと横はみ出しなしを確認。完了状態APIは待機ゲート付きfixtureで、実参加資格は変更していない。pageerrorなし。型チェック・build成功。
