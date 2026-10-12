@@ -73,3 +73,9 @@ Roomの期限後はAPIで拒否しalarmでRoom・参加者・解答を削除し�
 まあまあ・名付けるは保存済みの旧shuffle設定がOFFでも4語群の順を入れ替え、固定順と直前の名付ける問題の順を避ける。両方モードでも適用。順は問題データとして保存され、再読み込みでは変わらない。すいすいは従来のマスター設定を維持する。
 
 WebKit確認の任意ランナーは `tests/browser-webkit.cjs`。別途利用可能なPlaywright／WebKitを指定できる（`PLAYWRIGHT_MODULE`、`PLAYWRIGHT_BROWSERS_PATH`）。`TEST_ORIGIN`で検証先を指定できる。iPadOS 17.7実機と同一エンジン版ではないため、実機合格の代用にはしない。
+
+## 並べるのブラウザ履歴ジェスチャー保護
+
+並べるの解答グリッドとパレットで、単一タッチと横ホイールのブラウザ既定動作を抑制します。解答画面ではページルートの横overscrollも抑制し、名付ける・全解答確認・結果へ切り替わると解除します。既存の配置・なぞり・長押し移動、盤面外の縦スクロール、戻るボタンは維持します。
+
+`tests/browser-gesture-navigation.js` はChromium／WebKitのイベント抑制、実タップ、保存復元、混合出題と画面切替を確認します。OS／ブラウザがページへ渡さない画面端ジェスチャーは実機で別途確認します。仕様: [盤面ジェスチャー保護](../docs/ARRANGE_GESTURE_NAVIGATION_SPEC.md)。

@@ -3,6 +3,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {primePanelAudio,playPanelSound} from './panel-audio';
 import {createPortal} from "react-dom";
+import {bindGestureNavigationGuard} from './gesture-navigation';
 
 export type Panel = { type: number; rotation: number; element?: string };
 export type BoardGrid = (Panel | null)[][];
@@ -110,6 +111,8 @@ function PanelIcon({ panel, grid, row, col }: { panel: Panel; grid?: readonly (r
 }
 export function AlkaneBoard({ grid, label, onChange, selected, disabled, bounds, interactionKey, compact, promptCompact }: { grid: readonly (readonly (Panel | null)[])[]; label?: string; onChange?: (grid: BoardGrid) => void; selected?: Panel | null; disabled?: boolean; bounds?: Bounds; interactionKey?: string; compact?:boolean; promptCompact?:boolean }) {
   const board=useRef<HTMLDivElement>(null),[boardWidth,setBoardWidth]=useState(0);
+  const answering=!!onChange;
+  useLayoutEffect(()=>{if(answering&&board.current)return bindGestureNavigationGuard(board.current);},[answering]);
   useLayoutEffect(()=>{const element=board.current;if(!element)return;const measure=()=>{const width=element.getBoundingClientRect().width;setBoardWidth(previous=>Math.abs(previous-width)<.1?previous:width);};measure();const observer=new ResizeObserver(measure);observer.observe(element);return()=>observer.disconnect();},[compact,promptCompact,grid]);
   const [viewport,setViewport]=useState(()=>({width:typeof window==="undefined"?320:window.innerWidth,height:typeof window==="undefined"?568:window.innerHeight}));
   useEffect(()=>{if(!promptCompact)return;const resize=()=>setViewport({width:window.innerWidth,height:window.innerHeight});window.addEventListener("resize",resize);return()=>window.removeEventListener("resize",resize);},[promptCompact]);

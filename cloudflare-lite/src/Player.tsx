@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {QuestionView} from '../game/client/QuestionView';
 import {ImmediateVerdict} from '../../src/features/play/ImmediateVerdict';
 import {ParticipantSyncStatus} from '../../src/features/play/ParticipantSyncStatus';
@@ -19,6 +19,13 @@ export function Player({state,enabled,now,verdict,status,error,send}:{state:Snap
  const questions=deferred?state.deferred?.questions??[]:review?.questions??[];
  const q=deferred?questions[ordinal]:target!==null?questions[target]:state.question;
  const waiting=Math.max(0,Math.ceil((room.startAtMs!-now)/1000)),remaining=Math.max(0,Math.ceil(((room.cutoffAtMs??room.deadlineAtMs!)-now)/1000));
+ const protectNavigation=q?.prompt.mode==='arrange'&&!reviewing&&!submitting&&waiting===0&&['RUNNING','COUNTDOWN'].includes(room.state);
+ useLayoutEffect(()=>{
+  if(!protectNavigation)return;
+  const root=document.documentElement,marker='alkane-arrange-gesture-guard',present=root.classList.contains(marker);
+  root.classList.add(marker);
+  return()=>{if(!present)root.classList.remove(marker);};
+ },[protectNavigation]);
  const canEdit=loaded&&!storageError&&!submitting&&!status.startsWith('別のタブ')&&room.state!=='COLLECTING'&&remaining>0&&waiting===0;
  const field=q?.fields[0].id,key=q&&field?`${q.id}:${field}`:null;
  async function flush(){

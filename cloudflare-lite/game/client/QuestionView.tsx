@@ -1,10 +1,11 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { PublicQuestion } from "../types";
 import { AlkaneBoard, PaletteIcon, applyBoardEdit, type BoardGrid, type Panel } from "./AlkaneBoard";
 import {createPortal} from "react-dom";
 import {CompoundName} from './CompoundName';
 import { NameQuestion } from "./NameQuestion";
+import {bindGestureNavigationGuard} from './gesture-navigation';
 
 function parseAnswer<T>(value: string | undefined, key: string, fallback: T): T {
   if (!value) return fallback;
@@ -15,6 +16,8 @@ const carbonLabels=['','1級炭素','2級炭素（直線）','2級炭素（折�
 export function QuestionView({question,fieldId,value,onChange,disabled,storageKey,expiresAtMs,actions,arrangeActions,arrangeNavigation}:{question:PublicQuestion;fieldId?:"formula"|"name";value?:string;onChange?:(value:string)=>void;disabled?:boolean;storageKey?:string;expiresAtMs?:number;actions?:ReactNode;arrangeActions?:{pass:ReactNode;review:ReactNode};arrangeNavigation?:{previous:ReactNode;next:ReactNode;review:ReactNode}}){
  const [selected,setSelected]=useState<Panel|null>(null),[ghost,setGhost]=useState<{panel:Panel;x:number;y:number}|null>(null);
  const drag=useRef<{id:number;x:number;y:number;panel:Panel;moved:boolean}|null>(null);
+ const palette=useRef<HTMLDivElement>(null),protectPalette=question.prompt.kind==='alkane'&&question.prompt.mode==='arrange'&&!!onChange;
+ useLayoutEffect(()=>{if(protectPalette&&palette.current)return bindGestureNavigationGuard(palette.current);},[protectPalette]);
  useEffect(()=>{setSelected(null);setGhost(null);drag.current=null;},[question.id,disabled]);
  useEffect(()=>{const cancel=()=>{drag.current=null;setGhost(null);};window.addEventListener('blur',cancel);return()=>window.removeEventListener('blur',cancel);},[]);
  const prompt=question.prompt;
@@ -31,7 +34,7 @@ export function QuestionView({question,fieldId,value,onChange,disabled,storageKe
     {!arrangeActions&&!arrangeNavigation&&<div className="alkane-objective-actions">{actions}{clear}</div>}
    </div>
    <AlkaneBoard grid={grid} interactionKey={question.id} bounds={prompt.bounds} label="解答の構造" selected={selected} disabled={disabled||!onChange||fieldId==="name"} onChange={onChange?next=>onChange(JSON.stringify({grid:next})):undefined}/>
-   <div className="alkane-palette" aria-label="原子パレット" onContextMenu={e=>e.preventDefault()} onDragStart={e=>e.preventDefault()}>{[options.filter(p=>!p.element||p.element==='C'),options.filter(p=>p.element&&p.element!=='C')].map((panels,row)=><div className="alkane-palette-row" key={row}>{panels.map((panel,index)=><button type="button" key={index} className="alkane-palette-card" aria-label={panel.element??carbonLabels[panel.type]} title={panel.element??carbonLabels[panel.type]} aria-pressed={selected?.type===panel.type&&selected.element===panel.element} disabled={disabled||!onChange} onClick={e=>{if(e.detail===0)toggle(panel);}}
+   <div ref={palette} className="alkane-palette" aria-label="原子パレット" onContextMenu={e=>e.preventDefault()} onDragStart={e=>e.preventDefault()}>{[options.filter(p=>!p.element||p.element==='C'),options.filter(p=>p.element&&p.element!=='C')].map((panels,row)=><div className="alkane-palette-row" key={row}>{panels.map((panel,index)=><button type="button" key={index} className="alkane-palette-card" aria-label={panel.element??carbonLabels[panel.type]} title={panel.element??carbonLabels[panel.type]} aria-pressed={selected?.type===panel.type&&selected.element===panel.element} disabled={disabled||!onChange} onClick={e=>{if(e.detail===0)toggle(panel);}}
     onPointerDown={e=>{if(!onChange||disabled||!e.isPrimary||e.button!==0)return;e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);drag.current={id:e.pointerId,x:e.clientX,y:e.clientY,panel,moved:false};}}
     onPointerMove={e=>{const item=drag.current;if(!item||item.id!==e.pointerId)return;if(Math.hypot(e.clientX-item.x,e.clientY-item.y)>8){item.moved=true;setSelected(null);setGhost({panel,x:e.clientX,y:e.clientY});}}}
     onPointerUp={e=>{const item=drag.current;if(!item||item.id!==e.pointerId)return;drag.current=null;setGhost(null);if(!item.moved){toggle(panel);return;}const target=document.elementFromPoint(e.clientX,e.clientY)?.closest<HTMLElement>('[data-alkane-cell]');if(target?.dataset.active==='true')onChange?.(JSON.stringify({grid:applyBoardEdit(grid,{type:'place',row:Number(target.dataset.row),col:Number(target.dataset.col),panel})}));}}

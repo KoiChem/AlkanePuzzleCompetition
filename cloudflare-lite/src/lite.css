@@ -9,6 +9,7 @@
 .teacher-login-panel .primary-link{display:inline-flex;margin-top:.5rem}
 /* Teacher configuration stays independent of the puzzle's compact layout. */
 .mate-host-tools{max-width:720px;margin:0 auto;padding:1rem}
+html.alkane-arrange-gesture-guard{overscroll-behavior-x:contain}
 /* Match AlkanePuzzle's notebook, two palette rows, chips and pointer gestures. */
 .play-active{display:flex;flex-direction:column;gap:5px;max-width:520px;min-height:100dvh;height:auto;overflow:visible;padding:6px 12px 12px}
 .play-active .alkane-question{display:flex;flex-direction:column;flex:none;width:100%;min-width:0;padding:0;border:0;box-shadow:none;background:transparent;gap:0}

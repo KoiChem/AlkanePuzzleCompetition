@@ -171,3 +171,14 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - 独立読取レビューで重大な指摘なし。実Google認証の再ログイン、本番マスターによる設定変更、実iPhone/iPadの操作はローカル検証と区別する。
 - 公開source release `d2fd3a09c1b4b4dbabf9054a1250628c889a0de2`、Cloudflare version `b2e72f68-57a1-4ed1-b097-3640bfc76779`。既存GitHubブランチcodex/alkane-competitionへpushし、GitHub MCPでブランチSHA一致を確認。CI statusはなし。公開HTML metaとhealthは同release。公開public-configはHTTP200・no-store・mateEnabled=trueで、設定はONのまま。
 - 公開Playwright Chromiumで320／390／768／1280pxのアルコールON/OFF表示、50px高、横はみ出しなしを確認。実メイトの作成・2人参加・開始・両者パス・中断結果表示まで成功。pageerrorとrequestfailedなし。匿名の設定変更PUTはHTTP401、続く別セッションの公開設定読取もONで保持され、教員ページはGoogleログイン画面を表示。本番でマスター設定をOFFへ変更していないため、本番マスター実ログイン・設定保存は未検証。
+
+## 2026-10-12 並べるの履歴ジェスチャー保護
+
+- 解答グリッド全体とパレットへ、ネイティブcapture・非passiveのtouchstart／touchmove／wheel保護を追加。キャンセル可能な単一タッチ・横成分のあるwheelを抑え、複数タッチ・純縦wheel・ctrlKey付きズームは追加で抑制しない。編集処理は従来のPointer Eventsだけが行う。disabledになっても解答用onChangeがある間は保護を維持し、読み取り専用盤面には追加しない。
+- Playerは並べるの解答表示だけでHTMLルートにoverscroll-behavior-x:containを適用。名付ける・カウントダウン・全解答確認・提出・結果・アンマウントでは解除し、元のクラス状態を復元する。縦overscroll、履歴、ルーム／採点／下書き保存形式は変更しない。
+- 実装前のブラウザ検査は盤面touchstart／touchmove／横wheelのdefaultPrevented=falseで失敗。変更後は全保護対象で成功。既存の盤面はoverflow:visibleのため、そこにoverscroll CSSだけを置く方法は採らなかった。
+- Lite全95テスト／16ファイル、型チェック、Vite build、公開dry-run、diff check成功。追加3テストで単一タッチ／横wheelの選別と繰返し登録・解除を確認。Node EventTargetのcapture指定を登録・解除とも同じoptionsオブジェクトに揃えた。初回全体検査の既存OAuth1件はMiniflare UND_ERR_SOCKETで失敗し、その後の全95件は通過。
+- Playwright MCP Chromium: 8領域／状態のイベント抑制・非抑制、実タップ配置・回転、450ms長押し移動、CDPの3マスなぞりとtrusted touchstart／wheelのキャンセル、盤面外縦スクロール、URL／履歴位置維持、reload保存復元、オフライン時の保護維持、通常の戻る／進む、全5問の混合モードと確認画面往復、提出・結果・ホーム時の解除を確認。pageerrorなし。
+- 同じフローをPlaywright WebKit 26.5でも確認。CDPのなぞり計測はChromiumのみだが、WebKitは実タップ配置・長押し移動・縦スクロール・保存復元・戻る進む・混合／確認／提出／結果の解除まで通過、pageerrorなし。最初のWebKit検査はテスト開始直後の重複reloadがpublic-config読込を中断してaccess-controlメッセージを出していた。新しいページで設定読込完了を待ち、不要なreloadを除いて解消。製品コードにエラー隠蔽は追加していない。
+- 既存のbrowser-panel-gesturesもChromiumで成功。選択中のC／F／OH長押し移動と盤面外削除、同位置／blur／pointercancel復元、56px・opacity .9ゴースト、削除保存reload、AudioContext APIの音程、両者提出・結果が通過。
+- 独立読取レビューで重大な指摘なし。ブラウザ自動入力は実iPad/iPhoneやMacトラックパッドによるブラウザ履歴ジェスチャーの合格証拠ではない。特にページへ入力が届かない画面端操作は実機確認が未完了。
