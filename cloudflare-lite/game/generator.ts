@@ -45,7 +45,7 @@ function wordBank(rule:Rule,settings:AlkaneGameSettings,name:string,engine:Retur
     Array.from({length:maxNumber},(_,i)=>String(i+1)),
     shuffled(engine.MULTIPLIER_TOKENS.slice(0,Math.max(rule.subMax,settings.alcoholEnabled?2:1)-1),random),
     shuffled([...engine.SUB_NAME_SET],random),
-    ['シクロ',...(settings.alcoholEnabled?['オール']:[]),...shuffled([...bases],random)],
+    ['シクロ',...shuffled([...bases],random),...(settings.alcoholEnabled?['オール']:[])],
   ];
   if(settings.difficulty!=='medium'&&!rule.shuffleWordBankGroups)return rows;
   const permutations:number[][]=[];

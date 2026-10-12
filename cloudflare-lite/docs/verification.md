@@ -131,3 +131,11 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - 全82テスト・型チェック・build成功。初回全テストのOAuth1件はUND_ERR_SOCKETで失敗したが、ローカルブラウザ検証を停止して同じ全テストを再実行し82件すべて通過した。
 - 公開source release `cd3c8f93f9ec37ceaff584db9114e5c2b15f95cb`、Cloudflare version `f70db0db-8363-4339-9b45-87139ba53b49`。GitHub pushおよびMCPでcommit status取得成功(statusなし)。公開HTML metaと/api/healthのrelease一致。
 - 公開実メイトChromiumで名前の7ボタン・3幅・4色・選択色・Undo/消去・解答非干渉・タッチ/キャンセル・提出／結果、並べるの即時3ボタン・直上クリア・3幅・提出／結果成功。WebKit公開版でも名前の同3幅・4色・Undo・消去・両者提出成功。pageerrorなし。実iPadOS17.7 Chromeの確認ではない。
+
+## 2026-10-12 OHの水素結合表示・オール末尾化
+
+- コンペの共有PanelIconを本家svgIconに合わせ、炭素の結合方向に対して反対向きにOHの水素を表示。O-H線は中心から13→25、水素中心は32、未接続／候補／ドラッグ中は64.1,35.9。本家と描画の重なり順も一致。採点データは変更していない。
+- コンペと本家のアルカン名語群を「シクロ／ランダムなアルカン名／オール」の順に変更。アルコールOFFで非表示、グループ順ランダムは維持。
+- 変更前は接続四方向とオール末尾のテストが失敗。変更後コンペ全88テスト・型チェック・build成功、描画順調整後にOH5テスト再実行成功。本家全88テスト成功。既存transient.htmlの削除は変更対象外。
+- ローカルChromiumとWebKitで320pxのOH接続・炭素回転による切断・移動による再接続・reload保存・全解答確認・結果の水素座標を確認。名前5問すべてオール末尾、両者提出成功、pageerrorなし。
+- 本家は保存設定を変更しない検証用HTMLフックで実buildWordBankのDOM出力を検査。すいすい／そこそこのアルコールONでオール末尾・OFFで非表示を確認。独立読取レビューで重大な問題なし。

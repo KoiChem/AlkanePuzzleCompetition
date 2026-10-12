@@ -58,3 +58,9 @@ test('medium naming groups avoid fixed and preceding order even with a saved shu
  for(const mode of ['name','both'] as const){const qs=generateQuestionSet({mode,difficulty:'medium',alcoholEnabled:true,questionCount:15,timeLimitMinutes:3},random(),DEFAULT_PROFILE);let previous='';for(const q of qs.filter(q=>q.prompt.mode==='name')){const order=q.prompt.wordBank!.map(group).join(',');expect(order).not.toBe('0,1,2,3');expect(order).not.toBe(previous);expect([...q.prompt.wordBank!.map(group)].sort()).toEqual([0,1,2,3]);previous=order;}}
  const easy=generateQuestionSet({mode:'name',difficulty:'easy',alcoholEnabled:false,questionCount:5,timeLimitMinutes:3},random());for(const q of easy)expect(q.prompt.wordBank!.map(group)).toEqual([0,1,2,3]);
 });
+test('alcohol suffix is last in its group, preserving cyclo first and alcohol OFF',()=>{
+ for(const difficulty of ['easy','medium'] as const)for(const alcoholEnabled of [true,false]){
+  const qs=generateQuestionSet({mode:'name',difficulty,alcoholEnabled,questionCount:5,timeLimitMinutes:3},random(),DEFAULT_PROFILE);
+  for(const q of qs){const group=q.prompt.wordBank!.find(row=>row.includes('シクロ'))!;expect(group[0]).toBe('シクロ');if(alcoholEnabled){expect(group.at(-1)).toBe('オール');expect(group.filter(t=>t==='オール')).toHaveLength(1);}else expect(group).not.toContain('オール');}
+ }
+});
