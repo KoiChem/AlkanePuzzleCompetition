@@ -129,3 +129,5 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - Chromiumで320/390/768pxの7ボタン順・高さ・配置と3列フッター、4色描画、選択色、描画Undo・全消去Undo、解答への非干渉、CDPタッチ描画・キャンセル、提出／結果成功。WebKitでも名前の同3幅・4色・Undo・消去・提出成功。pageerrorなし。
 - ローカル疑似教員のクラス即時判定で解答チェック・パス・保存reload・提出／教員復習、メイト一括の解答復元を検証。320/390/768/1280pxで横はみ出しなし。独立読取レビューで重大な問題なし。実iPadOS17.7 Chrome、実Google認証は未検証。
 - 全82テスト・型チェック・build成功。初回全テストのOAuth1件はUND_ERR_SOCKETで失敗したが、ローカルブラウザ検証を停止して同じ全テストを再実行し82件すべて通過した。
+- 公開source release `cd3c8f93f9ec37ceaff584db9114e5c2b15f95cb`、Cloudflare version `f70db0db-8363-4339-9b45-87139ba53b49`。GitHub pushおよびMCPでcommit status取得成功(statusなし)。公開HTML metaと/api/healthのrelease一致。
+- 公開実メイトChromiumで名前の7ボタン・3幅・4色・選択色・Undo/消去・解答非干渉・タッチ/キャンセル・提出／結果、並べるの即時3ボタン・直上クリア・3幅・提出／結果成功。WebKit公開版でも名前の同3幅・4色・Undo・消去・両者提出成功。pageerrorなし。実iPadOS17.7 Chromeの確認ではない。
