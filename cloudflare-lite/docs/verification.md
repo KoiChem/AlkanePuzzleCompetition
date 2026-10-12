@@ -159,3 +159,4 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 
 - 参加状況のp要素が出入りしてヘッダーとカードの高さが変わり、中央配置によって入力欄・リンクが移動していた。既存のヘッダー〜入力欄の余白内に常設の表示枠を設け、文章の有無で高さが変わらないよう修正。aria role=statusと参加確認処理は維持。
 - 修正前の320pxブラウザ検査でカード高さ40px、入力欄top28.5pxの変化を再現。修正後Chromium/WebKitの320/390/1024/1366pxでカード・入力欄・ナビゲーションのtop/height/left/widthが切替前後で一致、状態文章の収まりと横はみ出しなしを確認。完了状態APIは待機ゲート付きfixtureで、実参加資格は変更していない。pageerrorなし。型チェック・build成功。
+- 公開source release `13bb6f570bd52b65fe5805e813cc6ab1b0ab34e3`、Cloudflare version `0c24f22f-b75c-4fb4-9c36-7e5cae24191c`。GitHub pushとMCP status取得成功(statusなし)、公開HTML metaとhealthのrelease一致。公開Chromium/WebKitで同4幅の状態切替前後の全位置・寸法一致を確認、pageerrorなし。状態APIは検証用fixture、実機iPadは未検証。
