@@ -49,8 +49,9 @@ export function Player({state,enabled,now,verdict,status,error,send}:{state:Snap
  const nameMode=q.prompt.mode==='name';
  const check=<button className="check-action" disabled={!enabled||!canEdit||!key||isAnswerEmpty(values[key])} onClick={()=>void action('answer')}>解答チェック</button>;
  const pass=<button className="pass-action" disabled={!enabled||!canEdit} onClick={()=>void action('pass')}>パス</button>;
- const reviewButton=<button className="review-action" disabled={!enabled||!canEdit} onClick={()=>void openReview()}>全解答確認</button>;
+ const reviewPrimary=deferred&&(ordinal===questions.length-1||questions.length>0&&questions.every(item=>item.fields.every(f=>!isAnswerEmpty(values[`${item.id}:${f.id}`]))));
+ const reviewButton=<button className={`review-action${reviewPrimary?' primary-action':''}`} disabled={!enabled||!canEdit} onClick={()=>void openReview()}>全解答確認</button>;
  const actions=deferred?null:nameMode?<>{pass}{check}{reviewButton}</>:check;
- const previous=<button disabled={!canEdit||ordinal===0} onClick={()=>{setOrdinal(ordinal-1);void flush().catch(e=>setMessage(e.message));}}>前の問題</button>,next=<button disabled={!canEdit||ordinal===questions.length-1} onClick={()=>{setOrdinal(ordinal+1);void flush().catch(e=>setMessage(e.message));}}>次の問題</button>;
+ const previous=<button disabled={!canEdit||ordinal===0} onClick={()=>{setOrdinal(ordinal-1);void flush().catch(e=>setMessage(e.message));}}>前の問題</button>,next=<button className={deferred&&!reviewPrimary?'primary-action':undefined} disabled={!canEdit||ordinal===questions.length-1} onClick={()=>{setOrdinal(ordinal+1);void flush().catch(e=>setMessage(e.message));}}>次の問題</button>;
  return <main className="play-shell play-active play-answering">{scorebar}{sync}{feedback}<QuestionView key={q.id} question={q} fieldId={field} value={key?values[key]:undefined} onChange={update} disabled={!canEdit} storageKey={`${room.code}:${own.id}:${q.id}`} expiresAtMs={room.expiresAtMs} actions={actions} arrangeActions={!deferred&&!nameMode?{pass,review:reviewButton}:undefined} arrangeNavigation={deferred&&!nameMode?{previous,next,review:reviewButton}:undefined}/>{(deferred&&nameMode)&&<section className="answer-area"><div className={`immediate-actions${deferred?' question-navigation':''}`}>{deferred?<>{previous}{next}</>:!nameMode?pass:null}{reviewButton}</div></section>}</main>;
 }
