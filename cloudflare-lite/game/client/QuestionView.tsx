@@ -36,7 +36,7 @@ export function QuestionView({question,fieldId,value,onChange,disabled,storageKe
     onPointerMove={e=>{const item=drag.current;if(!item||item.id!==e.pointerId)return;if(Math.hypot(e.clientX-item.x,e.clientY-item.y)>8){item.moved=true;setSelected(null);setGhost({panel,x:e.clientX,y:e.clientY});}}}
     onPointerUp={e=>{const item=drag.current;if(!item||item.id!==e.pointerId)return;drag.current=null;setGhost(null);if(!item.moved){toggle(panel);return;}const target=document.elementFromPoint(e.clientX,e.clientY)?.closest<HTMLElement>('[data-alkane-cell]');if(target?.dataset.active==='true')onChange?.(JSON.stringify({grid:applyBoardEdit(grid,{type:'place',row:Number(target.dataset.row),col:Number(target.dataset.col),panel})}));}}
     onPointerCancel={()=>{drag.current=null;setGhost(null);}}><span className="alkane-palette-icon"><PaletteIcon panel={panel}/></span></button>)}</div>)}</div>
-   {arrangeActions&&<div className="immediate-actions arrange-immediate-actions">{arrangeActions.pass}{actions}{clear}{arrangeActions.review}</div>}
+   {arrangeActions&&<><div className="alkane-arrange-clear">{clear}</div><div className="immediate-actions arrange-immediate-actions">{arrangeActions.pass}{actions}{arrangeActions.review}</div></>}
    {arrangeNavigation&&<div className="immediate-actions arrange-navigation">{arrangeNavigation.previous}{arrangeNavigation.next}{clear}{arrangeNavigation.review}</div>}
    {ghost&&createPortal(<div className="alkane-panel-ghost" style={{left:ghost.x,top:ghost.y}}><PaletteIcon panel={ghost.panel}/></div>,document.body)}
   </section>;

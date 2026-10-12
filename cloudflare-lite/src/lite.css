@@ -84,15 +84,20 @@
 .teacher-review-chevron{position:absolute;right:18px;top:18px;width:8px;height:8px;border-right:2px solid var(--primary-dark);border-bottom:2px solid var(--primary-dark);transform:rotate(45deg);pointer-events:none}
 .correct-participant-answer{display:flex;flex-direction:column;align-items:center;gap:8px}
 
-.play-active .arrange-immediate-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;margin-top:7px;gap:4px}
+.play-active .arrange-immediate-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;margin-top:7px;gap:4px}
 .play-active .arrange-immediate-actions>button{width:100%;height:44px;min-width:0;margin:0;padding:6px 2px;font-size:12px;white-space:nowrap}
 .play-active .arrange-immediate-actions>.check-action{background:var(--primary-dark);color:white;border-color:var(--primary-dark)}
 /* Name editing and structure markup share the original compact toolbar. */
-.alkane-token-controls{grid-template-columns:44px minmax(58px,1fr) repeat(3,44px);margin-bottom:7px}
+.alkane-token-controls{grid-template-columns:minmax(52px,60px) repeat(6,minmax(0,40px));justify-content:center;margin-bottom:7px}
 .alkane-token-controls svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .alkane-mark-tool.yellow .tool-swatch{fill:#fff000;stroke:#b8a600}.alkane-mark-tool.red .tool-swatch{fill:#f0443a;stroke:#a92b25}
-.alkane-mark-tool[aria-pressed=true]{background:#fff7d1;border-color:#d49b00;box-shadow:inset 0 0 0 1px #d49b00}
+.alkane-mark-tool[aria-pressed=true]{background:#d7f0ec;border-color:#2a9d8f;color:#1f8175}
 .alkane-mark-surface{position:relative}.alkane-markup-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:20;pointer-events:none;mix-blend-mode:multiply}.alkane-markup-canvas.active{pointer-events:auto;touch-action:none}
 .play-active .name-immediate-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:7px}.play-active .name-immediate-actions>button,.play-active .arrange-navigation>button{height:44px}
 .play-active .arrange-navigation{display:grid;grid-template-columns:3fr 3fr 2fr 3fr;margin-top:7px;gap:4px}.play-active .arrange-navigation>button{font-size:12px;padding-inline:2px}
 .play-active .name-immediate-actions .check-action{background:var(--primary-dark);color:white;border-color:var(--primary-dark)}
+
+.alkane-mark-tool.green .tool-swatch{fill:#78dc78;stroke:#399b39}.alkane-mark-tool.blue .tool-swatch{fill:#168de1;stroke:#0864a6}
+.play-active .alkane-arrange-clear{display:flex;justify-content:center;margin-top:4px}.play-active .alkane-arrange-clear button{height:44px;min-width:76px;margin:0;padding:6px 12px}
+
+.play-active .alkane-token-controls .alkane-mark-tool{padding:7px 2px}.alkane-token-controls svg{flex-shrink:0}
