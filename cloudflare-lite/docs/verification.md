@@ -152,3 +152,5 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - ローカル疑似教員の実APIで、Chromium/WebKitの16配置(全4設定×1366x768・1024x768・768x600・320x568)を検査。前2サイズは本文を含めスクロールなし、全サイズで保存欄可視・横はみ出しなし。範囲入力・タブ間変更保持・409変更保持・保存／読み直す／初期値復帰を確認した。WebKitのSecure localhost Cookie制約はローカル検証用APIプロキシで扱い、本番認証コードは変更していない。
 - 独立レビューでSPAの戻るによる変更消失を指摘。Appのルート更新前にキャンセル可能なイベントを送り、未保存編集が拒否したらURLと画面を維持するよう修正。ChromiumとWebKitのhistory.back・Escape・閉じるの拒否を検査し成功。再レビューで重大な問題なし。
 - 型チェック・build・全88テスト成功。初回のOAuth1件はローカルMiniflareのUND_ERR_SOCKETで失敗し、同じ全テスト再実行で88件通過した。実Google認証と実iPadOS17.7 Chromeは今回再検証していない。
+- 公開source release `d2f5413955bfeba2d4f6acb6d82e90268a57a2d6`、Cloudflare version `65983a0b-69c6-4627-8911-5751898040d4`。GitHub pushとMCPのcommit取得成功(statusなし)、公開HTML metaとhealthのrelease一致。
+- 公開Chromiumの実メイトで即時4ボタンの320/390/768px幅比・clear・提出／結果、一括両モードの初期／最終／全問入力／clear／reload／提出を確認成功。公開設定UIは分離API fixtureでChromium/WebKitの16配置・変更保護・保存競合時の保持を確認成功。本番Google認証・本番共通設定への書込みは行っていない。pageerrorなし。
