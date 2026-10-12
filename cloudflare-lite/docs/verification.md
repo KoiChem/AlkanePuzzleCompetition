@@ -139,3 +139,6 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - 変更前は接続四方向とオール末尾のテストが失敗。変更後コンペ全88テスト・型チェック・build成功、描画順調整後にOH5テスト再実行成功。本家全88テスト成功。既存transient.htmlの削除は変更対象外。
 - ローカルChromiumとWebKitで320pxのOH接続・炭素回転による切断・移動による再接続・reload保存・全解答確認・結果の水素座標を確認。名前5問すべてオール末尾、両者提出成功、pageerrorなし。
 - 本家は保存設定を変更しない検証用HTMLフックで実buildWordBankのDOM出力を検査。すいすい／そこそこのアルコールONでオール末尾・OFFで非表示を確認。独立読取レビューで重大な問題なし。
+- 公開: コンペsource release `2360302d1f60bb0e3ff855e847959be8baede53d`、Cloudflare version `9edd4946-89e1-47ca-bf9f-c7f84811d981`。本家commit `5f7259713b4705600add5edcf6c3b54f44843278`、Pages run `38194265000`のdeploy成功をGitHub MCPで確認。コンペHTML metaとhealthのrelease一致、本家配信HTMLの変更行も一致。
+- 公開実メイトChromiumとWebKitで、OH接続・回転による切断・移動による再接続・reload・全解答確認・結果のH位置、名前5問のオール末尾と提出を確認成功。pageerrorなし。
+- 本家公開ページの通常表示で名前語群を確認。公開配信HTMLにブラウザ内の検証フックを付け、すいすい／そこそこ・アルコールON/OFFの実DOMを確認成功。共有設定を保存・変更していない。実iPadOS17.7 Chromeは未検証。
