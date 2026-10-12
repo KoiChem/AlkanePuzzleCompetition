@@ -182,3 +182,5 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - 同じフローをPlaywright WebKit 26.5でも確認。CDPのなぞり計測はChromiumのみだが、WebKitは実タップ配置・長押し移動・縦スクロール・保存復元・戻る進む・混合／確認／提出／結果の解除まで通過、pageerrorなし。最初のWebKit検査はテスト開始直後の重複reloadがpublic-config読込を中断してaccess-controlメッセージを出していた。新しいページで設定読込完了を待ち、不要なreloadを除いて解消。製品コードにエラー隠蔽は追加していない。
 - 既存のbrowser-panel-gesturesもChromiumで成功。選択中のC／F／OH長押し移動と盤面外削除、同位置／blur／pointercancel復元、56px・opacity .9ゴースト、削除保存reload、AudioContext APIの音程、両者提出・結果が通過。
 - 独立読取レビューで重大な指摘なし。ブラウザ自動入力は実iPad/iPhoneやMacトラックパッドによるブラウザ履歴ジェスチャーの合格証拠ではない。特にページへ入力が届かない画面端操作は実機確認が未完了。
+- 公開source release `89ca20a12395b88384867d3939ac3d45d42f9e27`、Cloudflare version `426b540c-d853-4e6e-91e6-a1da376cf4bc`（100%配信）。GitHub MCPの既存ブランチSHA、公開HTML metaと/api/healthのrelease一致を確認。GitHubのCI statusはなし。公開public-configはONを保持。
+- 公開実メイトでChromium／WebKitの同じ8領域・状態チェック、実タップ配置、長押し移動、縦スクロール、保存reload、オフライン中の保護、戻る進む、全5問の混合出題と全解答確認の往復、提出・結果・ホーム時の解除が成功。ChromiumのみCDPの3マスなぞりとtrusted touchstart／wheelの抑止も確認。両エンジンpageerrorなし。公開ホームのconsole error/warningなし、health／public-configはHTTP200。実端末のOS履歴ジェスチャーは未検証のまま。
