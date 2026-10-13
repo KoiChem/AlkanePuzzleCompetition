@@ -206,3 +206,10 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - 長押し・移動・削除・Undoの音を正誤音と同じAudioContextに統一。既存の保存済み効果音OFF/ONを使用し、長押しの音程・音量は保持。[Web Audioのユーザー操作による初期化](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)も確認。
 - Lite 116テスト、既存アプリ431テスト成功（既定の負荷5テストはスキップ）。両型チェックとLiteビルド成功。ブラウザで320/375/390/768/1280pxの配置、タッチ/キーボードUndo、全操作復元、保存reload、次問境界、疑似締切、2人提出/結果、およびOFF時の長押し・正誤無音/ON復帰を検証。pageerrorなし。
 - WebKitの実行用バイナリがなく、WebKit・実機iPadの操作感/聴感は未検証。本項は公開前のローカル検証記録。公開検証は別途記録する。
+
+### 公開確認
+
+- 公開ソースcommit `54f8d0b282066f4ad37f9411aa89fc42474a47c3`、Cloudflare version `b89707fb-f7f5-4741-905b-c116a17ab16e`。既存の`codex/alkane-competition`へpushし、GitHub MCPでcommitの存在を確認。専用deployコマンド成功。healthとHTMLのreleaseが一致し、JS/CSSのHTTP200とローカルdistとのSHA256一致を確認。
+- 公開の実メイトルーム2人で、まとめて判定のタッチ/マウス/キーボードUndo、取消・水素化・移動・削除・クリア・一筆復元、保存reload、次問境界、両者提出/最終結果をChromiumで確認。320/375/390/768/1280pxでUndo44px・Fの左・折返し/横overflowなし。pageerrorなし。疑似時計による締切テストは公開先では実行していない。
+- 問題毎判定の別公開メイトルーム2人で、正誤音と長押し音が同一AudioContextを使用し、保存済みOFFでは両方無出力、ON復帰では元の480/660Hzの長押し音程を確認。console error・requestfailed・pageerrorなし。検証ルームを中断し、結果表示まで確認して終了。
+- WebKit・実機iPad・実スピーカーの操作感/聴感と端末の消音設定は未検証。
