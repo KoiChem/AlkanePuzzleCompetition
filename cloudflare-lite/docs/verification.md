@@ -194,3 +194,7 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - ブラウザ時計だけを進めて締切後の編集・Undo停止も確認。テスト初期の誤判定（操作中のUndo無効、既定5分の競技で4分だけ進行）を、全候補の編集停止待ち・3分の競技指定へ直した。実サーバーの期限は変更していない。
 - 即時判定4ボタンの1:1:2:1・44pxと、既存ナビゲーション保護（混合出題、確認、提出、保存reload、戻る進む、縦scroll）のChromium回帰も成功。独立レビュー重大指摘なし、レビュー担当も新12テストを通過。
 - 一次情報：[React refs](https://react.dev/learn/referencing-values-with-refs)、[Pointer Events](https://www.w3.org/TR/pointerevents3/)。WebKit自動入力・音声API記録は実機iPhone／iPad・実スピーカーの合格証拠ではない。
+
+### 公開確認
+- 公開source release `b5cffd52ec92da259443a8982f95feb4b11a9a69`、Cloudflare version `6315ee79-893b-4386-ad9c-afa885e7986a`。GitHub MCPでも公開元commitを確認。healthのreleaseとHTMLのalkane-releaseが一致し、health／public-config／JS／CSSはHTTP200。JS／CSSのSHA256はローカルdistと一致。公開ホームconsole error／warningなし。
+- 公開実メイト2人でChromium／WebKitの4点の操作、5原子の音程と長押し、置換／復元、選択解除、回転／削除／クリア／一筆Undo、Undo後のサーバー保存reload、次問履歴リセット、両者提出／最終結果を確認。両エンジンpageerrorなし、5幅で44px・Fの左・折返しなし・overflowなし。ChromiumのみCDP touchも確認。疑似時計の締切テストはローカルだけで、本番の期限・共通設定は変更していない。実Google再ログイン・実iPhone／iPad・実スピーカーは未検証。
