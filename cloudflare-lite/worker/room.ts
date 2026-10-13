@@ -1,6 +1,7 @@
 import {DEFAULT_PROFILE as initialProfile,validateProfile as validateQuestionProfileShape} from '../game/profile';
 import { DurableObject } from 'cloudflare:workers';
 import { generateQuestionSet, validateGameSettings, toPublicQuestion } from '../game/generator';
+import {QuestionPreparationError} from '../game/question-diversity';
 import { evaluateField,validateAlkaneAnswer,isAnswerEmpty } from '../game/evaluator';
 import { topRankingRows } from '../../src/features/results/ranking-visibility';
 import { parseCompetitionSettings } from '../../src/config/public';
@@ -203,7 +204,7 @@ export class AlkaneRoom extends DurableObject<AlkaneEnv> {
       if(changed||joined)this.broadcastState(ws);
       else if(progress)for(const host of this.ctx.getWebSockets())if(this.principal(host)?.role==='teacher')this.send(host,{type:'progress',participant:progress,serverNow:Date.now()});
     } catch(error) {
-      const e=error instanceof RoomError?error:new RoomError('invalid_message','送信内容を確認してください');
+      const e=error instanceof RoomError?error:error instanceof QuestionPreparationError?new RoomError('question_preparation_failed',error.message):new RoomError('invalid_message','送信内容を確認してください');
       const p=this.principal(ws);let state:Snapshot|undefined;try{if(p)state=this.snapshot(p);}catch{}
       this.send(ws,{type:'error',requestId:message?.requestId,code:e.code,message:e.message,...(state?{state}:{})});
       if(['unauthorized','expired','not_found','rate_limited'].includes(e.code))ws.close(1008,e.message);

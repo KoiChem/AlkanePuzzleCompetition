@@ -1,0 +1,12 @@
+async(page,engine)=>{
+ const origin='http://localhost:8792',browser=page.context().browser(),context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true}),host=await context.newPage(),guestContext=await browser.newContext({viewport:{width:390,height:844},hasTouch:true}),guest=await guestContext.newPage(),errors=[];let question=null;
+ for(const p of [host,guest])p.on('pageerror',e=>errors.push(e.message));guest.on('websocket',ws=>ws.on('framereceived',e=>{try{const data=JSON.parse(String(e.payload));if(data.state)question=data.state.question;}catch{}}));
+ async function finish(p){if(await p.getByRole('button',{name:'全解答確認',exact:true}).count())await p.getByRole('button',{name:'全解答確認',exact:true}).click();await p.getByRole('button',{name:'このまま提出',exact:true}).click();await p.getByRole('button',{name:'提出を確定する',exact:true}).click();}
+ try{
+  await host.goto(origin+'/#/mate/new');await host.getByLabel('ニックネーム（1〜16文字）').fill('即時ホスト');await host.getByRole('button',{name:'5問',exact:true}).click();await host.getByRole('button',{name:'ランダム',exact:true}).click();await host.getByRole('button',{name:'問題毎判定',exact:true}).click();await host.getByRole('button',{name:'メイトルームを作る',exact:true}).click();await host.getByRole('button',{name:'問題を準備して開始',exact:true}).waitFor();
+  const code=new URL(host.url()).hash.match(/rooms\/([A-Z2-9]{6})/)[1];await guest.goto(origin+'/#/join/'+code);await guest.getByLabel('ニックネーム（1〜16文字）').fill('即時参加');await guest.getByRole('button',{name:'参加する',exact:true}).click();await guest.getByRole('heading',{name:'開始を待っています',exact:true}).waitFor();await host.getByRole('button',{name:'問題を準備して開始',exact:true}).click();
+  const rows=[];for(let i=0;i<5;i++){await guest.getByText(`第${i+1}問 / 全5問`,{exact:true}).waitFor();const name=question.prompt.name??engine.generateName(question.prompt.grid).name;rows.push({name,mode:question.prompt.mode,combination:engine.groupTypeSignature(name)});await guest.getByRole('button',{name:'パス',exact:true}).click();}
+  await guest.getByRole('heading',{name:'全解答確認',exact:true}).waitFor();if(new Set(rows.map(q=>q.name)).size!==5||rows.some((q,i)=>i>0&&q.combination===rows[i-1].combination))throw Error('immediate diversity violation');
+  await finish(guest);await finish(host);await host.getByRole('heading',{name:'最終結果',exact:true}).waitFor();if(errors.length)throw Error(errors.join('\n'));return {rows,immediateRandom:true,submissionResults:true,pageErrors:errors};
+ }finally{await guestContext.close();await context.close();}
+}

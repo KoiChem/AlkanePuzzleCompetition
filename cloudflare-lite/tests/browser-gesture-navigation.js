@@ -16,7 +16,7 @@ async launcherPage => {
  }
  try{
   await page.goto(origin+'/#/');await page.locator('a[href="#/mate/new"]').waitFor();const original=await root();
-  await page.goto(origin+'/#/mate/new');await page.getByLabel('ニックネーム（1〜16文字）').fill('ジェスチャー検証');await page.getByRole('button',{name:'5問',exact:true}).click();await page.getByRole('button',{name:'両方',exact:true}).click();await page.getByRole('button',{name:'まとめて判定',exact:true}).click();await page.getByRole('button',{name:'メイトルームを作る',exact:true}).click();await page.getByRole('button',{name:'問題を準備して開始',exact:true}).waitFor();
+  await page.goto(origin+'/#/mate/new');await page.getByLabel('ニックネーム（1〜16文字）').fill('ジェスチャー検証');await page.getByRole('button',{name:'5問',exact:true}).click();await page.getByRole('button',{name:'ランダム',exact:true}).click();await page.getByRole('button',{name:'まとめて判定',exact:true}).click();await page.getByRole('button',{name:'メイトルームを作る',exact:true}).click();await page.getByRole('button',{name:'問題を準備して開始',exact:true}).waitFor();
   const code=new URL(page.url()).hash.match(/rooms\/([A-Z2-9]{6})/)[1];await guest.goto(origin+'/#/join/'+code);await guest.getByLabel('ニックネーム（1〜16文字）').fill('確認参加');await guest.getByRole('button',{name:'参加する',exact:true}).click();await guest.getByRole('heading',{name:'開始を待っています',exact:true}).waitFor();await page.getByRole('button',{name:'問題を準備して開始',exact:true}).click();await page.locator('.play-answering .alkane-question').waitFor();
   for(let i=0;i<5&&!await page.locator('.alkane-question[data-mode="arrange"]').count();i++){if(await root()!==original)throw Error('name question has root guard');await page.getByRole('button',{name:'次の問題',exact:true}).click();}
   const board=page.getByRole('group',{name:'解答の構造',exact:true});await board.waitFor();

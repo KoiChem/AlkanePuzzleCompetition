@@ -2,10 +2,11 @@ import {evaluateField} from './evaluator';
 import { createAlkaneEngine, type GeneratedStructure, type EngineOptions } from './engine.js';
 import { DEFAULT_PROFILE, validateProfile, type QuestionProfile, type Rule } from './profile';
 import type { AlkaneGameSettings, Grid, InternalQuestion, Panel, PublicQuestion, QuestionProgress } from './types';
+import {selectQuestionCandidates,QuestionPreparationError,PREPARATION_MESSAGE,type QuestionCandidate} from './question-diversity';
 
 const modes = ['arrange','name'] as const;
 const difficulties = ['easy','medium'] as const;
-function boundedRandom(random:()=>number,maximum:number,deadline:number){let count=0;return ()=>{if(++count>maximum||Date.now()>deadline)throw new RangeError('問題の準備が上限に達しました。設定範囲を広げてください');const value=random();if(!Number.isFinite(value)||value<0||value>=1)throw new TypeError('抽選値が不正です');return value;};}
+function boundedRandom(random:()=>number,maximum:number,deadline:number){let count=0;return ()=>{if(++count>maximum||Date.now()>deadline)throw new QuestionPreparationError(PREPARATION_MESSAGE);const value=random();if(!Number.isFinite(value)||value<0||value>=1)throw new TypeError('抽選値が不正です');return value;};}
 function freeze<T>(value:T):T {
   if(value&&typeof value==='object'&&!Object.isFrozen(value)) {
     for(const nested of Object.values(value)) freeze(nested);
@@ -91,23 +92,33 @@ export function generateQuestionSet(settings:AlkaneGameSettings,random:()=>numbe
   const deadline=Date.now()+2000;random=boundedRandom(random,150000,deadline);
   const engine=createAlkaneEngine(random);
   const arrangeCount=Math.floor(settings.questionCount/2)+(settings.questionCount%2&&random()<0.5?1:0);
-  const plannedModes:('arrange'|'name')[]=settings.mode==='both'
-    ? shuffled(Array.from({length:settings.questionCount},(_,index)=>index<arrangeCount?'arrange' as const:'name' as const),random)
-    : Array(settings.questionCount).fill(settings.mode);
+  const required={arrange:settings.mode==='both'?arrangeCount:settings.mode==='arrange'?settings.questionCount:0,name:settings.mode==='both'?settings.questionCount-arrangeCount:settings.mode==='name'?settings.questionCount:0};
+  const candidates:QuestionCandidate[]=[];
+  const target=Math.max(24,settings.questionCount*3);
+  for(const mode of modes){
+    if(!required[mode])continue;
+    const rule=(profile??DEFAULT_PROFILE).rules[mode][settings.difficulty];
+    const options=optionsFor({...settings,mode},rule),seen=new Set<string>();
+    for(let attempt=0;attempt<target*4&&seen.size<target;attempt++){
+      const structure=engine.generateStructureWithOptions(options);if(!structure||seen.has(structure.name))continue;
+      const summary=engine.namedGroupSummary(structure.name);if(!summary)continue;
+      seen.add(structure.name);
+      const cyclo=structure.name.includes('シクロ');
+      candidates.push({mode,structure,combination:summary.signature,types:summary.types,parentCarbons:summary.parentCarbonCount,
+        totalCarbons:structure.grid.flat().filter(p=>p&&(!p.element||p.element==='C')).length,
+        backbone:`${cyclo?'ring':'chain'}:${summary.parentCarbonCount}`,
+        locants:cyclo?[]:(engine.expectedGame2AnswerTokens(structure.name)??[]).filter(t=>/^\d+$/.test(t)).map(Number),
+        alcoholRate:settings.alcoholEnabled?rule.alcoholRate:0});
+    }
+  }
+  const chosenQuestions=selectQuestionCandidates(candidates,required,random,deadline);
+  if(new Set(chosenQuestions.map(q=>q.structure.name)).size!==settings.questionCount||chosenQuestions.some((q,i)=>i>0&&q.combination===chosenQuestions[i-1].combination))throw new QuestionPreparationError(PREPARATION_MESSAGE);
   const result:InternalQuestion[]=[];
   const groupHistory={order:''};
-  const histories:{arrange:unknown[];name:unknown[]}={arrange:[],name:[]};
   for(let ordinal=0;ordinal<settings.questionCount;ordinal++) {
-    const mode=plannedModes[ordinal];
+    const {mode,structure:chosen}=chosenQuestions[ordinal];
     const questionSettings={...settings,mode};
     const rule=(profile??DEFAULT_PROFILE).rules[mode][settings.difficulty];
-    const options=optionsFor(questionSettings,rule),history=histories[mode];
-    const chosen=Date.now()<deadline
-      ? engine.generateAvoidingRecentRepeat(options,history)
-      : null;
-    if(!chosen) throw new RangeError('設定に合う問題を生成できません。主鎖・置換基・枠数・折れ曲がりの設定を見直してください');
-    engine.rememberQuestion(history,chosen);
-    if(mode==='arrange') engine.rememberGame1LocantProfile(chosen);
     const field=mode==='arrange'?'formula':'name';
     const tokens=engine.expectedGame2AnswerTokens(chosen.name);
     if(!tokens) throw new RangeError('正答の語句を生成できません');
