@@ -130,3 +130,14 @@ html.alkane-arrange-gesture-guard{overscroll-behavior-x:contain}
 .home-participation-status{display:flex;align-items:center;height:2.7em;margin-top:4px;font-size:.75rem;line-height:1.35;color:var(--muted)}
 .home-participation-status p{margin:0;width:100%;font-size:inherit;line-height:inherit}
 .home-card .join-form{margin-top:4px}
+
+/* Same Undo silhouette and frameless 44px hit area as AlkanePuzzle. */
+.alkane-palette-row.with-undo{display:grid;grid-template-columns:44px repeat(var(--atom-count,5),minmax(0,58px));align-items:center;width:100%;max-width:calc(44px + var(--atom-count,5)*64px)}
+.alkane-palette-row.with-undo .alkane-palette-card{width:100%;height:58px;display:grid;place-items:center}
+.alkane-palette-row.with-undo .alkane-palette-icon{width:min(52px,100%);height:auto;aspect-ratio:1}
+.alkane-grid-undo{width:44px;min-width:44px;height:44px;min-height:44px;padding:6px;border:1.5px solid transparent;background:transparent;color:var(--primary-dark,#1f8175);box-shadow:none;border-radius:13px 11px 14px 12px;cursor:pointer;touch-action:manipulation}
+.alkane-grid-undo svg{display:block;width:100%;height:100%;fill:currentColor}
+.alkane-grid-undo:disabled{opacity:1;cursor:default;background:transparent;box-shadow:none}
+.alkane-grid-undo:disabled svg{opacity:.3}
+.alkane-grid-undo:active:not(:disabled){transform:translate(1px,1px)}
+.alkane-grid-undo:focus-visible{outline:2px solid var(--primary-dark,#1f8175);outline-offset:2px}

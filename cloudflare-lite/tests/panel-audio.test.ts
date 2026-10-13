@@ -27,3 +27,9 @@ test('muted audio does not create a context',async()=>{
 test('audio API failure cannot break editing',async()=>{
  vi.stubGlobal('window',{AudioContext:class {constructor(){throw Error('Unavailable');}}});const {playPanelSound}=await import('../game/client/panel-audio');expect(()=>playPanelSound('pickup')).not.toThrow();
 });
+
+test('Undo reuses the original puzzle short descending motif',async()=>{
+ const {playPanelSound}=await import('../game/client/panel-audio');playPanelSound('undo');
+ expect(tones.map(n=>[n.type,n.frequency.setValueAtTime.mock.calls[0][0],n.frequency.linearRampToValueAtTime.mock.calls[0][0]])).toEqual([['triangle',520,390]]);
+ expect(clicks.map(n=>[n.frequency.value,n.Q.value])).toEqual([[1300,1]]);
+});

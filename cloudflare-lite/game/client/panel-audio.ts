@@ -2,7 +2,7 @@ import {savedSoundLevel} from '../../../src/features/play/audio-feedback';
 // AlkanePuzzle index.html: playPanelPickupSound / playMoveSound / playDeleteSound.
 let context:AudioContext|null=null,output:GainNode|null=null,warmUntil=0;
 const pending:{kind:PanelSound;at:number}[]=[];
-type PanelSound='pickup'|'move'|'delete';
+type PanelSound='pickup'|'move'|'delete'|'undo';
 export function primePanelAudio(){
  if(savedSoundLevel()==='off'||typeof window==='undefined')return;
  try{
@@ -48,5 +48,6 @@ function render(kind:PanelSound,queuedDelay:number){
  };
  if(kind==='pickup'){tone(480,300,.075,'sine',.09);tone(660,940,.095,'sine',.072,.065);click(2100,.025,.12,1.8,.065);}
  else if(kind==='move'){click(1450,.035,.14,1);tone(330,392,.075,'triangle',.05);}
- else {click(720,.05,.2,.85);tone(250,180,.09,'triangle',.055);}
+ else if(kind==='delete'){click(720,.05,.2,.85);tone(250,180,.09,'triangle',.055);}
+ else {click(1300,.032,.15,1);tone(520,390,.085,'triangle',.05);}
 }

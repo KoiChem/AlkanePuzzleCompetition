@@ -184,3 +184,13 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 - 独立読取レビューで重大な指摘なし。ブラウザ自動入力は実iPad/iPhoneやMacトラックパッドによるブラウザ履歴ジェスチャーの合格証拠ではない。特にページへ入力が届かない画面端操作は実機確認が未完了。
 - 公開source release `89ca20a12395b88384867d3939ac3d45d42f9e27`、Cloudflare version `426b540c-d853-4e6e-91e6-a1da376cf4bc`（100%配信）。GitHub MCPの既存ブランチSHA、公開HTML metaと/api/healthのrelease一致を確認。GitHubのCI statusはなし。公開public-configはONを保持。
 - 公開実メイトでChromium／WebKitの同じ8領域・状態チェック、実タップ配置、長押し移動、縦スクロール、保存reload、オフライン中の保護、戻る進む、全5問の混合出題と全解答確認の往復、提出・結果・ホーム時の解除が成功。ChromiumのみCDPの3マスなぞりとtrusted touchstart／wheelの抑止も確認。両エンジンpageerrorなし。公開ホームのconsole error/warningなし、health／public-configはHTTP200。実端末のOS履歴ジェスチャーは未検証のまま。
+
+## 2026-10-13 並べる操作4点を本家から移植
+
+- 現行alkanecompetitionのクライアントに移植。全5原子も400ms長押しで本家と同じペコリ音。短い隣接スワイプは炭素鎖へ置換し、成立していた結合と元のパネルを保持して引き返し・pointercancel・blurで復元する。候補選択中も初期マスからなぞる。
+- Fの左に最新本家と同じ枠なし円弧矢印のUndo（44x44px）。配置・上書き・回転・移動・削除・クリアと一筆全体を独立コピーで復元。無変更・取消は履歴なし、履歴は問題画面内だけ。問題切替・reload・編集停止でリセットする。Undoも既存IndexedDB／Room下書き保存へ流れ、採点・操作番号・teacher設定・DO schemaは変更しない。
+- Lite全17ファイル108テスト、型チェック、Vite build、専用deploy.mjsによるWorker dry-run、diff check成功。初回の既存OAuth1件はMiniflare UND_ERR_SOCKET、次の全108件は通過。製品コードへ推測の修正は加えていない。
+- ChromiumとWebKitで全原子の音程・長押し、始点／通過の置換、引き返し／blur、候補解除、移動先復元、回転／削除／クリア／一筆Undo、保存reload、次問境界、2人提出／結果を確認。320／375／390／768／1280pxで44px・Fの左・同じ行・横overflowなし。ChromiumはCDP touch入力も確認。
+- ブラウザ時計だけを進めて締切後の編集・Undo停止も確認。テスト初期の誤判定（操作中のUndo無効、既定5分の競技で4分だけ進行）を、全候補の編集停止待ち・3分の競技指定へ直した。実サーバーの期限は変更していない。
+- 即時判定4ボタンの1:1:2:1・44pxと、既存ナビゲーション保護（混合出題、確認、提出、保存reload、戻る進む、縦scroll）のChromium回帰も成功。独立レビュー重大指摘なし、レビュー担当も新12テストを通過。
+- 一次情報：[React refs](https://react.dev/learn/referencing-values-with-refs)、[Pointer Events](https://www.w3.org/TR/pointerevents3/)。WebKit自動入力・音声API記録は実機iPhone／iPad・実スピーカーの合格証拠ではない。

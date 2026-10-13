@@ -1,6 +1,7 @@
 "use client";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type {BoardChangePhase} from './board-history';
 import {primePanelAudio,playPanelSound} from './panel-audio';
 import {createPortal} from "react-dom";
 import {bindGestureNavigationGuard} from './gesture-navigation';
@@ -49,7 +50,6 @@ export function advanceTrace(snapshot:readonly (readonly (Panel|null)[])[],trace
   const path=trace.path, last=path.at(-1);
   if (!last || direction(last,next)<0) return trace;
   if (path.length>=2 && next.row===path.at(-2)!.row && next.col===path.at(-2)!.col) return {path:path.slice(0,-1),closed:false};
-  if (!isCarbon(snapshot[next.row][next.col])) return trace;
   const first=path[0];
   if (next.row===first.row && next.col===first.col) return path.length>=3 ? {path:[...path],closed:true}:trace;
   if (path.some(point=>point.row===next.row && point.col===next.col)) return trace;
@@ -65,7 +65,15 @@ export function traceBoard(snapshot:readonly (readonly (Panel|null)[])[],trace:T
     if (following) directions.push(direction(point,following));
     if (!directions.length) continue;
     const existing=result[point.row][point.col];
-    const existingDirections=existing ? (arms[existing.type] ?? []).map(arm=>(arm+Math.round(existing.rotation/90))%4):[];
+    let existingDirections=existing && isCarbon(existing) ? (arms[existing.type] ?? []).map(arm=>(arm+Math.round(existing.rotation/90))%4):[];
+    if (existing && !isCarbon(existing)) {
+      // Noncarbon panels have automatic bonds, not their stored type/rotation arms.
+      const incoming=vectors.flatMap(([x,y],dir)=>{
+        const neighbor=snapshot[point.row+y]?.[point.col+x];
+        return neighbor&&isCarbon(neighbor)&&(arms[neighbor.type]??[]).some(arm=>(arm+Math.round(neighbor.rotation/90))%4===(dir+2)%4)?[dir]:[];
+      });
+      existingDirections=incoming.length===1?incoming:[];
+    }
     result[point.row][point.col]=panelForDirections([...existingDirections,...directions]);
   }
   return result;
@@ -109,7 +117,7 @@ function PanelIcon({ panel, grid, row, col }: { panel: Panel; grid?: readonly (r
     {isAtom ? element === "OH" ? <>{hydrogen}<circle cx="50" cy="50" r="14" fill="#E8564F"/></> : <><circle cx="50" cy="50" r="27" fill={halogens[element]?.fill ?? "#fff"} stroke={halogens[element]?.stroke ?? "#333"} strokeWidth="2"/><text x="50" y="51" textAnchor="middle" dominantBaseline="central" fontSize={element.length === 1 ? "32" : "24"} fontWeight="700" fill={halogens[element]?.stroke ?? "#333"}>{element}</text></> : <circle cx="50" cy="50" r="14" fill="var(--ink)"/>}
   </svg>;
 }
-export function AlkaneBoard({ grid, label, onChange, selected, disabled, bounds, interactionKey, compact, promptCompact }: { grid: readonly (readonly (Panel | null)[])[]; label?: string; onChange?: (grid: BoardGrid) => void; selected?: Panel | null; disabled?: boolean; bounds?: Bounds; interactionKey?: string; compact?:boolean; promptCompact?:boolean }) {
+export function AlkaneBoard({ grid, label, onChange, selected, onDeselect, onInteractionChange, disabled, bounds, interactionKey, compact, promptCompact }: { grid: readonly (readonly (Panel | null)[])[]; label?: string; onChange?: (grid: BoardGrid, phase?:BoardChangePhase) => void; selected?: Panel | null; onDeselect?:()=>void; onInteractionChange?:(active:boolean)=>void; disabled?: boolean; bounds?: Bounds; interactionKey?: string; compact?:boolean; promptCompact?:boolean }) {
   const board=useRef<HTMLDivElement>(null),[boardWidth,setBoardWidth]=useState(0);
   const answering=!!onChange;
   useLayoutEffect(()=>{if(answering&&board.current)return bindGestureNavigationGuard(board.current);},[answering]);
@@ -119,16 +127,23 @@ export function AlkaneBoard({ grid, label, onChange, selected, disabled, bounds,
   const [ghost,setGhost]=useState<{panel:Panel;x:number;y:number;row:number;col:number}|null>(null);
   const pointer = useRef<{ id:number; row: number; col: number; x: number; y: number; lastX:number;lastY:number; timer: ReturnType<typeof setTimeout> | null; moved: boolean; long: boolean; snapshot:BoardGrid|null; trace:TraceState|null } | null>(null);
   const previousGrid=useRef(grid);
-  const latest=useRef({grid:cloneGrid(grid),onChange});
-  latest.current.onChange=onChange;
+  const latest=useRef({grid:cloneGrid(grid),onChange,onDeselect,onInteractionChange,editable:!!onChange&&!disabled});
+  latest.current.onChange=onChange;latest.current.onDeselect=onDeselect;latest.current.onInteractionChange=onInteractionChange;latest.current.editable=!!onChange&&!disabled;
   // A local emission must be visible to the next gesture even before React rerenders.
   if (grid!==previousGrid.current) {latest.current.grid=cloneGrid(grid);previousGrid.current=grid;}
-  function commit(next:BoardGrid) {latest.current.grid=next;latest.current.onChange?.(next);}
+  function commit(next:BoardGrid,phase:BoardChangePhase='commit') {latest.current.grid=next;latest.current.onChange?.(next,phase);}
   const taps=useRef<ReturnType<typeof createBoardTapController>|null>(null);
   if (!taps.current) taps.current=createBoardTapController(()=>latest.current.grid,commit);
-  useEffect(() => () => { if (pointer.current?.timer) clearTimeout(pointer.current.timer);pointer.current=null;taps.current?.dispose(); }, []);
-  useEffect(() => { if (pointer.current?.timer) clearTimeout(pointer.current.timer);pointer.current=null;taps.current?.cancelAll();setGhost(null); }, [disabled,interactionKey]);
-  useEffect(()=>{const cancel=()=>{if(pointer.current?.timer)clearTimeout(pointer.current.timer);pointer.current=null;taps.current?.cancelAll();setGhost(null);};window.addEventListener("blur",cancel);return()=>window.removeEventListener("blur",cancel);},[]);
+  function cancelPointer(restore:boolean) {
+    const item=pointer.current;
+    if(item?.timer)clearTimeout(item.timer);
+    pointer.current=null;taps.current?.cancelAll();setGhost(null);
+    if(restore&&item?.trace&&item.snapshot&&latest.current.editable)commit(cloneGrid(item.snapshot),'cancel');
+    latest.current.onInteractionChange?.(false);
+  }
+  useEffect(() => () => {if(pointer.current?.timer)clearTimeout(pointer.current.timer);pointer.current=null;taps.current?.dispose();}, []);
+  useEffect(() => {cancelPointer(false);}, [disabled,interactionKey]);
+  useEffect(()=>{const cancel=()=>cancelPointer(true);window.addEventListener('blur',cancel);return()=>window.removeEventListener('blur',cancel);},[]);
   const editable = !!onChange && !disabled;
   const active=(row:number,col:number) => cellWithinBounds(grid,row,col,bounds);
   function emit(edit: BoardEdit) { if (editable) {taps.current?.cancelAll();commit(applyBoardEdit(latest.current.grid,edit));} }
@@ -142,7 +157,7 @@ export function AlkaneBoard({ grid, label, onChange, selected, disabled, bounds,
     const target=targetPoint(event);if (!target) return;
     const next=advanceTrace(item.snapshot,item.trace,target,bounds);
     if (next===item.trace) return;
-    item.trace=next;commit(traceBoard(item.snapshot,next));
+    item.trace=next;commit(traceBoard(item.snapshot,next),'preview');
   }
   function down(event: ReactPointerEvent, row: number, col: number) {
     if (!editable || !active(row,col) || !event.isPrimary || event.button!==0) return;
@@ -151,33 +166,35 @@ export function AlkaneBoard({ grid, label, onChange, selected, disabled, bounds,
     const panel=latest.current.grid[row][col];
     if (panel) taps.current?.hold(row,col);
     const item = { id:event.pointerId,row, col, x:event.clientX, y:event.clientY,lastX:event.clientX,lastY:event.clientY, timer:null as ReturnType<typeof setTimeout> | null, moved:false, long:false,snapshot:null as BoardGrid|null,trace:null as TraceState|null };
-    if (panel && (selected || isCarbon(panel))) item.timer = setTimeout(() => {if(pointer.current!==item)return;item.long=true;taps.current?.cancelAll();setGhost({panel,row,col,x:item.lastX,y:item.lastY});playPanelSound("pickup");},400);
+    if (panel) item.timer = setTimeout(() => {if(pointer.current!==item)return;item.long=true;taps.current?.cancelAll();setGhost({panel,row,col,x:item.lastX,y:item.lastY});playPanelSound("pickup");},400);
     if (!selected && !panel) {item.snapshot=cloneGrid(latest.current.grid);item.trace={path:[{row,col}],closed:false};taps.current?.cancelAll();}
-    pointer.current = item;
+    pointer.current = item;latest.current.onInteractionChange?.(true);
   }
   function move(event: ReactPointerEvent) {
     const item=pointer.current;if (!item || item.id!==event.pointerId) return;
     item.lastX=event.clientX;item.lastY=event.clientY;
     if(item.long){const panel=latest.current.grid[item.row][item.col];if(panel)setGhost({panel,row:item.row,col:item.col,x:event.clientX,y:event.clientY});return;}
-    if (Math.hypot(event.clientX-item.x,event.clientY-item.y)>8) {
-      if (!item.moved) {
-        item.moved=true;taps.current?.cancelAll();
-        if (item.timer) {clearTimeout(item.timer);item.timer=null;}
-        const panel=latest.current.grid[item.row][item.col];
-        if (!selected && panel && isCarbon(panel)) {item.snapshot=cloneGrid(latest.current.grid);item.trace={path:[{row:item.row,col:item.col}],closed:false};}
-        else if (panel?.element && !selected) {item.long=true;setGhost({panel,row:item.row,col:item.col,x:event.clientX,y:event.clientY});}
+    if (Math.hypot(event.clientX-item.x,event.clientY-item.y)>=8) {
+      item.moved=true;taps.current?.cancelAll();
+      if(item.timer){clearTimeout(item.timer);item.timer=null;}
+      if(!item.trace){
+        const target=targetPoint(event);
+        if(!target||direction({row:item.row,col:item.col},target)<0)return;
+        item.snapshot=cloneGrid(latest.current.grid);item.trace={path:[{row:item.row,col:item.col}],closed:false};
+        if(selected)latest.current.onDeselect?.();
       }
       advancePointerTrace(item,event);
     }
   }
+
   function up(event: ReactPointerEvent, row: number, col: number) {
-    const item = pointer.current; if (!item || item.id!==event.pointerId) return;primePanelAudio();pointer.current=null;
+    const item = pointer.current; if (!item || item.id!==event.pointerId) return;primePanelAudio();pointer.current=null;latest.current.onInteractionChange?.(false);
     if (item.timer) clearTimeout(item.timer);
     setGhost(null);
     const target=targetPoint(event);
     if (item.long) { if (target) { if (target.row!==item.row || target.col!==item.col) {emit({ type:"move", row:item.row, col:item.col, toRow:target.row, toCol:target.col });playPanelSound("move");} } else {emit({ type:"remove", row:item.row, col:item.col });playPanelSound("delete");} return; }
-    if (item.trace) {advancePointerTrace(item,event);return;}
-    if (item.moved) { if (selected && target) emit({ type:"place", row:target.row, col:target.col, panel:selected }); return; }
+    if (item.trace && item.snapshot) {advancePointerTrace(item,event);commit(traceBoard(item.snapshot,item.trace),'commit');return;}
+    if (item.moved) return;
     if (selected) { emit({ type:"place", row, col, panel:selected }); return; }
     taps.current?.tap(row,col);
   }
@@ -189,6 +206,6 @@ export function AlkaneBoard({ grid, label, onChange, selected, disabled, bounds,
   const cellSize=boardWidth>0?Math.max(0,(boardWidth-3*(columns-1))/columns):undefined;
   const promptWidth=region&&promptCompact?Math.min(viewport.width*.74,310,(viewport.height<=620?180:250)*columns/(region.bottom-region.top+1)):undefined;
   const displayGrid=ghost?grid.map((line,row)=>line.map((panel,col)=>row===ghost.row&&col===ghost.col?null:panel)):grid;
-  return <><div ref={board} className={`alkane-board ${compact ? "alkane-board-cropped" : ""} ${promptCompact ? "alkane-board-prompt" : ""} `} role="group" aria-label={label ?? "アルカンの構造"} style={{ gridAutoRows:cellSize,height:cellSize===undefined?undefined:cellSize*rowCount+3*(rowCount-1),width:promptWidth, "--alkane-cols": columns, "--alkane-crop-width": `${columns*48+(columns-1)*3}px` } as CSSProperties}>{displayGrid.flatMap((line,row) => line.flatMap((panel,col) => region&&(row<region.top||row>region.bottom||col<region.left||col>region.right)?[]:<div className={`alkane-cell ${panel ? "filled" : ""} ${active(row,col) ? "" : "inactive"}`} key={`${row}-${col}`} data-alkane-cell data-row={row} data-col={col} data-active={active(row,col)} onContextMenu={event=>event.preventDefault()} onDragStart={event=>event.preventDefault()} onPointerDown={editable && active(row,col) ? event => down(event,row,col) : undefined} onPointerMove={editable && active(row,col) ? move : undefined} onPointerUp={editable && active(row,col) ? event => up(event,row,col) : undefined} onPointerCancel={editable ? () => { if (pointer.current?.timer) clearTimeout(pointer.current.timer); pointer.current=null; taps.current?.cancelAll(); setGhost(null); } : undefined} aria-label={`${row+1}行${col+1}列${panel ? ` ${panel.element ?? "炭素"}` : " 空欄"}`} role={editable && active(row,col) ? "button" : undefined} tabIndex={editable && active(row,col) ? 0 : undefined} onKeyDown={editable && active(row,col) ? event => { if (event.key === "Delete" || event.key === "Backspace") emit({type:"remove",row,col}); if (event.key === "Enter" || event.key === " ") { event.preventDefault(); if (selected) emit({type:"place",row,col,panel:selected}); else if (panel) emit({type:"rotate",row,col,reverse:event.shiftKey}); } } : undefined}>{panel && <PanelIcon panel={panel} grid={displayGrid} row={row} col={col}/>}</div>))}</div>{ghost&&createPortal(<div className="alkane-panel-ghost" style={{left:ghost.x,top:ghost.y,transform:`translate(-50%,-50%) rotate(${ghost.panel.rotation}deg)`}}><PaletteIcon panel={{...ghost.panel,rotation:0}}/></div>,document.body)}</>;
+  return <><div ref={board} className={`alkane-board ${compact ? "alkane-board-cropped" : ""} ${promptCompact ? "alkane-board-prompt" : ""} `} role="group" aria-label={label ?? "アルカンの構造"} style={{ gridAutoRows:cellSize,height:cellSize===undefined?undefined:cellSize*rowCount+3*(rowCount-1),width:promptWidth, "--alkane-cols": columns, "--alkane-crop-width": `${columns*48+(columns-1)*3}px` } as CSSProperties}>{displayGrid.flatMap((line,row) => line.flatMap((panel,col) => region&&(row<region.top||row>region.bottom||col<region.left||col>region.right)?[]:<div className={`alkane-cell ${panel ? "filled" : ""} ${active(row,col) ? "" : "inactive"}`} key={`${row}-${col}`} data-alkane-cell data-row={row} data-col={col} data-active={active(row,col)} onContextMenu={event=>event.preventDefault()} onDragStart={event=>event.preventDefault()} onPointerDown={editable && active(row,col) ? event => down(event,row,col) : undefined} onPointerMove={editable && active(row,col) ? move : undefined} onPointerUp={editable && active(row,col) ? event => up(event,row,col) : undefined} onPointerCancel={editable ? event => {if(pointer.current?.id===event.pointerId)cancelPointer(true);} : undefined} aria-label={`${row+1}行${col+1}列${panel ? ` ${panel.element ?? "炭素"}` : " 空欄"}`} role={editable && active(row,col) ? "button" : undefined} tabIndex={editable && active(row,col) ? 0 : undefined} onKeyDown={editable && active(row,col) ? event => { if (event.key === "Delete" || event.key === "Backspace") emit({type:"remove",row,col}); if (event.key === "Enter" || event.key === " ") { event.preventDefault(); if (selected) emit({type:"place",row,col,panel:selected}); else if (panel) emit({type:"rotate",row,col,reverse:event.shiftKey}); } } : undefined}>{panel && <PanelIcon panel={panel} grid={displayGrid} row={row} col={col}/>}</div>))}</div>{ghost&&createPortal(<div className="alkane-panel-ghost" style={{left:ghost.x,top:ghost.y,transform:`translate(-50%,-50%) rotate(${ghost.panel.rotation}deg)`}}><PaletteIcon panel={{...ghost.panel,rotation:0}}/></div>,document.body)}</>;
 }
 export function PaletteIcon({ panel }: { panel: Panel }) { return <PanelIcon panel={panel}/>; }
