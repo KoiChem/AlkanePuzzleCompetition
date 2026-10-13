@@ -33,3 +33,14 @@ test('Undo reuses the original puzzle short descending motif',async()=>{
  expect(tones.map(n=>[n.type,n.frequency.setValueAtTime.mock.calls[0][0],n.frequency.linearRampToValueAtTime.mock.calls[0][0]])).toEqual([['triangle',520,390]]);
  expect(clicks.map(n=>[n.frequency.value,n.Q.value])).toEqual([[1300,1]]);
 });
+test('panel gestures unlock the same context as answer effects and obey changes to the shared mute setting',async()=>{
+ vi.stubGlobal('AudioContext',AudioFixture);
+ let level='medium';vi.stubGlobal('localStorage',{getItem:()=>level});
+ const {playPanelSound,primePanelAudio}=await import('../game/client/panel-audio');
+ const {playAnswerSound,savedSoundLevel}=await import('../../src/features/play/audio-feedback');
+ primePanelAudio();playPanelSound('pickup');playAnswerSound('correct',savedSoundLevel());
+ expect(contexts).toBe(1);expect(tones).toHaveLength(6);
+ level='off';for(const kind of ['pickup','move','delete','undo'] as const)playPanelSound(kind);playAnswerSound('incorrect',savedSoundLevel());
+ expect(tones).toHaveLength(6);
+ level='medium';playPanelSound('pickup');expect(contexts).toBe(1);expect(tones).toHaveLength(8);
+});

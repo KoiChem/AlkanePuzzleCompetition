@@ -1,6 +1,23 @@
 import {test,expect} from 'vitest';
 import {advanceTrace,traceBoard,type BoardGrid,type TraceState} from '../game/client/AlkaneBoard';
 const blank=():BoardGrid=>Array.from({length:5},()=>Array(7).fill(null));
+test('tracing carbon replaces dangling arms with hydrogen while keeping mutual bonds',()=>{
+ const original=blank();original[2][3]={type:5,rotation:0};original[2][2]={type:1,rotation:0};original[2][4]={type:1,rotation:0};
+ const result=traceBoard(original,{path:[{row:1,col:3},{row:2,col:3}],closed:false});
+ // Up is traced; left is a real bond; right points toward a carbon facing away; down is empty.
+ expect(result[2][3]).toEqual({type:3,rotation:270});
+ expect(result[2][2]).toEqual(original[2][2]);expect(result[2][4]).toEqual(original[2][4]);expect(original[2][3]).toEqual({type:5,rotation:0});
+});
+for(const element of ['F','Cl','Br','I','OH'])test(`tracing carbon retains its bond to ${element}`,()=>{
+ const original=blank();original[2][3]={type:5,rotation:0};original[2][2]={type:1,rotation:0,element};
+ expect(traceBoard(original,{path:[{row:1,col:3},{row:2,col:3}],closed:false})[2][3]).toEqual({type:3,rotation:270});
+});
+test('tracing removes dangling arms throughout a loop and backtracking restores the snapshot',()=>{
+ const original=blank();original[2][3]={type:5,rotation:0};
+ const path=[{row:2,col:3},{row:2,col:4},{row:3,col:4},{row:3,col:3}];
+ expect(traceBoard(original,{path,closed:true})[2][3]).toEqual({type:3,rotation:90});
+ expect(traceBoard(original,{path:[path[0]],closed:false})).toEqual(original);
+});
 for(const element of ['F','Cl','Br','I','OH']){
  test(`${element} is replaced at start, crossing and endpoint without mutating the snapshot`,()=>{
   for(const path of [[{row:2,col:3},{row:1,col:3}],[{row:1,col:3},{row:2,col:3}],[{row:1,col:3},{row:2,col:3},{row:3,col:3}]]){

@@ -20,10 +20,11 @@ export function QuestionView({question,fieldId,value,onChange,disabled,storageKe
  const history=useRef(createBoardHistory()),currentGrid=useRef<BoardGrid|null>(null),previousValue=useRef(value);
  const [interacting,setInteracting]=useState(false),[boardRevision,setBoardRevision]=useState(0);
  const drag=useRef<{id:number;x:number;y:number;panel:Panel;moved:boolean}|null>(null);
+ const undoPointer=useRef<number|null>(null);
  const palette=useRef<HTMLDivElement>(null),protectPalette=question.prompt.kind==='alkane'&&question.prompt.mode==='arrange'&&!!onChange;
  useLayoutEffect(()=>{if(protectPalette&&palette.current)return bindGestureNavigationGuard(palette.current);},[protectPalette]);
- useEffect(()=>{setSelected(null);setGhost(null);drag.current=null;setInteracting(false);history.current.reset();},[question.id,disabled]);
- useEffect(()=>{const cancel=()=>{drag.current=null;setGhost(null);setInteracting(false);};window.addEventListener('blur',cancel);return()=>window.removeEventListener('blur',cancel);},[]);
+ useEffect(()=>{setSelected(null);setGhost(null);drag.current=null;undoPointer.current=null;setInteracting(false);history.current.reset();},[question.id,disabled]);
+ useEffect(()=>{const cancel=()=>{drag.current=null;undoPointer.current=null;setGhost(null);setInteracting(false);};window.addEventListener('blur',cancel);return()=>window.removeEventListener('blur',cancel);},[]);
  const prompt=question.prompt;
  if(prompt.kind!=="alkane")return <section className="question-card" aria-label="問題"/>;
  if(prompt.mode==="arrange"){
@@ -41,7 +42,12 @@ export function QuestionView({question,fieldId,value,onChange,disabled,storageKe
    currentGrid.current=previous;setBoardRevision(revision=>revision+1);onChange?.(JSON.stringify({grid:previous}));playPanelSound('undo');
   }
   const options=prompt.options?.length?prompt.options:defaultPalette;
-  const undoButton=<button type="button" className="alkane-grid-undo" aria-label="盤面の操作を1つ戻す" title="盤面の操作を1つ戻す" disabled={disabled||!onChange||interacting||!history.current.canUndo()} onPointerDown={()=>primePanelAudio()} onClick={undo}><svg viewBox="0 0 1000 936" aria-hidden="true"><path d="M416 835 A345 345 0 1 0 269 249" fill="none" stroke="currentColor" strokeWidth="82" strokeLinecap="round"/><path d="M155 117 L70 462 L409 365 Z"/></svg></button>;
+  // The palette suppresses touch-generated clicks; use pointer release and keep keyboard clicks.
+  const undoButton=<button type="button" className="alkane-grid-undo" aria-label="盤面の操作を1つ戻す" title="盤面の操作を1つ戻す" disabled={disabled||!onChange||interacting||!history.current.canUndo()}
+   onPointerDown={event=>{if(!event.isPrimary||event.button!==0)return;undoPointer.current=event.pointerId;event.currentTarget.setPointerCapture(event.pointerId);primePanelAudio();}}
+   onPointerUp={event=>{if(undoPointer.current!==event.pointerId)return;undoPointer.current=null;const rect=event.currentTarget.getBoundingClientRect();if(event.clientX>=rect.left&&event.clientX<=rect.right&&event.clientY>=rect.top&&event.clientY<=rect.bottom)undo();}}
+   onPointerCancel={()=>{undoPointer.current=null;}}
+   onClick={event=>{if(event.detail===0)undo();}}><svg viewBox="0 0 1000 936" aria-hidden="true"><path d="M416 835 A345 345 0 1 0 269 249" fill="none" stroke="currentColor" strokeWidth="82" strokeLinecap="round"/><path d="M155 117 L70 462 L409 365 Z"/></svg></button>;
   function toggle(panel:Panel){setSelected(selected?.type===panel.type&&selected.element===panel.element?null:panel);}
   const clear=<button type="button" className="alkane-reset" disabled={disabled||!onChange||grid.every(row=>row.every(panel=>!panel))} onClick={()=>{setBoardRevision(revision=>revision+1);changeGrid(blank);}}>クリア</button>;
   return <section className="question-card alkane-question" data-mode="arrange" aria-label="問題">

@@ -11,12 +11,18 @@ export function saveSoundLevel(value: SoundLevel): void {
   try { localStorage.setItem(KEY, value); } catch { /* sound preference is optional */ }
 }
 
-export function primeAudio(level: SoundLevel): void {
-  if (level === "off" || typeof window === "undefined") return;
+// Every effect uses this context so one user gesture unlocks all game audio.
+export function primeAudio(level: SoundLevel): AudioContext | null {
+  if (level === "off" || typeof window === "undefined") return null;
   try {
-    context ??= new AudioContext();
-    if (context.state === "suspended") void context.resume().catch(() => {});
-  } catch { /* audio is optional */ }
+    if (!context || context.state === "closed") {
+      const AC = window.AudioContext ?? (window as typeof window & {webkitAudioContext?: typeof AudioContext}).webkitAudioContext;
+      if (!AC) return null;
+      context = new AC({latencyHint: "interactive"});
+    }
+    if (context.state !== "running") void context.resume().catch(() => {});
+    return context;
+  } catch { /* audio is optional */ return null; }
 }
 
 function note(audio: AudioContext, frequency: number, at: number, duration: number, volume: number, waveform: OscillatorType = "sine") {

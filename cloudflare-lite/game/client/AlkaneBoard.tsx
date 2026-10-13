@@ -64,8 +64,11 @@ export function traceBoard(snapshot:readonly (readonly (Panel|null)[])[],trace:T
     if (previous) directions.push(direction(point,previous));
     if (following) directions.push(direction(point,following));
     if (!directions.length) continue;
-    const existing=result[point.row][point.col];
-    let existingDirections=existing && isCarbon(existing) ? (arms[existing.type] ?? []).map(arm=>(arm+Math.round(existing.rotation/90))%4):[];
+    const existing=snapshot[point.row][point.col];
+    let existingDirections=existing && isCarbon(existing) ? (arms[existing.type] ?? []).map(arm=>(arm+Math.round(existing.rotation/90))%4).filter(dir=>{
+      const [x,y]=vectors[dir],neighbor=snapshot[point.row+y]?.[point.col+x];
+      return neighbor&&(!isCarbon(neighbor)||(arms[neighbor.type]??[]).some(arm=>(arm+Math.round(neighbor.rotation/90))%4===(dir+2)%4));
+    }):[];
     if (existing && !isCarbon(existing)) {
       // Noncarbon panels have automatic bonds, not their stored type/rotation arms.
       const incoming=vectors.flatMap(([x,y],dir)=>{

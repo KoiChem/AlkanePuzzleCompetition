@@ -198,3 +198,11 @@ Worker名は alkanecompetition、標準URLは https://alkanecompetition.koichem.
 ### 公開確認
 - 公開source release `b5cffd52ec92da259443a8982f95feb4b11a9a69`、Cloudflare version `6315ee79-893b-4386-ad9c-afa885e7986a`。GitHub MCPでも公開元commitを確認。healthのreleaseとHTMLのalkane-releaseが一致し、health／public-config／JS／CSSはHTTP200。JS／CSSのSHA256はローカルdistと一致。公開ホームconsole error／warningなし。
 - 公開実メイト2人でChromium／WebKitの4点の操作、5原子の音程と長押し、置換／復元、選択解除、回転／削除／クリア／一筆Undo、Undo後のサーバー保存reload、次問履歴リセット、両者提出／最終結果を確認。両エンジンpageerrorなし、5幅で44px・Fの左・折返しなし・overflowなし。ChromiumのみCDP touchも確認。疑似時計の締切テストはローカルだけで、本番の期限・共通設定は変更していない。実Google再ログイン・実iPhone／iPad・実スピーカーは未検証。
+
+## 2026-10-13 並べるのタッチUndo・未接続結合・共通音声（ローカル検証）
+
+- パレットのtouchstart抑止でclickが発生せず、タッチUndoが動かないことをChromiumの実タッチイベントで再現。ボタン内のpointerupで1操作を戻し、マウスの後続clickは重複実行せず、キーボードのclickも維持。pointercancel・blur・ボタン外へのリリースでは戻さない。
+- なぞった炭素は開始時の盤面に実在する相互結合とOH・ハロゲンへの結合、今回の経路だけを保持。相手のない方向を水素に戻し、経路外のパネルは変更しない。Undo・引き返し・キャンセルは開始前に復元する。
+- 長押し・移動・削除・Undoの音を正誤音と同じAudioContextに統一。既存の保存済み効果音OFF/ONを使用し、長押しの音程・音量は保持。[Web Audioのユーザー操作による初期化](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)も確認。
+- Lite 116テスト、既存アプリ431テスト成功（既定の負荷5テストはスキップ）。両型チェックとLiteビルド成功。ブラウザで320/375/390/768/1280pxの配置、タッチ/キーボードUndo、全操作復元、保存reload、次問境界、疑似締切、2人提出/結果、およびOFF時の長押し・正誤無音/ON復帰を検証。pageerrorなし。
+- WebKitの実行用バイナリがなく、WebKit・実機iPadの操作感/聴感は未検証。本項は公開前のローカル検証記録。公開検証は別途記録する。

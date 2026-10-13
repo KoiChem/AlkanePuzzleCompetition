@@ -18,6 +18,26 @@ async(page)=>{
   await page.goto(origin+'/#/mate/new');await page.getByLabel('ニックネーム（1〜16文字）').fill('Undoホスト');await page.getByRole('button',{name:'5問',exact:true}).click();await page.getByRole('button',{name:'3分',exact:true}).click();await page.getByRole('button',{name:'並べる',exact:true}).click();await page.getByRole('button',{name:'まとめて判定',exact:true}).click();const alcoholOff=page.getByRole('button',{name:/アルコール.*OFF/});if(await alcoholOff.count())await alcoholOff.click();await page.getByRole('button',{name:'メイトルームを作る',exact:true}).click();await page.getByRole('button',{name:'問題を準備して開始',exact:true}).waitFor();
   const code=new URL(page.url()).hash.match(/rooms\/([A-Z2-9]{6})/)[1];await guest.goto(origin+'/#/join/'+code);await guest.getByLabel('ニックネーム（1〜16文字）').fill('Undo参加');await guest.getByRole('button',{name:'参加する',exact:true}).click();await guest.getByRole('heading',{name:'開始を待っています',exact:true}).waitFor();await page.getByRole('button',{name:'問題を準備して開始',exact:true}).click();await guest.getByRole('button',{name:'1級炭素',exact:true}).waitFor();
   check(await guest.getByRole('button',{name:'盤面の操作を1つ戻す',exact:true}).isDisabled(),'initial Undo not disabled');
+  // A real touch must undo once even though palette touchstart suppresses synthetic clicks.
+  await place('F',2,3);await place('Cl',2,4);
+  for(const cancel of ['pointercancel','blur','outside']){
+   const button=guest.getByRole('button',{name:'盤面の操作を1つ戻す',exact:true}),b=await button.boundingBox();
+   await guest.mouse.move(b.x+b.width/2,b.y+b.height/2);await guest.mouse.down();
+   if(cancel==='pointercancel')await button.dispatchEvent('pointercancel',{pointerId:1});
+   if(cancel==='blur')await guest.evaluate(()=>window.dispatchEvent(new Event('blur')));
+   if(cancel==='outside')await guest.mouse.move(2,2);
+   await guest.mouse.up();check(await atom(2,3,'F')&&await atom(2,4,'Cl'),'cancelled Undo changed the board '+cancel);
+  }
+  await guest.getByRole('button',{name:'盤面の操作を1つ戻す',exact:true}).tap();
+  check(await atom(2,3,'F')&&await cell(2,4).locator('svg').count()===0,'native touch Undo failed or undid twice');
+  await guest.getByRole('button',{name:'盤面の操作を1つ戻す',exact:true}).focus();await guest.keyboard.press('Enter');
+  check(await cell(2,3).locator('svg').count()===0,'keyboard Undo failed');
+  await place('4級炭素',2,3);await place('1級炭素',2,2);await place('1級炭素',2,4);
+  await trace([[1,3],[2,3]]);
+  check(await cell(2,3).locator('line[stroke-width="3"]').count()===2&&await cell(2,3).locator('circle[r="6"]').count()===2,'dangling bonds did not become hydrogens');
+  check(await cell(2,2).locator('line[stroke-width="3"]').count()===1&&await cell(2,4).locator('line[stroke-width="3"]').count()===1,'untraced carbons changed');
+  await guest.getByRole('button',{name:'盤面の操作を1つ戻す',exact:true}).tap();
+  check(await cell(2,3).locator('line[stroke-width="3"]').count()===4&&await cell(1,3).locator('svg').count()===0,'dangling bond replacement Undo failed');await clear();
   for(const element of ['F','Cl','Br','I','OH']){
    await place(element,2,3);const original=await cell(2,3).innerHTML();await guest.evaluate(()=>window.__pickup=[]);await down(2,3);await guest.waitForTimeout(450);check(await guest.locator('.alkane-panel-ghost').count()===1,'noncarbon pickup '+element);check(JSON.stringify(await guest.evaluate(()=>window.__pickup))==='[480,660]','pickup tone differs '+element);await move(2,4);await guest.mouse.up();check(await atom(2,4,element),'move loses '+element);await undo();check(await cell(2,3).innerHTML()===original,'move Undo '+element);
    await trace([[1,3],[2,3],[3,3]]);check(await atom(2,3,'炭素'),'crossing not carbon '+element);await undo();check(await cell(2,3).innerHTML()===original,'cross Undo '+element);check(await cell(1,3).locator('svg').count()===0&&await cell(3,3).locator('svg').count()===0,'stroke not one Undo');
@@ -46,6 +66,6 @@ async(page)=>{
   check(await guest.locator('.alkane-question .alkane-board').innerHTML()===cutoffBoard,'deadline allowed late Undo or pointer edit');
   await guest.evaluate(()=>{delete performance.now;delete window.__undoClock;});await context.setOffline(false);await guest.getByText('端末・サーバーに保存済み',{exact:true}).waitFor();
   await finish(guest);await finish(page);await page.getByRole('heading',{name:'最終結果',exact:true}).waitFor();check(!errors.length,errors.join('\n'));
-  return {allAtomPickup:true,overwriteAndBacktrack:true,selectedSwipe:true,wholeStrokeUndo:true,clearAndDestinationRestore:true,rotationAndDeleteUndo:true,nativeTouch:native,savedUndoReload:true,questionBoundary:true,simulatedDeadlineReadOnly:true,submissionResults:true,layouts,pageErrors:errors};
+  return {nativeTouchUndo:true,keyboardUndo:true,danglingBondsToHydrogens:true,allAtomPickup:true,overwriteAndBacktrack:true,selectedSwipe:true,wholeStrokeUndo:true,clearAndDestinationRestore:true,rotationAndDeleteUndo:true,nativeTouch:native,savedUndoReload:true,questionBoundary:true,simulatedDeadlineReadOnly:true,submissionResults:true,layouts,pageErrors:errors};
  }finally{await context.close();page.off('pageerror',record);page.off('dialog',dialog);}
 }

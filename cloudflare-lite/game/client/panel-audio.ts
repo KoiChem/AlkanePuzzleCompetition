@@ -1,4 +1,4 @@
-import {savedSoundLevel} from '../../../src/features/play/audio-feedback';
+import {primeAudio,savedSoundLevel} from '../../../src/features/play/audio-feedback';
 // AlkanePuzzle index.html: playPanelPickupSound / playMoveSound / playDeleteSound.
 let context:AudioContext|null=null,output:GainNode|null=null,warmUntil=0;
 const pending:{kind:PanelSound;at:number}[]=[];
@@ -6,9 +6,9 @@ type PanelSound='pickup'|'move'|'delete'|'undo';
 export function primePanelAudio(){
  if(savedSoundLevel()==='off'||typeof window==='undefined')return;
  try{
-  if(!context||context.state==='closed'){
-   const AC=window.AudioContext ?? (window as typeof window & {webkitAudioContext?:typeof AudioContext}).webkitAudioContext;
-   if(!AC)return;context=new AC({latencyHint:'interactive'});warmUntil=context.currentTime+.07;
+  const shared=primeAudio(savedSoundLevel());if(!shared)return;
+  if(context!==shared){
+   context=shared;warmUntil=context.currentTime+.07;
    output=context.createGain();output.gain.value=.88;
    const compressor=context.createDynamicsCompressor();compressor.threshold.value=-8;compressor.knee.value=8;compressor.ratio.value=6;compressor.attack.value=.003;compressor.release.value=.12;
    output.connect(compressor);compressor.connect(context.destination);
