@@ -49,6 +49,6 @@ Files: `src/Settings.tsx`, `worker/room.ts`, relevant unit/browser tests.
 ## Task 3: Review and release
 
 - [x] Run Lite full tests, typecheck/build, focused browser flows and `git diff --check`; request a read-only independent review.
-- [ ] Commit/push to the existing branch and deploy only via `pnpm --dir cloudflare-lite deploy`.
-- [ ] Verify GitHub commit, public health/release/asset hashes, new labels, server-prepared sets in all modes, both grading flows, and responsive layouts.
-- [ ] Record public verification and distinguish browser evidence from physical-device evidence.
+- [x] Commit/push to the existing branch and deploy only via `pnpm --dir cloudflare-lite deploy`.
+- [x] Verify GitHub commit, public health/release/asset hashes, new labels, server-prepared sets in all modes, both grading flows, and responsive layouts.
+- [x] Record public verification and distinguish browser evidence from physical-device evidence.
