@@ -141,3 +141,8 @@ html.alkane-arrange-gesture-guard{overscroll-behavior-x:contain}
 .alkane-grid-undo:disabled svg{opacity:.3}
 .alkane-grid-undo:active:not(:disabled){transform:translate(1px,1px)}
 .alkane-grid-undo:focus-visible{outline:2px solid var(--primary-dark,#1f8175);outline-offset:2px}
+
+/* Center the home card within the visible viewport; tall content remains scrollable. */
+main.home-shell{min-height:100dvh;place-items:center;padding:24px}
+.home-related-actions{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:16px}
+.home-related-actions .secondary-link{min-width:0;padding-inline:6px;font-size:clamp(.8rem,3.5vw,1rem);white-space:nowrap}
