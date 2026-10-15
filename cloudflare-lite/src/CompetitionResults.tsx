@@ -47,7 +47,7 @@ export function Results({ data, reviewControls }: { reviewControls?:ReactNode; d
   const classParticipant = data.room?.kind === "class" && !!data.own;
   const classTeacher = data.room?.kind === "class" && !!data.aggregate && !data.own;
   const hostRankingLayout = classTeacher || data.room?.kind === "mate";
-  const boundary = classParticipant ? 3 : teacherTopRank(ranking.length);
+  const boundary = classParticipant ? 3 : teacherTopRank();
   const visibleRanking = classParticipant || (classTeacher && !allVisible) ? topRankingRows(ranking, boundary) : ranking;
   const reasonLabel = (reason: string) => reason === "completed" ? "完了" : reason === "submitted" ? "提出" : reason === "interrupted" ? "中断" : "時間切れ";
   const questionResults = data.questions && <section><h2>{data.own ? "あなたの問題別結果" : "選択した参加者の問題別結果"}</h2><ol className="review-list">{data.questions.map(question => <li key={question.id} className="review-card"><h3 className="review-prompt">第{question.ordinal + 1}問</h3><AlkanePromptSummary prompt={question.prompt}/>{question.fields.map(field => data.own && field.state === "correct" ? <CorrectParticipantAnswer key={field.id} field={field}/> : data.room?.settings?.gradingMode === "deferred"

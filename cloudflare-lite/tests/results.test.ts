@@ -17,3 +17,14 @@ test('incorrect participant and teacher correct reviews retain the model answer'
   expect(html).toContain('ブタン');expect(html).toContain('ペンタン');expect(html).toContain('あなたの解答：');
  }
 });
+
+for (const count of [0, 1, 3, 5, 8, 12, 20, 30, 42]) test(`class host shows up to fifth place with ${count} participants`, () => {
+ const ranking=Array.from({length:count},(_,i)=>({rank:i+1,nickname:`順位${i+1}番`,correctCount:0,elapsedCs:100,finishReason:'completed'}));
+ const html=renderToStaticMarkup(h(Results,{data:{room:{kind:'class'},aggregate:{averageCorrectCount:0,perfectCount:0,completedCount:0},ranking}}));
+ expect(html).toContain('上位5位');if(count>=5)expect(html).toContain('順位5番');expect(html).not.toContain('順位6番');
+});
+for (const boundary of [3,5]) test(`class result includes all ties at rank ${boundary}`, () => {
+ const ranking=[1,2,3,3,5,5,7].map((rank,i)=>({rank,nickname:`同率検証${i}`,correctCount:0,elapsedCs:100,finishReason:'completed'}));
+ const html=renderToStaticMarkup(h(Results,{data:{room:{kind:'class'},aggregate:{averageCorrectCount:0,perfectCount:0,completedCount:0},ranking,...(boundary===3?{own:{rank:7}}:{})}}));
+ expect(html).toContain(boundary===3?'同率検証3':'同率検証5');expect(html).not.toContain(boundary===3?'同率検証4':'同率検証6');
+});
