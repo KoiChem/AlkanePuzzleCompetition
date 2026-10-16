@@ -68,3 +68,16 @@ test('a state with matching seq but no body proof cannot erase a pending answer'
  const {connection,first}=setup();const pending=connection.send({type:'answer',seq:1,questionId:'q',fieldId:'name',value:'{"tokens":["メタン"]}'}).catch(()=>null);
  const unproven=state(1);delete unproven.lastOperation;first.receive({type:'state',state:unproven});expect(connection.pending).toBe(true);connection.dispose();await pending;
 });
+test('an unreceived reopen is replayed even while the participant is still submitted',async()=>{
+ const {connection,first}=setup();const pending=connection.send({type:'reopen',seq:1}).catch(()=>null);first.close();await pending;await vi.advanceTimersByTimeAsync(1100);
+ const second=FakeSocket.instances[1];second.open();const submitted=state(0);submitted.own!.finished=true;second.receive({type:'ack',requestId:second.sent[0].requestId,state:submitted});
+ expect(second.sent[1]).toMatchObject({type:'reopen',seq:1});second.receive({type:'ack',requestId:second.sent[1].requestId,state:state(1)});expect(connection.pending).toBe(false);connection.dispose();
+});
+test('a pending reopen survives reload and is cleared if collection has begun',async()=>{
+ const {connection}=setup();const pending=connection.send({type:'reopen',seq:1}).catch(()=>null);connection.dispose();await pending;
+ const resumed=new RoomConnection(c,{onState:()=>{},onStatus:()=>{},onVerdict:()=>{}});const second=FakeSocket.instances[1];second.open();const collecting=state(0);collecting.room.state='COLLECTING';collecting.own!.finished=true;second.receive({type:'ack',requestId:second.sent[0].requestId,state:collecting});expect(second.sent).toHaveLength(1);expect(resumed.pending).toBe(false);resumed.dispose();
+});
+test('an unreceived reopen survives reload while the room still accepts reopening',async()=>{
+ const {connection}=setup();const pending=connection.send({type:'reopen',seq:1}).catch(()=>null);connection.dispose();await pending;
+ const resumed=new RoomConnection(c,{onState:()=>{},onStatus:()=>{},onVerdict:()=>{}});const second=FakeSocket.instances[1];second.open();const submitted=state(0);submitted.own!.finished=true;second.receive({type:'ack',requestId:second.sent[0].requestId,state:submitted});expect(second.sent[1]).toMatchObject({type:'reopen',seq:1});resumed.dispose();
+});
