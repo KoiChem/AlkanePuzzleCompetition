@@ -26,7 +26,8 @@ export function occupiedRegion(grid:readonly (readonly (Panel|null)[])[]) {
 const vectors = [[0,-1],[1,0],[0,1],[-1,0]] as const;
 const arms: Record<number, number[]> = { 1:[1], 2:[0,2], 3:[0,1], 4:[0,3,1], 5:[0,1,2,3] };
 export type TracePoint = { row:number; col:number };
-export type TraceState = { path:TracePoint[]; closed:boolean };
+// The walk may revisit cells and bonds; each consecutive pair is one traced bond.
+export type TraceState = { path:TracePoint[] };
 type Bounds = { rows:number; cols:number };
 function cloneGrid(grid:readonly (readonly (Panel|null)[])[]):BoardGrid { return grid.map(row=>row.map(panel=>panel ? {...panel}:null)); }
 function isCarbon(panel:Panel|null|undefined) { return !panel?.element || panel.element==='C'; }
@@ -46,24 +47,24 @@ function panelForDirections(directions:Iterable<number>):Panel {
   throw new Error('Unsupported carbon bond directions');
 }
 export function advanceTrace(snapshot:readonly (readonly (Panel|null)[])[],trace:TraceState,next:TracePoint,bounds?:Bounds):TraceState {
-  if (trace.closed || !cellWithinBounds(snapshot,next.row,next.col,bounds)) return trace;
+  if (!cellWithinBounds(snapshot,next.row,next.col,bounds)) return trace;
   const path=trace.path, last=path.at(-1);
   if (!last || direction(last,next)<0) return trace;
-  if (path.length>=2 && next.row===path.at(-2)!.row && next.col===path.at(-2)!.col) return {path:path.slice(0,-1),closed:false};
-  const first=path[0];
-  if (next.row===first.row && next.col===first.col) return path.length>=3 ? {path:[...path],closed:true}:trace;
-  if (path.some(point=>point.row===next.row && point.col===next.col)) return trace;
-  return {path:[...path,next],closed:false};
+  if (path.length>=2 && next.row===path.at(-2)!.row && next.col===path.at(-2)!.col) return {path:path.slice(0,-1)};
+  return {path:[...path,next]};
 }
 export function traceBoard(snapshot:readonly (readonly (Panel|null)[])[],trace:TraceState):BoardGrid {
-  const result=cloneGrid(snapshot), {path,closed}=trace;
-  for (let index=0;index<path.length;index++) {
-    const point=path[index], directions:number[]=[];
-    const previous=index>0 ? path[index-1]:closed ? path.at(-1):undefined;
-    const following=index<path.length-1 ? path[index+1]:closed ? path[0]:undefined;
-    if (previous) directions.push(direction(point,previous));
-    if (following) directions.push(direction(point,following));
-    if (!directions.length) continue;
+  const result=cloneGrid(snapshot), {path}=trace;
+  const bonds=new Map<string,{point:TracePoint;directions:Set<number>}>();
+  for (let index=1;index<path.length;index++) {
+    const previous=path[index-1],point=path[index],dir=direction(previous,point);
+    for (const [cell,arm] of [[previous,dir],[point,(dir+2)%4]] as const) {
+      const key=`${cell.row},${cell.col}`;
+      if (!bonds.has(key)) bonds.set(key,{point:cell,directions:new Set()});
+      bonds.get(key)!.directions.add(arm);
+    }
+  }
+  for (const {point,directions} of bonds.values()) {
     const existing=snapshot[point.row][point.col];
     let existingDirections=existing && isCarbon(existing) ? (arms[existing.type] ?? []).map(arm=>(arm+Math.round(existing.rotation/90))%4).filter(dir=>{
       const [x,y]=vectors[dir],neighbor=snapshot[point.row+y]?.[point.col+x];
@@ -170,20 +171,21 @@ export function AlkaneBoard({ grid, label, onChange, selected, onDeselect, onInt
     if (panel) taps.current?.hold(row,col);
     const item = { id:event.pointerId,row, col, x:event.clientX, y:event.clientY,lastX:event.clientX,lastY:event.clientY, timer:null as ReturnType<typeof setTimeout> | null, moved:false, long:false,snapshot:null as BoardGrid|null,trace:null as TraceState|null };
     if (panel) item.timer = setTimeout(() => {if(pointer.current!==item)return;item.long=true;taps.current?.cancelAll();setGhost({panel,row,col,x:item.lastX,y:item.lastY});playPanelSound("pickup");},400);
-    if (!selected && !panel) {item.snapshot=cloneGrid(latest.current.grid);item.trace={path:[{row,col}],closed:false};taps.current?.cancelAll();}
+    if (!selected && !panel) {item.snapshot=cloneGrid(latest.current.grid);item.trace={path:[{row,col}]};taps.current?.cancelAll();}
     pointer.current = item;latest.current.onInteractionChange?.(true);
   }
   function move(event: ReactPointerEvent) {
     const item=pointer.current;if (!item || item.id!==event.pointerId) return;
     item.lastX=event.clientX;item.lastY=event.clientY;
     if(item.long){const panel=latest.current.grid[item.row][item.col];if(panel)setGhost({panel,row:item.row,col:item.col,x:event.clientX,y:event.clientY});return;}
-    if (Math.hypot(event.clientX-item.x,event.clientY-item.y)>=8) {
+    // After tracing starts, returning to the press point is still a drawing step.
+    if (item.moved || Math.hypot(event.clientX-item.x,event.clientY-item.y)>=8) {
       item.moved=true;taps.current?.cancelAll();
       if(item.timer){clearTimeout(item.timer);item.timer=null;}
       if(!item.trace){
         const target=targetPoint(event);
         if(!target||direction({row:item.row,col:item.col},target)<0)return;
-        item.snapshot=cloneGrid(latest.current.grid);item.trace={path:[{row:item.row,col:item.col}],closed:false};
+        item.snapshot=cloneGrid(latest.current.grid);item.trace={path:[{row:item.row,col:item.col}]};
         if(selected)latest.current.onDeselect?.();
       }
       advancePointerTrace(item,event);
