@@ -43,7 +43,7 @@ export function Runner({ id, color = "#1763a6", goal, stopped, rest = false, das
   </svg>;
 }
 
-export const HostRace = memo(function HostRace({ roomId, participants, mode, maxScore, active, pace, remainingText, interruptButton }: { roomId: string; participants: ParticipantState[]; mode: RaceMode; maxScore: number; active: boolean; pace: 0 | 1 | 2 | 3; remainingText: string; interruptButton: ReactNode }) {
+export const HostRace = memo(function HostRace({ roomId, participants, mode, maxScore, active, waiting = false, pace, remainingText, interruptButton }: { roomId: string; participants: ParticipantState[]; mode: RaceMode; maxScore: number; active: boolean; waiting?: boolean; pace: 0 | 1 | 2 | 3; remainingText: string; interruptButton: ReactNode }) {
   const motionKey = "alkane-puzzle-competition:race-motion:v1";
   const previous = useRef<string[]>([]);
   const [motionChoice, setMotionChoice] = useState<RaceMotionChoice>("auto");
@@ -158,9 +158,9 @@ export const HostRace = memo(function HostRace({ roomId, participants, mode, max
   const draw = (row: RaceRow, index: number) => {
     const progress = raceProgress(row, mode, maxScore);
     const goal = isRaceGoal(row, mode, maxScore);
-    const rest = mode === "deferred" && row.submitted === true;
+    const rest = waiting || (mode === "deferred" && row.submitted === true);
     const dash = dashIds.has(row.id) && active && !hidden && !goal && !rest;
-    const stopped = !active || (mode === "immediate" && row.status === "FINISHED" && !goal);
+    const stopped = (!active && !waiting) || (mode === "immediate" && row.status === "FINISHED" && !goal);
     const phase = `${mode === "deferred" ? "入力" : "正解"} ${row.count} / ${maxScore}`;
     return <div key={row.id} className="race-lane" style={{ height: laneHeight, transform: `translateY(${index * laneHeight}px)` }}>
       <div className="race-label" style={{ fontSize: `max(18px, ${24 * raceScale(row.rank)}px)` }}><strong>{row.rank}位</strong><span title={row.nickname}>{row.nickname}</span><small>{phase}{row.submitted && mode === "deferred" ? "・提出済み" : stopped && !goal && active ? "・解答終了" : ""}</small></div>
