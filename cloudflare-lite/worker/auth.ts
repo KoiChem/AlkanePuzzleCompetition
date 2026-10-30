@@ -36,6 +36,7 @@ export class AlkaneTeachers extends DurableObject<AlkaneTeacherEnv> {
       CREATE TABLE IF NOT EXISTS profile (id INTEGER PRIMARY KEY,revision INTEGER NOT NULL,value TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS mate_setting (id INTEGER PRIMARY KEY,enabled INTEGER NOT NULL);
       INSERT OR IGNORE INTO mate_setting VALUES(1,1);`);
+    if (!this.sql.exec<{name:string}>('PRAGMA table_info(teachers)').toArray().some(row => row.name === 'note')) this.sql.exec("ALTER TABLE teachers ADD COLUMN note TEXT NOT NULL DEFAULT ''");
   }
   private mateEnabled(){return this.sql.exec<{enabled:number}>('SELECT enabled FROM mate_setting WHERE id=1').toArray()[0].enabled===1;}
   private profile(){return this.sql.exec<{revision:number;value:string}>('SELECT revision,value FROM profile WHERE id=1').toArray()[0]??{revision:1,value:JSON.stringify(DEFAULT_PROFILE)};}
@@ -118,16 +119,20 @@ export class AlkaneTeachers extends DurableObject<AlkaneTeacherEnv> {
     if (path === '/api/teacher/allowlist') {
       if (!session.isMaster) return json({error: 'マスター教員だけが許可教員を管理できます'}, 403);
       if (request.method !== 'GET') {
-        if (!['POST', 'DELETE'].includes(request.method)) return json({error: '操作方法を確認してください'}, 405);
+        if (!['POST', 'PUT', 'DELETE'].includes(request.method)) return json({error: '操作方法を確認してください'}, 405);
         const text = await request.text();
         if (text.length > 1024) return json({error: 'メールアドレスを確認してください'}, 400);
-        let email: string;
-        try { const body = JSON.parse(text); email = typeof body.email === 'string' ? normalize(body.email) : ''; }
+        let email: string, note = '';
+        try { const body = JSON.parse(text); email = typeof body.email === 'string' ? normalize(body.email) : ''; if (request.method !== 'DELETE') { if (body.note !== undefined && typeof body.note !== 'string') throw new Error(); note = (body.note ?? '').trim(); if (note.length > 100 || /[\r\n]/.test(note)) return json({error:'メモは改行なしの100文字以内で入力してください'},400); } }
         catch { return json({error: 'メールアドレスを確認してください'}, 400); }
         if (!validEmail(email) || email === this.master()) return json({error: 'マスター教員以外のメールアドレスを入力してください'}, 400);
         if (request.method === 'POST') {
           if (!this.allowed(email) && this.sql.exec<{count: number}>('SELECT COUNT(*) AS count FROM teachers').toArray()[0].count >= 100) return json({error: '登録できる教員は100人までです'}, 409);
           this.sql.exec('INSERT OR IGNORE INTO teachers(email) VALUES(?)', email);
+          this.sql.exec('UPDATE teachers SET note=? WHERE email=?',note,email);
+        } else if(request.method === 'PUT') {
+          if (!this.sql.exec('SELECT email FROM teachers WHERE email=?',email).toArray().length) return json({error:'教員が見つかりません'},404);
+          this.sql.exec('UPDATE teachers SET note=? WHERE email=?',note,email);
         } else {
           this.ctx.storage.transactionSync(() => {
             this.sql.exec('DELETE FROM teachers WHERE email=?', email);
@@ -136,7 +141,7 @@ export class AlkaneTeachers extends DurableObject<AlkaneTeacherEnv> {
           await this.schedule();
         }
       }
-      return json({emails: this.sql.exec<{email: string}>('SELECT email FROM teachers ORDER BY email').toArray().map(row => row.email), masterEmail: this.master()});
+      return json({emails: this.sql.exec<{email: string}>('SELECT email FROM teachers ORDER BY email').toArray().map(row => row.email), notes: Object.fromEntries(this.sql.exec<{email:string;note:string}>('SELECT email,note FROM teachers').toArray().map(row => [row.email,row.note])), masterEmail: this.master()});
     }
     return json({error: '見つかりません'}, 404);
   }

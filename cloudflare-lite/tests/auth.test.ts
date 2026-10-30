@@ -6,7 +6,7 @@ test('public profile starts with original values and only master can update atom
  const profile=structuredClone(DEFAULT_PROFILE);profile.rules.arrange.easy.lenMax=5;
  r=await f.fetch('/api/teacher/question-profile',{method:'PUT',headers:f.teacherHeaders,body:JSON.stringify({revision:current.revision,profile})});expect(r.status).toBe(200);const updated=await r.json() as any;expect(updated.revision).toBe(current.revision+1);
  expect((await f.fetch('/api/teacher/question-profile',{method:'PUT',headers:f.teacherHeaders,body:JSON.stringify({revision:current.revision,profile:DEFAULT_PROFILE})})).status).toBe(409);
- const secret='B'.repeat(43);await f.authStorage.exec('INSERT INTO teachers VALUES(?)','teacher@example.com');await f.authStorage.exec('INSERT INTO sessions VALUES(?,?,?,?)',await hash(secret),'teacher','teacher@example.com',Date.now()+60000);
+ const secret='B'.repeat(43);await f.authStorage.exec('INSERT INTO teachers(email) VALUES(?)','teacher@example.com');await f.authStorage.exec('INSERT INTO sessions VALUES(?,?,?,?)',await hash(secret),'teacher','teacher@example.com',Date.now()+60000);
  expect((await f.fetch('/api/teacher/question-profile',{method:'PUT',headers:{cookie:'__Host-alkane-lite-session='+secret,origin:'https://lite.test','x-competition-csrf':await hash(secret+':csrf')},body:JSON.stringify({revision:updated.revision,profile})})).status).toBe(403);
 });
 test('room uses authoritative shared profile and existing snapshot never changes',async()=>{

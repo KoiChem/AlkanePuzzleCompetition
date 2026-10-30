@@ -25,7 +25,7 @@ test('only master with same-origin CSRF can change mate availability',async()=>{
  expect((await f.fetch('/api/teacher/mate-setting',{method:'PUT',body:'{"enabled":false}'})).status).toBe(401);
  expect((await f.fetch('/api/teacher/mate-setting',{method:'PUT',headers:{cookie:f.teacherHeaders.cookie,origin:'https://lite.test'},body:'{"enabled":false}'})).status).toBe(403);
  expect((await f.fetch('/api/teacher/mate-setting',{method:'PUT',headers:{...f.teacherHeaders,origin:'https://evil.test'},body:'{"enabled":false}'})).status).toBe(403);
- const secret='B'.repeat(43);await f.authStorage.exec('INSERT INTO teachers VALUES(?)','teacher@example.com');await f.authStorage.exec('INSERT INTO sessions VALUES(?,?,?,?)',await hash(secret),'teacher','teacher@example.com',Date.now()+60000);
+ const secret='B'.repeat(43);await f.authStorage.exec('INSERT INTO teachers(email) VALUES(?)','teacher@example.com');await f.authStorage.exec('INSERT INTO sessions VALUES(?,?,?,?)',await hash(secret),'teacher','teacher@example.com',Date.now()+60000);
  expect((await f.fetch('/api/teacher/mate-setting',{method:'PUT',headers:{cookie:'__Host-alkane-lite-session='+secret,origin:'https://lite.test','x-competition-csrf':await hash(secret+':csrf')},body:'{"enabled":false}'})).status).toBe(403);
  expect(await (await f.fetch('/api/public-config')).json()).toEqual({mateEnabled:true});
 });
